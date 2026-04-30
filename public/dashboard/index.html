@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPMP | Dashboard</title>
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+  <header class="dashboard-header">
+    <div class="header-content">
+      <h1 class="brand">SPMP</h1>
+      <nav class="header-nav">
+        <span id="user-name" class="user-display"></span>
+        <button id="logout-btn" class="logout-button">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="dashboard-main">
+    <section class="projects-section">
+      <div class="section-header">
+        <h2>My Projects</h2>
+        <button id="new-project-btn" class="btn btn-primary">+ New Project</button>
+      </div>
+
+      <div id="projects-list" class="projects-grid">
+        <!-- Projects will be loaded here -->
+      </div>
+    </section>
+
+    <section class="tasks-section">
+      <div class="section-header">
+        <h2>My Tasks</h2>
+      </div>
+
+      <div id="tasks-list" class="tasks-list">
+        <!-- Tasks will be loaded here -->
+      </div>
+    </section>
+  </main>
+
+  <!-- New Project Modal -->
+  <div id="project-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Create New Project</h3>
+        <button class="close-btn" onclick="closeProjectModal()">&times;</button>
+      </div>
+      <form id="project-form">
+        <div class="form-group">
+          <label for="project-name">Project Name</label>
+          <input type="text" id="project-name" name="name" required>
+        </div>
+        <div class="form-group">
+          <label for="project-description">Description (Optional)</label>
+          <textarea id="project-description" name="description" rows="3"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeProjectModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Project</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Task Modal -->
+  <div id="task-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Add New Task</h3>
+        <button class="close-btn" onclick="closeTaskModal()">&times;</button>
+      </div>
+      <form id="task-form">
+        <input type="hidden" id="task-project-id" name="project_id">
+        <div class="form-group">
+          <label for="task-title">Task Title</label>
+          <input type="text" id="task-title" name="title" required>
+        </div>
+        <div class="form-group">
+          <label for="task-description">Description (Optional)</label>
+          <textarea id="task-description" name="description" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="task-priority">Priority</label>
+            <select id="task-priority" name="priority">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="task-due-date">Due Date (Optional)</label>
+            <input type="date" id="task-due-date" name="due_date">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/dashboard.js" defer></script>
+</body>
+</html>
