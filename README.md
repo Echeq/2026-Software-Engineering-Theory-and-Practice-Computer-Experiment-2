@@ -14,3 +14,8 @@ Basic System Functionalities
 - Change task status: Pending / In Progress / Completed
 - View tasks filtered by project or user
 - Optional: Add comments to tasks
+
+- Frontend: HTML5, CSS3, Vanilla TypeScript
+- Backend: Node.js, Express.js, TypeScript
+- Database: SQLite
+- Development Tools: VS Code, Git & GitHub, Thunder Client
