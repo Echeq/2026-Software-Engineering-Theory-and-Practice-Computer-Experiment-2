@@ -15,6 +15,7 @@ Basic System Functionalities
 - View tasks filtered by project or user
 - Optional: Add comments to tasks
 
+Technological Stack
 - Frontend: HTML5, CSS3, Vanilla TypeScript
 - Backend: Node.js, Express.js, TypeScript
 - Database: SQLite
