@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPMP | Login</title>
+  <link rel="stylesheet" href="./css/login.css">
+</head>
+<body>
+  <main class="login-page">
+    <section class="login-card" aria-labelledby="login-title">
+      <span class="brand-tag">SPMP</span>
+      <h1 id="login-title">Log In</h1>
+      <p class="subtitle">
+        A platform for managing projects and tasks.
+      </p>
+
+      <form class="login-form" id="login-form" novalidate>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="student@example.com"
+            autocomplete="email"
+          >
+          <small class="field-error" data-error-for="email"></small>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+          >
+          <small class="field-error" data-error-for="password"></small>
+        </div>
+
+        <p class="form-message" id="form-message" aria-live="polite"></p>
+
+        <button type="submit" class="submit-button">Log In</button>
+      </form>
+
+      <p class="auth-switch">
+        Don't have an account?
+        <a href="./signup.html" class="auth-link">Sign Up</a>
+      </p>
+    </section>
+  </main>
+
+  <script src="./js/login.js" defer></script>
+</body>
+</html>
