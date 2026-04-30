@@ -2,6 +2,7 @@
 
 A full-stack web-based project and task management platform built with Node.js, Express, TypeScript, SQLite, and vanilla JavaScript/TypeScript.
 
+<<<<<<< HEAD
 ## Tech Stack
 
 ### Backend
@@ -172,3 +173,19 @@ NODE_ENV=development
 ## License
 
 MIT
+=======
+Basic System Functionalities
+- User management (register, login, logout, profile)
+- Project management (create, view, edit, delete projects)
+- Task management (create, edit, delete tasks inside projects)
+- Task assignment to team members
+- Change task status: Pending / In Progress / Completed
+- View tasks filtered by project or user
+- Optional: Add comments to tasks
+
+Technological Stack
+- Frontend: HTML5, CSS3, Vanilla TypeScript
+- Backend: Node.js, Express.js, TypeScript
+- Database: SQLite
+- Development Tools: VS Code, Git & GitHub, Thunder Client
+>>>>>>> a8b5e5f88ce61c0a57ed569585ee27e7939a04d2
