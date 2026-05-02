@@ -3,12 +3,10 @@
   "version": "1.0.0",
   "description": "SPMP - Project and Task Management Platform",
   "scripts": {
-    "install:all": "npm run install:backend && npm run install:frontend",
-    "install:backend": "cd backend && npm install",
-    "install:frontend": "cd frontend && npm install",
-    "build:frontend": "cd frontend && npm run build",
-    "dev": "cd backend && npm run dev",
-    "start": "cd backend && npm start"
+    "install:all": "cd alimStrcuture && npm install",
+    "build": "cd alimStrcuture && npm run build",
+    "dev": "cd alimStrcuture && npm run dev",
+    "start": "cd alimStrcuture && npm start"
   },
   "keywords": ["project-management", "task-management"],
   "author": "",

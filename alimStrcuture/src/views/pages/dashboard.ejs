@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <%- include("../partials/head", { pageTitle }) %>
+  <body>
+    <main class="page-shell">
+      <header class="topbar">
+        <div class="hero-copy">
+          <span class="eyebrow">AlimStrcuture</span>
+          <h1><%= currentUser ? currentUser.name : 'Dashboard' %></h1>
+          <p>Backend and frontend now live together in one local-first Express + EJS + HTMX structure under <code>alimStrcuture/</code>.</p>
+        </div>
+
+        <div class="hero-actions">
+          <span class="muted"><%= currentUser ? currentUser.email : '' %></span>
+          <form method="post" action="/logout">
+            <button class="button button-danger" type="submit">Logout</button>
+          </form>
+        </div>
+      </header>
+
+      <%- include("../partials/dashboard-content", {
+        flash,
+        projects,
+        tasksByProject,
+        totalTasks,
+        completedTasks,
+        projectValues,
+        taskValues
+      }) %>
+    </main>
+  </body>
+</html>
