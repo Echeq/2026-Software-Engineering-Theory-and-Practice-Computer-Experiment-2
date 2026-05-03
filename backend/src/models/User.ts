@@ -2,11 +2,14 @@ import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { query, queryOne, run } from '../database';
 
+export type UserRole = 'user' | 'manager';
+
 export interface User {
   id: string;
   name: string;
   email: string;
   password_hash: string;
+  role: UserRole;
   created_at: string;
   updated_at: string;
 }
@@ -45,6 +48,15 @@ export class UserModel {
   }
 
   static listAll(): User[] {
-    return query('SELECT id, name, email, created_at, updated_at FROM users') as User[];
+    return query('SELECT id, name, email, role, created_at, updated_at FROM users') as User[];
+  }
+
+  static updateRole(id: string, role: UserRole): User | null {
+    run(
+      'UPDATE users SET role = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [role, id]
+    );
+
+    return this.findById(id);
   }
 }

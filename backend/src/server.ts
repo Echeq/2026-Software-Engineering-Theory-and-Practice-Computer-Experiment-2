@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import dotenv from 'dotenv';
 import { closeDatabase, getDatabase } from './database';
+import { ensureManagerUser } from './bootstrap/manager';
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
 import taskRoutes from './routes/tasks';
@@ -61,6 +62,7 @@ process.on('SIGTERM', () => {
 async function startServer(): Promise<void> {
   try {
     await getDatabase();
+    await ensureManagerUser();
     console.log('Database initialized');
     
     app.listen(PORT, () => {

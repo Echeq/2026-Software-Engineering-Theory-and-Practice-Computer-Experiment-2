@@ -1,52 +1,9 @@
 import { Router, Response } from "express";
 import jwt from "jsonwebtoken";
-import { UserModel, CreateUserInput } from "../models/User";
+import { UserModel } from "../models/User";
 import { authenticateToken, AuthRequest } from "../middleware/auth";
 
 const router = Router();
-
-router.post("/register", async (req, res: Response) => {
-    try {
-        const { name, email, password }: CreateUserInput = req.body;
-
-        // Validate input
-        if (!name || !email || !password) {
-            res.status(400).json({
-                message: "Name, email, and password are required",
-            });
-            return;
-        }
-
-        if (password.length < 6) {
-            res.status(400).json({
-                message: "Password must be at least 6 characters",
-            });
-            return;
-        }
-
-        // Check if user already exists
-        const existingUser = UserModel.findByEmail(email);
-        if (existingUser) {
-            res.status(409).json({ message: "Email already registered" });
-            return;
-        }
-
-        // Create new user
-        const user = await UserModel.create({ name, email, password });
-
-        res.status(201).json({
-            message: "User created successfully",
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-            },
-        });
-    } catch (error) {
-        console.error("Registration error:", error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-});
 
 router.post("/login", async (req, res: Response) => {
     try {
@@ -90,6 +47,7 @@ router.post("/login", async (req, res: Response) => {
                 id: user.id,
                 name: user.name,
                 email: user.email,
+                role: user.role,
             },
         });
     } catch (error) {
@@ -109,6 +67,7 @@ router.get("/me", authenticateToken, (req: AuthRequest, res: Response) => {
             id: req.user.id,
             name: req.user.name,
             email: req.user.email,
+            role: req.user.role,
         },
     });
 });

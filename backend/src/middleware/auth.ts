@@ -35,3 +35,21 @@ export async function authenticateToken(
         res.status(403).json({ message: "Invalid or expired token" });
     }
 }
+
+export function requireManager(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+): void {
+    if (!req.user) {
+        res.status(401).json({ message: "Authentication required" });
+        return;
+    }
+
+    if (req.user.role !== "manager") {
+        res.status(403).json({ message: "Manager access required" });
+        return;
+    }
+
+    next();
+}
