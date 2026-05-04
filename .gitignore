@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 backend/dist/
+frontend/dist/
 public/js/*.js
 public/js/*.js.map
 
