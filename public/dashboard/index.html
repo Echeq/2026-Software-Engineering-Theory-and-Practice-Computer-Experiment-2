@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Original pre-sidebar layout backed up in ./index.layout-backup.html -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -7,100 +8,149 @@
   <link rel="stylesheet" href="../css/dashboard.css">
 </head>
 <body>
-  <header class="dashboard-header">
-    <div class="header-content">
-      <h1 class="brand">SPMP</h1>
-      <nav class="header-nav">
-        <span id="user-name" class="user-display"></span>
-        <button id="logout-btn" class="logout-button">Logout</button>
-      </nav>
-    </div>
-  </header>
+  <div id="sidebar-backdrop" class="sidebar-backdrop" hidden data-close-sidebar="true"></div>
 
-  <main class="dashboard-main">
-    <section class="projects-section">
-      <div class="section-header">
-        <h2>My Projects</h2>
-        <button id="new-project-btn" class="btn btn-primary">+ New Project</button>
+  <main class="dashboard-app">
+    <aside id="dashboard-sidebar" class="dashboard-sidebar" aria-label="Primary navigation">
+      <div class="sidebar-top">
+        <div class="sidebar-brand-wrap">
+          <a href="./index.html" class="sidebar-brand" aria-label="SPMP dashboard home">
+            <span class="sidebar-logo">SP</span>
+            <span class="sidebar-brand-copy">
+              <strong>SPMP</strong>
+              <span>Project workspace</span>
+            </span>
+          </a>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Workspace navigation">
+          <a href="./index.html" class="sidebar-link is-active">Dashboard</a>
+          <a href="./projects.html" class="sidebar-link">Projects</a>
+          <a href="./tasks.html" class="sidebar-link">Tasks</a>
+          <a href="#projects-title" class="sidebar-link">Settings</a>
+        </nav>
       </div>
 
-      <div id="projects-list" class="projects-grid">
-        <!-- Projects will be loaded here -->
+      <div class="sidebar-footer">
+        <div class="user-panel" aria-live="polite">
+          <span class="user-label">Signed in as</span>
+          <strong id="user-name" class="user-display">Loading...</strong>
+        </div>
+        <button id="logout-btn" type="button" class="secondary-button sidebar-logout">Log Out</button>
       </div>
-    </section>
+    </aside>
 
-    <section class="tasks-section">
-      <div class="section-header">
-        <h2>My Tasks</h2>
-      </div>
+    <section class="dashboard-main" aria-labelledby="dashboard-title">
+      <header class="main-topbar">
+        <div class="topbar-left">
+          <button
+            id="sidebar-toggle-btn"
+            type="button"
+            class="menu-toggle"
+            aria-expanded="false"
+            aria-controls="dashboard-sidebar"
+            aria-label="Open navigation menu"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
 
-      <div id="tasks-list" class="tasks-list">
-        <!-- Tasks will be loaded here -->
-      </div>
+          <div class="topbar-copy">
+            <span class="section-tag">Workspace</span>
+            <p class="topbar-label">Navigation, projects, and account controls in one place.</p>
+          </div>
+        </div>
+
+        <button id="theme-toggle-btn" type="button" class="theme-toggle" aria-pressed="false">Dark Mode</button>
+      </header>
+
+      <section class="overview-panel" aria-labelledby="dashboard-title">
+        <div class="overview-copy">
+          <span class="brand-tag">SPMP</span>
+          <h1 id="dashboard-title">Projects Dashboard</h1>
+          <p class="subtitle">
+            A focused workspace for tracking projects, planning new work, and staying organized across your study flow.
+          </p>
+        </div>
+
+        <div class="overview-actions">
+          <div class="overview-note">
+            <span class="overview-note-label">Current View</span>
+            <strong>Dashboard Overview</strong>
+            <p>Review active projects and create a new workspace when needed.</p>
+          </div>
+          <button id="new-project-btn" type="button" class="submit-button">Create New Project</button>
+        </div>
+      </section>
+
+      <section class="projects-section" aria-labelledby="projects-title">
+        <div class="section-header">
+          <div class="section-copy">
+            <span class="section-tag">Projects</span>
+            <h2 id="projects-title">My Projects</h2>
+            <p class="section-subtitle">Keep project workspaces visible, organized, and easy to scan.</p>
+          </div>
+        </div>
+
+        <p class="form-message" id="projects-message" aria-live="polite"></p>
+
+        <div id="projects-list" class="projects-grid">
+          <article class="state-card">
+            <h3>Loading projects...</h3>
+            <p>Fetching your workspace.</p>
+          </article>
+        </div>
+      </section>
     </section>
   </main>
 
-  <!-- New Project Modal -->
-  <div id="project-modal" class="modal" style="display: none;">
-    <div class="modal-content">
+  <div id="project-modal" class="modal" hidden aria-hidden="true">
+    <div class="modal-scrim" data-close-modal="true"></div>
+
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
       <div class="modal-header">
-        <h3>Create New Project</h3>
-        <button class="close-btn" onclick="closeProjectModal()">&times;</button>
+        <div>
+          <span class="brand-tag">SPMP</span>
+          <h2 id="project-modal-title">Create New Project</h2>
+          <p class="subtitle">Add a new project to your dashboard.</p>
+        </div>
+        <button id="close-project-modal" type="button" class="close-btn" aria-label="Close create project dialog">&times;</button>
       </div>
-      <form id="project-form">
+
+      <form id="project-form" class="project-form" novalidate>
         <div class="form-group">
           <label for="project-name">Project Name</label>
-          <input type="text" id="project-name" name="name" required>
+          <input
+            id="project-name"
+            name="name"
+            type="text"
+            placeholder="Semester Project Planner"
+            maxlength="120"
+          >
+          <small class="field-error" data-error-for="project-name"></small>
         </div>
-        <div class="form-group">
-          <label for="project-description">Description (Optional)</label>
-          <textarea id="project-description" name="description" rows="3"></textarea>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" onclick="closeProjectModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Create Project</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
-  <!-- Task Modal -->
-  <div id="task-modal" class="modal" style="display: none;">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Add New Task</h3>
-        <button class="close-btn" onclick="closeTaskModal()">&times;</button>
-      </div>
-      <form id="task-form">
-        <input type="hidden" id="task-project-id" name="project_id">
         <div class="form-group">
-          <label for="task-title">Task Title</label>
-          <input type="text" id="task-title" name="title" required>
+          <label for="project-description">Description</label>
+          <textarea
+            id="project-description"
+            name="description"
+            rows="4"
+            placeholder="Briefly describe the goal of this project"
+            maxlength="500"
+          ></textarea>
+          <small class="field-error" data-error-for="project-description"></small>
         </div>
-        <div class="form-group">
-          <label for="task-description">Description (Optional)</label>
-          <textarea id="task-description" name="description" rows="2"></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="task-priority">Priority</label>
-            <select id="task-priority" name="priority">
-              <option value="low">Low</option>
-              <option value="medium" selected>Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="task-due-date">Due Date (Optional)</label>
-            <input type="date" id="task-due-date" name="due_date">
-          </div>
-        </div>
+
+        <p class="form-message" id="project-form-message" aria-live="polite"></p>
+
         <div class="modal-actions">
-          <button type="button" class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Add Task</button>
+          <button id="cancel-project-btn" type="button" class="secondary-button">Cancel</button>
+          <button id="project-submit-btn" type="submit" class="submit-button">Create Project</button>
         </div>
       </form>
-    </div>
+    </section>
   </div>
 
   <script src="../js/dashboard.js" defer></script>

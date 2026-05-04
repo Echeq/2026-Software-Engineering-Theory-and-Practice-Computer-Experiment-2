@@ -1,15 +1,20 @@
 :root {
-  --page-start: #fff7eb;
-  --page-end: #e6f7ff;
+  --jet-black: #022b3aff;
+  --teal: #1f7a8cff;
+  --pale-sky: #bfdbf7ff;
+  --lavender: #e1e5f2ff;
+  --white: #ffffffff;
+  --page-start: var(--lavender);
+  --page-end: var(--pale-sky);
   --card-bg: rgba(255, 255, 255, 0.94);
-  --text-main: #24323f;
-  --text-muted: #5f6f7f;
-  --accent: #0f8b8d;
-  --accent-hover: #0c6f70;
-  --border: #d8e4ea;
-  --error: #c93c3c;
-  --success: #18794e;
-  --shadow: 0 20px 45px rgba(15, 139, 141, 0.12);
+  --text-main: var(--jet-black);
+  --text-muted: rgba(2, 43, 58, 0.72);
+  --accent: var(--teal);
+  --accent-hover: var(--jet-black);
+  --border: rgba(31, 122, 140, 0.24);
+  --error: var(--jet-black);
+  --success: var(--teal);
+  --shadow: 0 20px 45px rgba(2, 43, 58, 0.14);
   --radius: 22px;
 }
 
@@ -24,7 +29,7 @@ body {
   font-family: "Trebuchet MS", "Segoe UI", sans-serif;
   color: var(--text-main);
   background:
-    radial-gradient(circle at top left, rgba(249, 177, 122, 0.25), transparent 30%),
+    radial-gradient(circle at top left, rgba(31, 122, 140, 0.18), transparent 30%),
     linear-gradient(135deg, var(--page-start), var(--page-end));
 }
 
@@ -38,7 +43,7 @@ body {
 .login-card {
   width: min(100%, 420px);
   padding: 32px;
-  border: 1px solid rgba(216, 228, 234, 0.9);
+  border: 1px solid rgba(31, 122, 140, 0.22);
   border-radius: var(--radius);
   background: var(--card-bg);
   box-shadow: var(--shadow);
@@ -51,7 +56,7 @@ body {
   margin-bottom: 14px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(15, 139, 141, 0.12);
+  background: rgba(191, 219, 247, 0.72);
   color: var(--accent);
   font-size: 12px;
   font-weight: 700;
@@ -91,7 +96,7 @@ body {
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--white);
   font: inherit;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
@@ -99,12 +104,13 @@ body {
 .form-group input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(15, 139, 141, 0.14);
+  box-shadow: 0 0 0 4px rgba(31, 122, 140, 0.16);
   transform: translateY(-1px);
 }
 
 .form-group input.input-error {
   border-color: var(--error);
+  box-shadow: 0 0 0 4px rgba(2, 43, 58, 0.08);
 }
 
 .field-error {
@@ -132,7 +138,7 @@ body {
   border: none;
   border-radius: 14px;
   background: var(--accent);
-  color: #ffffff;
+  color: var(--white);
   font: inherit;
   font-weight: 700;
   cursor: pointer;

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPMP | Tasks</title>
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+  <div id="sidebar-backdrop" class="sidebar-backdrop" hidden data-close-sidebar="true"></div>
+
+  <main class="dashboard-app">
+    <aside id="dashboard-sidebar" class="dashboard-sidebar" aria-label="Primary navigation">
+      <div class="sidebar-top">
+        <div class="sidebar-brand-wrap">
+          <a href="./index.html" class="sidebar-brand" aria-label="SPMP dashboard home">
+            <span class="sidebar-logo">SP</span>
+            <span class="sidebar-brand-copy">
+              <strong>SPMP</strong>
+              <span>Project workspace</span>
+            </span>
+          </a>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Workspace navigation">
+          <a href="./index.html" class="sidebar-link">Dashboard</a>
+          <a href="./projects.html" class="sidebar-link">Projects</a>
+          <a href="./tasks.html" class="sidebar-link is-active">Tasks</a>
+          <a href="#tasks-page-title" class="sidebar-link">Settings</a>
+        </nav>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-panel" aria-live="polite">
+          <span class="user-label">Signed in as</span>
+          <strong id="user-name" class="user-display">Loading...</strong>
+        </div>
+        <button id="logout-btn" type="button" class="secondary-button sidebar-logout">Log Out</button>
+      </div>
+    </aside>
+
+    <section class="dashboard-main" aria-labelledby="tasks-page-title">
+      <header class="main-topbar">
+        <div class="topbar-left">
+          <button
+            id="sidebar-toggle-btn"
+            type="button"
+            class="menu-toggle"
+            aria-expanded="false"
+            aria-controls="dashboard-sidebar"
+            aria-label="Open navigation menu"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+
+          <div class="topbar-copy">
+            <span class="section-tag">Tasks</span>
+            <p class="topbar-label">Task-level view for the selected project.</p>
+          </div>
+        </div>
+
+        <button id="theme-toggle-btn" type="button" class="theme-toggle" aria-pressed="false">Dark Mode</button>
+      </header>
+
+      <section class="overview-panel" aria-labelledby="tasks-page-title">
+        <div class="overview-copy">
+          <span class="brand-tag">SPMP</span>
+          <h1 id="tasks-page-title">Tasks Workspace</h1>
+          <p id="tasks-page-subtitle" class="subtitle">
+            Open a project from the projects board to continue into its task workflow.
+          </p>
+        </div>
+
+        <div class="overview-actions">
+          <div class="overview-note">
+            <span class="overview-note-label">Selected Project</span>
+            <strong id="selected-project-name">No project selected</strong>
+            <p id="selected-project-meta">Choose a project card from the projects board to view task context.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="projects-section task-detail-section" aria-labelledby="task-detail-title">
+        <div class="section-header">
+          <div class="section-copy">
+            <span class="section-tag">Tasks</span>
+            <h2 id="task-detail-title">Task Board Placeholder</h2>
+            <p class="section-subtitle">This page is ready as the navigation target for project cards.</p>
+          </div>
+        </div>
+
+        <div class="detail-panel">
+          <p>
+            The selected project context is loaded from the projects board. This keeps the click-through flow working now and leaves room for a fuller task board later.
+          </p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="../js/tasks.js" defer></script>
+</body>
+</html>

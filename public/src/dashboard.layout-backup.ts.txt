@@ -1,8 +1,33 @@
-/* Original pre-sidebar layout backed up in ./dashboard.layout-backup.ts */
 const API_BASE_URL = `${window.location.origin}/api`;
 const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
 const THEME_STORAGE_KEY = "dashboard-theme";
-const MOBILE_SIDEBAR_BREAKPOINT = 960;
+let isPreviewMode = false;
+const PREVIEW_PROJECTS: Project[] = [
+  {
+    id: "preview-1",
+    name: "Semester Project Planner",
+    description: "Track milestones, assignments, and deadlines for the current term.",
+    owner_id: "preview-user",
+    status: "active",
+    created_at: new Date("2026-03-12").toISOString()
+  },
+  {
+    id: "preview-2",
+    name: "UX Research Board",
+    description: "Collect interview notes, usability feedback, and iteration ideas.",
+    owner_id: "preview-user",
+    status: "in-review",
+    created_at: new Date("2026-04-02").toISOString()
+  },
+  {
+    id: "preview-3",
+    name: "Frontend Showcase",
+    description: "A visual preview project to review the dashboard style without backend data.",
+    owner_id: "preview-user",
+    status: "planning",
+    created_at: new Date("2026-04-18").toISOString()
+  }
+];
 
 interface User {
   id: string;
@@ -33,34 +58,6 @@ interface CreateProjectResponse {
 
 type DashboardTheme = "light" | "dark";
 
-let isPreviewMode = false;
-const PREVIEW_PROJECTS: Project[] = [
-  {
-    id: "preview-1",
-    name: "Semester Project Planner",
-    description: "Track milestones, assignments, and deadlines for the current term.",
-    owner_id: "preview-user",
-    status: "active",
-    created_at: new Date("2026-03-12").toISOString()
-  },
-  {
-    id: "preview-2",
-    name: "UX Research Board",
-    description: "Collect interview notes, usability feedback, and iteration ideas.",
-    owner_id: "preview-user",
-    status: "in-review",
-    created_at: new Date("2026-04-02").toISOString()
-  },
-  {
-    id: "preview-3",
-    name: "Frontend Showcase",
-    description: "A visual preview project to review the dashboard style without backend data.",
-    owner_id: "preview-user",
-    status: "planning",
-    created_at: new Date("2026-04-18").toISOString()
-  }
-];
-
 let currentUser: User | null = null;
 let userNameElement: HTMLElement | null = null;
 let projectsMessageBox: HTMLElement | null = null;
@@ -68,9 +65,6 @@ let projectsListElement: HTMLElement | null = null;
 let newProjectButton: HTMLButtonElement | null = null;
 let logoutButton: HTMLButtonElement | null = null;
 let themeToggleButton: HTMLButtonElement | null = null;
-let sidebarToggleButton: HTMLButtonElement | null = null;
-let sidebarElement: HTMLElement | null = null;
-let sidebarBackdropElement: HTMLElement | null = null;
 let projectModalElement: HTMLElement | null = null;
 let projectFormElement: HTMLFormElement | null = null;
 let projectNameInput: HTMLInputElement | null = null;
@@ -87,7 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
 async function initializeDashboard(): Promise<void> {
   cacheElements();
   initializeTheme();
-  syncSidebarState();
   setupEventListeners();
 
   const token = getStoredToken();
@@ -98,8 +91,25 @@ async function initializeDashboard(): Promise<void> {
   }
 
   renderProjectsLoading();
+
   await loadUserData();
   await loadProjects();
+}
+
+function loadPreviewDashboard(): void {
+  isPreviewMode = true;
+  currentUser = {
+    id: "preview-user",
+    name: "Anna Ivanova",
+    email: "anna.ivanova@example.com"
+  };
+
+  if (userNameElement) {
+    userNameElement.textContent = currentUser.name;
+  }
+
+  showProjectsMessage("Preview mode: dashboard style is shown with demo data.", "success");
+  renderProjects(PREVIEW_PROJECTS);
 }
 
 function cacheElements(): void {
@@ -109,9 +119,6 @@ function cacheElements(): void {
   newProjectButton = document.getElementById("new-project-btn") as HTMLButtonElement | null;
   logoutButton = document.getElementById("logout-btn") as HTMLButtonElement | null;
   themeToggleButton = document.getElementById("theme-toggle-btn") as HTMLButtonElement | null;
-  sidebarToggleButton = document.getElementById("sidebar-toggle-btn") as HTMLButtonElement | null;
-  sidebarElement = document.getElementById("dashboard-sidebar");
-  sidebarBackdropElement = document.getElementById("sidebar-backdrop");
   projectModalElement = document.getElementById("project-modal");
   projectFormElement = document.getElementById("project-form") as HTMLFormElement | null;
   projectNameInput = document.getElementById("project-name") as HTMLInputElement | null;
@@ -125,23 +132,12 @@ function cacheElements(): void {
 function setupEventListeners(): void {
   logoutButton?.addEventListener("click", logout);
   themeToggleButton?.addEventListener("click", toggleTheme);
-  sidebarToggleButton?.addEventListener("click", toggleSidebar);
-  sidebarBackdropElement?.addEventListener("click", handleSidebarBackdropClick);
   newProjectButton?.addEventListener("click", openProjectModal);
   closeProjectModalButton?.addEventListener("click", closeProjectModal);
   cancelProjectModalButton?.addEventListener("click", closeProjectModal);
   projectFormElement?.addEventListener("submit", handleProjectSubmit);
   projectModalElement?.addEventListener("click", handleProjectModalClick);
-  window.addEventListener("resize", syncSidebarState);
   document.addEventListener("keydown", handleEscapeKey);
-
-  document.querySelectorAll(".sidebar-link").forEach((link) => {
-    link.addEventListener("click", () => {
-      if (isMobileViewport()) {
-        closeSidebar();
-      }
-    });
-  });
 }
 
 function initializeTheme(): void {
@@ -177,77 +173,6 @@ function applyTheme(theme: DashboardTheme): void {
   themeToggleButton.textContent = isDarkTheme ? "Light Mode" : "Dark Mode";
   themeToggleButton.setAttribute("aria-pressed", String(isDarkTheme));
   themeToggleButton.setAttribute("aria-label", isDarkTheme ? "Switch to light mode" : "Switch to dark mode");
-}
-
-function isMobileViewport(): boolean {
-  return window.innerWidth <= MOBILE_SIDEBAR_BREAKPOINT;
-}
-
-function syncSidebarState(): void {
-  if (!sidebarElement || !sidebarToggleButton || !sidebarBackdropElement) {
-    return;
-  }
-
-  if (!isMobileViewport()) {
-    document.body.classList.remove("sidebar-open");
-  }
-
-  const isSidebarOpen = !isMobileViewport() || document.body.classList.contains("sidebar-open");
-
-  sidebarElement.setAttribute("aria-hidden", String(!isSidebarOpen));
-  sidebarToggleButton.setAttribute("aria-expanded", String(isMobileViewport() && document.body.classList.contains("sidebar-open")));
-  sidebarToggleButton.setAttribute(
-    "aria-label",
-    document.body.classList.contains("sidebar-open") ? "Close navigation menu" : "Open navigation menu"
-  );
-  sidebarBackdropElement.hidden = !(isMobileViewport() && document.body.classList.contains("sidebar-open"));
-}
-
-function openSidebar(): void {
-  if (!isMobileViewport()) {
-    return;
-  }
-
-  document.body.classList.add("sidebar-open");
-  syncSidebarState();
-}
-
-function closeSidebar(): void {
-  document.body.classList.remove("sidebar-open");
-  syncSidebarState();
-}
-
-function toggleSidebar(): void {
-  if (document.body.classList.contains("sidebar-open")) {
-    closeSidebar();
-    return;
-  }
-
-  openSidebar();
-}
-
-function handleSidebarBackdropClick(event: Event): void {
-  const target = event.target as HTMLElement | null;
-
-  if (target?.dataset.closeSidebar === "true") {
-    closeSidebar();
-  }
-}
-
-function loadPreviewDashboard(): void {
-  isPreviewMode = true;
-  currentUser = {
-    id: "preview-user",
-    name: "Anna Ivanova",
-    email: "anna.ivanova@example.com"
-  };
-
-  if (userNameElement) {
-    userNameElement.textContent = currentUser.name;
-  }
-
-  showProjectsMessage("Preview mode: dashboard style is shown with demo data.", "success");
-  renderProjects(PREVIEW_PROJECTS);
 }
 
 async function loadUserData(): Promise<void> {
@@ -491,7 +416,6 @@ function openProjectModal(): void {
     return;
   }
 
-  closeSidebar();
   projectModalElement.hidden = false;
   projectModalElement.setAttribute("aria-hidden", "false");
   document.body.classList.add("modal-open");
@@ -520,17 +444,8 @@ function handleProjectModalClick(event: Event): void {
 }
 
 function handleEscapeKey(event: KeyboardEvent): void {
-  if (event.key !== "Escape") {
-    return;
-  }
-
-  if (projectModalElement && !projectModalElement.hidden) {
+  if (event.key === "Escape" && projectModalElement && !projectModalElement.hidden) {
     closeProjectModal();
-    return;
-  }
-
-  if (document.body.classList.contains("sidebar-open")) {
-    closeSidebar();
   }
 }
 
@@ -543,7 +458,6 @@ function redirectToLogin(): void {
 }
 
 function logout(): void {
-  closeSidebar();
   localStorage.removeItem("token");
   redirectToLogin();
 }
