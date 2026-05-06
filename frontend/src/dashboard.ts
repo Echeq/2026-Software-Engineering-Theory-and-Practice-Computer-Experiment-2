@@ -321,22 +321,30 @@ function renderProjects(projects: Project[]): void {
   }
 
   projectsListElement.innerHTML = projects.map((project) => {
+    const creatorName = escapeHtml(currentUser?.name || "You");
     const description = project.description?.trim()
       ? `<p class="project-description">${escapeHtml(project.description.trim())}</p>`
       : '<p class="project-description is-empty">No description yet.</p>';
+    const query = new URLSearchParams({
+      projectId: project.id,
+      projectName: project.name,
+      status: formatStatus(project.status),
+      creator: currentUser?.name || "You",
+      createdAt: project.created_at
+    }).toString();
 
     return `
-      <article class="project-card" data-project-id="${escapeHtml(project.id)}">
+      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}">
         <div class="project-head">
           <h3 class="project-name">${escapeHtml(project.name)}</h3>
           <span class="project-status">${escapeHtml(formatStatus(project.status))}</span>
         </div>
         ${description}
         <div class="project-meta">
-          <span class="project-owner">${escapeHtml(currentUser?.name || "You")}</span>
+          <span class="project-owner">${creatorName}</span>
           <span>${escapeHtml(formatProjectDate(project.created_at))}</span>
         </div>
-      </article>
+      </a>
     `;
   }).join("");
 }
