@@ -37,6 +37,52 @@ body {
   animation: page-fade-in 0.32s ease;
 }
 
+.language-switcher {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 200;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+body[data-theme="dark"] .language-switcher {
+  background: rgba(22, 27, 34, 0.92);
+}
+
+.language-option {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.language-option:hover,
+.language-option:focus-visible {
+  outline: none;
+  border-color: var(--surface-border);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.language-option.is-active {
+  border-color: rgba(79, 70, 229, 0.18);
+  background: var(--surface-accent);
+  color: var(--accent);
+}
+
 body[data-theme="light"] {
   color-scheme: light;
 }
@@ -199,6 +245,7 @@ body[data-theme="dark"] .submit-button {
 .sidebar-link {
   display: flex;
   align-items: center;
+  gap: 7px;
   min-height: 34px;
   padding: 0 10px;
   border: 1px solid transparent;
@@ -207,6 +254,16 @@ body[data-theme="dark"] .submit-button {
   font-size: 12px;
   font-weight: 600;
   transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.nav-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+.sidebar-link span {
+  min-width: 0;
 }
 
 .sidebar-link:hover,
@@ -330,6 +387,19 @@ body[data-theme="dark"] .submit-button {
   font-weight: 600;
 }
 
+.button-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+.sidebar-logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
 .submit-button {
   background: var(--accent);
   color: #ffffff;
@@ -379,7 +449,7 @@ body[data-theme="dark"] .submit-button {
 }
 
 body[data-theme="dark"] .theme-toggle::before {
-  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.14);
+  box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.16);
 }
 
 .menu-toggle {
@@ -548,7 +618,7 @@ body[data-theme="dark"] .theme-toggle::before {
 body[data-theme="dark"] .search-input:focus,
 body[data-theme="dark"] .form-group input:focus,
 body[data-theme="dark"] .form-group textarea:focus {
-  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.14);
+  box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.16);
 }
 
 .status-filters {
@@ -634,7 +704,7 @@ body[data-theme="dark"] .state-card {
 }
 
 body[data-theme="dark"] .project-card:hover {
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 6px 16px rgba(1, 4, 9, 0.28);
 }
 
 .project-head {
@@ -682,6 +752,12 @@ body[data-theme="dark"] .project-card:hover {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.status-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
 }
 
 .status-indicator {
@@ -754,7 +830,7 @@ body[data-theme="dark"] .project-card:hover {
 body[data-theme="dark"] .empty-state-svg rect,
 body[data-theme="dark"] .empty-state-svg circle,
 body[data-theme="dark"] .empty-state-svg path {
-  stroke: rgba(129, 140, 248, 0.42);
+  stroke: rgba(47, 129, 247, 0.4);
 }
 
 .empty-state-action {
@@ -773,7 +849,7 @@ body[data-theme="dark"] .empty-state-svg path {
 }
 
 body[data-theme="dark"] .skeleton-line {
-  background: linear-gradient(90deg, rgba(45, 55, 72, 0.92), rgba(74, 85, 104, 0.7), rgba(45, 55, 72, 0.92));
+  background: linear-gradient(90deg, rgba(33, 38, 45, 0.95), rgba(48, 54, 61, 0.72), rgba(33, 38, 45, 0.95));
   background-size: 200% 100%;
 }
 
@@ -893,7 +969,7 @@ body[data-theme="dark"] .skeleton-line {
 }
 
 body[data-theme="dark"] .project-card-link:focus-visible {
-  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.14), 0 4px 10px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.18), 0 4px 10px rgba(1, 4, 9, 0.24);
 }
 
 .project-meta-stack {
@@ -1111,6 +1187,13 @@ body[data-theme="dark"] .project-card-link:focus-visible {
 }
 
 @media (max-width: 520px) {
+  .language-switcher {
+    top: 8px;
+    right: 8px;
+    left: 8px;
+    justify-content: center;
+  }
+
   .overview-copy h1,
   .modal-header h2 {
     font-size: 18px;

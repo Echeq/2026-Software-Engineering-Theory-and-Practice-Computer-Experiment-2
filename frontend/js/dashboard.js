@@ -4,6 +4,7 @@ const API_BASE_URL = `${window.location.origin}/api`;
 const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
 const THEME_STORAGE_KEY = "dashboard-theme";
 const MOBILE_SIDEBAR_BREAKPOINT = 960;
+const i18n = (key, values) => window.I18n?.t(key, values) || key;
 let isPreviewMode = false;
 const PREVIEW_PROJECTS = [
     {
@@ -128,9 +129,9 @@ function applyTheme(theme) {
         return;
     }
     const isDarkTheme = theme === "dark";
-    themeToggleButton.textContent = isDarkTheme ? "Light Mode" : "Dark Mode";
+    themeToggleButton.textContent = isDarkTheme ? i18n("theme.light") : i18n("theme.dark");
     themeToggleButton.setAttribute("aria-pressed", String(isDarkTheme));
-    themeToggleButton.setAttribute("aria-label", isDarkTheme ? "Switch to light mode" : "Switch to dark mode");
+    themeToggleButton.setAttribute("aria-label", isDarkTheme ? i18n("theme.toLight") : i18n("theme.toDark"));
 }
 function isMobileViewport() {
     return window.innerWidth <= MOBILE_SIDEBAR_BREAKPOINT;
@@ -182,7 +183,7 @@ function loadPreviewDashboard() {
     if (userNameElement) {
         userNameElement.textContent = currentUser.name;
     }
-    showProjectsMessage("Preview mode: dashboard style is shown with demo data.", "success");
+    showProjectsMessage(i18n("dashboard.preview"), "success");
     renderProjects(PREVIEW_PROJECTS);
 }
 async function loadUserData() {
@@ -254,9 +255,9 @@ function renderProjects(projects) {
             <path d="M30 96l10-10"></path>
           </svg>
         </div>
-        <h3>No projects yet</h3>
-        <p>Create your first project to start organizing tasks and deliverables.</p>
-        <button type="button" class="submit-button empty-state-action" id="empty-state-create-project-btn">Create New Project</button>
+      <h3>${escapeHtml(i18n("dashboard.noProjects"))}</h3>
+      <p>${escapeHtml(i18n("dashboard.noProjectsText"))}</p>
+      <button type="button" class="submit-button empty-state-action" id="empty-state-create-project-btn">${escapeHtml(i18n("dashboard.createProject"))}</button>
       </article>
     `;
         document.getElementById("empty-state-create-project-btn")?.addEventListener("click", openProjectModal, { once: true });
@@ -266,9 +267,7 @@ function renderProjects(projects) {
         const creatorName = escapeHtml(currentUser?.name || "You");
         const taskCount = typeof project.taskCount === "number" ? project.taskCount : 0;
         const normalizedStatus = project.status.trim().toLowerCase();
-        const statusIndicator = normalizedStatus === "active"
-            ? '<span class="status-indicator" aria-hidden="true"></span>'
-            : "";
+        const statusIndicator = getStatusIconMarkup(normalizedStatus);
         const description = project.description?.trim()
             ? `<p class="project-description">${escapeHtml(project.description.trim())}</p>`
             : '<p class="project-description is-empty">No description yet.</p>';
@@ -284,7 +283,7 @@ function renderProjects(projects) {
         <div class="project-head">
           <div class="project-title-wrap">
             <h3 class="project-name">${escapeHtml(project.name)}</h3>
-            <span class="project-task-count">${taskCount} tasks</span>
+            <span class="project-task-count">${escapeHtml(i18n("common.tasksCount", { count: taskCount }))}</span>
           </div>
           <span class="project-status">${statusIndicator}${escapeHtml(formatStatus(project.status))}</span>
         </div>
@@ -303,7 +302,7 @@ function renderProjectsError(text) {
     }
     projectsListElement.innerHTML = `
     <article class="state-card">
-      <h3>Projects unavailable</h3>
+      <h3>${escapeHtml(i18n("dashboard.projectsUnavailable"))}</h3>
       <p>${escapeHtml(text)}</p>
     </article>
   `;
@@ -318,7 +317,7 @@ async function handleProjectSubmit(event) {
     const description = projectDescriptionInput.value.trim();
     const isValid = validateProjectForm(name, description);
     if (!isValid) {
-        showProjectFormMessage("Fix the form errors and try again.", "error");
+        showProjectFormMessage(i18n("dashboard.validation.fix"), "error");
         return;
     }
     setProjectSubmitting(true);
@@ -333,7 +332,7 @@ async function handleProjectSubmit(event) {
                 created_at: new Date().toISOString()
             });
             closeProjectModal();
-            showProjectsMessage("Preview project created successfully.", "success");
+            showProjectsMessage(i18n("dashboard.previewProjectCreated"), "success");
             renderProjects(PREVIEW_PROJECTS);
             return;
         }
@@ -348,7 +347,7 @@ async function handleProjectSubmit(event) {
             })
         });
         closeProjectModal();
-        showProjectsMessage("Project created successfully.", "success");
+        showProjectsMessage(i18n("dashboard.projectCreated"), "success");
         await loadProjects({ preserveMessage: true });
     }
     catch (error) {
@@ -356,7 +355,7 @@ async function handleProjectSubmit(event) {
         if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
             return;
         }
-        showProjectFormMessage(getErrorText(error, "Failed to create project."), "error");
+        showProjectFormMessage(getErrorText(error, i18n("dashboard.projectCreateFailed")), "error");
     }
     finally {
         setProjectSubmitting(false);
@@ -365,15 +364,15 @@ async function handleProjectSubmit(event) {
 function validateProjectForm(name, description) {
     let isValid = true;
     if (!name) {
-        setProjectFieldError("project-name", "Project name is required.");
+        setProjectFieldError("project-name", i18n("dashboard.validation.projectRequired"));
         isValid = false;
     }
     else if (name.length < 2) {
-        setProjectFieldError("project-name", "Project name must be at least 2 characters.");
+        setProjectFieldError("project-name", i18n("dashboard.validation.projectShort"));
         isValid = false;
     }
     if (description.length > 500) {
-        setProjectFieldError("project-description", "Description must be 500 characters or fewer.");
+        setProjectFieldError("project-description", i18n("dashboard.validation.projectDescriptionLong"));
         isValid = false;
     }
     return isValid;
@@ -414,7 +413,7 @@ function setProjectSubmitting(isSubmitting) {
         return;
     }
     projectSubmitButton.disabled = isSubmitting;
-    projectSubmitButton.textContent = isSubmitting ? "Creating..." : "Create Project";
+    projectSubmitButton.textContent = isSubmitting ? i18n("dashboard.projectSubmitting") : i18n("dashboard.projectSubmit");
 }
 function openProjectModal() {
     if (!projectModalElement) {
@@ -470,6 +469,18 @@ function logout() {
     });
     redirectToLogin();
 }
+function getStatusIconMarkup(status) {
+    if (status === "active") {
+        return '<span class="status-indicator" aria-hidden="true"></span><svg class="status-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.75 8h2l1.25-3 2 6 1.5-4h3.75" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+    if (status === "planning" || status === "planned" || status === "start-next" || status === "queued") {
+        return '<svg class="status-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.25" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 5.25V8l1.75 1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+    if (["done", "completed", "complete", "closed", "shipped", "finished"].includes(status)) {
+        return '<svg class="status-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.25" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M5.5 8.1 7.2 9.8l3.3-3.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+    return "";
+}
 async function requestWithAuth(path, init = {}) {
     const token = getStoredToken();
     const headers = new Headers(init.headers);
@@ -515,13 +526,14 @@ function formatStatus(status) {
 function formatProjectDate(dateString) {
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) {
-        return "Created recently";
+        return i18n("common.createdRecently");
     }
-    return `Created ${date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric"
-    })}`;
+    const locale = window.I18n?.getLanguage() === "zh" ? "zh-CN" : window.I18n?.getLanguage() === "es" ? "es-ES" : "en-US";
+    return i18n("common.createdDate", { date: date.toLocaleDateString(locale, {
+            month: "short",
+            day: "numeric",
+            year: "numeric"
+        }) });
 }
 function escapeHtml(text) {
     const div = document.createElement("div");

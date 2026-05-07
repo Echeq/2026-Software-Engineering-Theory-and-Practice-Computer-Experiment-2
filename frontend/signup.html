@@ -5,60 +5,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SPMP | Sign Up</title>
   <link rel="stylesheet" href="./css/signup.css">
+  <script src="./js/i18n.js" defer></script>
 </head>
 <body>
   <main class="signup-page">
     <section class="signup-card" aria-labelledby="signup-title">
       <span class="brand-tag">SPMP</span>
-      <h1 id="signup-title">Create Account</h1>
-      <p class="subtitle">
+      <h1 id="signup-title" data-i18n="signup.title">Create Account</h1>
+      <p class="subtitle" data-i18n="signup.subtitle">
         Create your account to start managing projects and tasks.
       </p>
 
       <form class="signup-form" id="signup-form" novalidate>
         <div class="form-group">
-          <label for="name">Full Name</label>
+          <label for="name" data-i18n="signup.name">Full Name</label>
           <input
             id="name"
             name="name"
             type="text"
             placeholder="Anna Ivanova"
+            data-i18n-placeholder="signup.namePlaceholder"
             autocomplete="name"
           >
           <small class="field-error" data-error-for="name"></small>
         </div>
 
         <div class="form-group">
-          <label for="email">Email</label>
+          <label for="email" data-i18n="signup.email">Email</label>
           <input
             id="email"
             name="email"
             type="email"
             placeholder="student@example.com"
+            data-i18n-placeholder="signup.emailPlaceholder"
             autocomplete="email"
           >
           <small class="field-error" data-error-for="email"></small>
         </div>
 
         <div class="form-group">
-          <label for="password">Password</label>
+          <label for="password" data-i18n="signup.password">Password</label>
           <input
             id="password"
             name="password"
             type="password"
             placeholder="Create a password"
+            data-i18n-placeholder="signup.passwordPlaceholder"
             autocomplete="new-password"
           >
           <small class="field-error" data-error-for="password"></small>
         </div>
 
         <div class="form-group">
-          <label for="confirm-password">Confirm Password</label>
+          <label for="confirm-password" data-i18n="signup.confirmPassword">Confirm Password</label>
           <input
             id="confirm-password"
             name="confirmPassword"
             type="password"
             placeholder="Repeat your password"
+            data-i18n-placeholder="signup.confirmPasswordPlaceholder"
             autocomplete="new-password"
           >
           <small class="field-error" data-error-for="confirm-password"></small>
@@ -66,12 +71,12 @@
 
         <p class="form-message" id="form-message" aria-live="polite"></p>
 
-        <button type="submit" class="submit-button">Sign Up</button>
+        <button type="submit" class="submit-button" data-i18n="signup.submit">Sign Up</button>
       </form>
 
       <p class="auth-switch">
-        Already have an account?
-        <a href="./index.html" class="auth-link">Log In</a>
+        <span data-i18n="signup.haveAccount">Already have an account?</span>
+        <a href="./index.html" class="auth-link" data-i18n="signup.loginLink">Log In</a>
       </p>
     </section>
   </main>

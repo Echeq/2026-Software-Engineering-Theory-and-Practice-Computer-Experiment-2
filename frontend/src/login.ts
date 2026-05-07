@@ -1,5 +1,7 @@
 (() => {
   const API_BASE_URL = `${window.location.origin}/api`;
+  const THEME_STORAGE_KEY = "dashboard-theme";
+  const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 
   interface LoginResponse {
     token?: string;
@@ -13,7 +15,14 @@
   const submitButton = document.querySelector(".submit-button") as HTMLButtonElement;
   let alertTimeoutId = 0;
 
+  initializeTheme();
   form.addEventListener("submit", handleFormSubmit);
+
+  function initializeTheme(): void {
+    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    document.body.dataset.theme = storedTheme === "dark" || storedTheme === "light" ? storedTheme : preferredTheme;
+  }
 
   async function handleFormSubmit(event: Event): Promise<void> {
     event.preventDefault();
@@ -24,7 +33,7 @@
     const isValid = validateForm(email, password);
 
     if (!isValid) {
-      showMessage("Fix the form errors and try again.", "error");
+      showMessage(i18n("login.validation.fix"), "error");
       return;
     }
 
@@ -37,14 +46,14 @@
         localStorage.setItem("token", data.token);
       }
 
-      showMessage("Login successful. Redirecting to dashboard...", "success");
+      showMessage(i18n("login.success"), "success");
       form.reset();
 
       setTimeout(() => {
         window.location.href = "./dashboard/index.html";
       }, 1000);
     } catch (error: unknown) {
-      showMessage(error instanceof Error ? error.message : "Login failed.", "error");
+      showMessage(error instanceof Error ? error.message : i18n("login.failed"), "error");
     } finally {
       setLoadingState(false);
     }
@@ -54,18 +63,18 @@
     let isValid = true;
 
     if (!email) {
-      setFieldError("email", "Email is required.");
+      setFieldError("email", i18n("login.validation.emailRequired"));
       isValid = false;
     } else if (!isEmailValid(email)) {
-      setFieldError("email", "Enter a valid email address.");
+      setFieldError("email", i18n("login.validation.emailInvalid"));
       isValid = false;
     }
 
     if (!password) {
-      setFieldError("password", "Password is required.");
+      setFieldError("password", i18n("login.validation.passwordRequired"));
       isValid = false;
     } else if (password.length < 6) {
-      setFieldError("password", "Password must be at least 6 characters.");
+      setFieldError("password", i18n("login.validation.passwordShort"));
       isValid = false;
     }
 
@@ -121,7 +130,7 @@
 
   function setLoadingState(isLoading: boolean): void {
     submitButton.disabled = isLoading;
-    submitButton.textContent = isLoading ? "Logging in..." : "Log In";
+    submitButton.textContent = isLoading ? i18n("login.submitting") : i18n("login.submit");
   }
 
   async function loginUser(email: string, password: string): Promise<LoginResponse> {
@@ -137,7 +146,7 @@
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new Error(data.message || "Login failed. Check your credentials or server status.");
+      throw new Error(data.message || i18n("login.failedDefault"));
     }
 
     return data;

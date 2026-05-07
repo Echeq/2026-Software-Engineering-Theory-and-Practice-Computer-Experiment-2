@@ -3,6 +3,7 @@ namespace TasksPage {
   const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
   const THEME_STORAGE_KEY = "dashboard-theme";
   const MOBILE_SIDEBAR_BREAKPOINT = 960;
+  const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 
   interface User {
     id: string;
@@ -102,9 +103,9 @@ namespace TasksPage {
     }
 
     const isDarkTheme = theme === "dark";
-    themeToggleButton.textContent = isDarkTheme ? "Light Mode" : "Dark Mode";
+    themeToggleButton.textContent = isDarkTheme ? i18n("theme.light") : i18n("theme.dark");
     themeToggleButton.setAttribute("aria-pressed", String(isDarkTheme));
-    themeToggleButton.setAttribute("aria-label", isDarkTheme ? "Switch to light mode" : "Switch to dark mode");
+    themeToggleButton.setAttribute("aria-label", isDarkTheme ? i18n("theme.toLight") : i18n("theme.toDark"));
   }
 
   function isMobileViewport(): boolean {
@@ -170,9 +171,9 @@ namespace TasksPage {
 
   function hydrateSelectedProject(): void {
     const searchParams = new URLSearchParams(window.location.search);
-    const projectName = searchParams.get("projectName")?.trim() || "No project selected";
-    const status = searchParams.get("status")?.trim() || "No status yet";
-    const creator = searchParams.get("creator")?.trim() || "Unknown creator";
+    const projectName = searchParams.get("projectName")?.trim() || i18n("tasks.noProject");
+    const status = searchParams.get("status")?.trim() || i18n("status.planning");
+    const creator = searchParams.get("creator")?.trim() || i18n("common.unavailable");
     const createdAt = formatProjectDate(searchParams.get("createdAt")?.trim() || "");
 
     if (selectedProjectNameElement) {
@@ -183,8 +184,8 @@ namespace TasksPage {
       selectedProjectMetaElement.textContent = `${status} • ${creator} • ${createdAt}`;
     }
 
-    if (tasksPageSubtitleElement && projectName !== "No project selected") {
-      tasksPageSubtitleElement.textContent = `Continue planning and delivery for ${projectName}.`;
+    if (tasksPageSubtitleElement && projectName !== i18n("tasks.noProject")) {
+      tasksPageSubtitleElement.textContent = i18n("tasks.subtitleProject", { projectName });
     }
   }
 
@@ -216,7 +217,7 @@ namespace TasksPage {
       }
 
       if (userNameElement) {
-        userNameElement.textContent = "Unavailable";
+        userNameElement.textContent = i18n("common.unavailable");
       }
     }
   }
@@ -291,13 +292,14 @@ namespace TasksPage {
     const date = new Date(dateString);
 
     if (Number.isNaN(date.getTime())) {
-      return "Created recently";
+      return i18n("common.createdRecently");
     }
 
-    return `Created ${date.toLocaleDateString("en-US", {
+    const locale = window.I18n?.getLanguage() === "zh" ? "zh-CN" : window.I18n?.getLanguage() === "es" ? "es-ES" : "en-US";
+    return i18n("common.createdDate", { date: date.toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
       year: "numeric"
-    })}`;
+    }) });
   }
 }

@@ -5,6 +5,7 @@ var TasksPage;
     const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
     const THEME_STORAGE_KEY = "dashboard-theme";
     const MOBILE_SIDEBAR_BREAKPOINT = 960;
+    const i18n = (key, values) => window.I18n?.t(key, values) || key;
     let currentUser = null;
     let userNameElement = null;
     let logoutButton = null;
@@ -77,9 +78,9 @@ var TasksPage;
             return;
         }
         const isDarkTheme = theme === "dark";
-        themeToggleButton.textContent = isDarkTheme ? "Light Mode" : "Dark Mode";
+        themeToggleButton.textContent = isDarkTheme ? i18n("theme.light") : i18n("theme.dark");
         themeToggleButton.setAttribute("aria-pressed", String(isDarkTheme));
-        themeToggleButton.setAttribute("aria-label", isDarkTheme ? "Switch to light mode" : "Switch to dark mode");
+        themeToggleButton.setAttribute("aria-label", isDarkTheme ? i18n("theme.toLight") : i18n("theme.toDark"));
     }
     function isMobileViewport() {
         return window.innerWidth <= MOBILE_SIDEBAR_BREAKPOINT;
@@ -128,9 +129,9 @@ var TasksPage;
     }
     function hydrateSelectedProject() {
         const searchParams = new URLSearchParams(window.location.search);
-        const projectName = searchParams.get("projectName")?.trim() || "No project selected";
-        const status = searchParams.get("status")?.trim() || "No status yet";
-        const creator = searchParams.get("creator")?.trim() || "Unknown creator";
+        const projectName = searchParams.get("projectName")?.trim() || i18n("tasks.noProject");
+        const status = searchParams.get("status")?.trim() || i18n("status.planning");
+        const creator = searchParams.get("creator")?.trim() || i18n("common.unavailable");
         const createdAt = formatProjectDate(searchParams.get("createdAt")?.trim() || "");
         if (selectedProjectNameElement) {
             selectedProjectNameElement.textContent = projectName;
@@ -138,8 +139,8 @@ var TasksPage;
         if (selectedProjectMetaElement) {
             selectedProjectMetaElement.textContent = `${status} • ${creator} • ${createdAt}`;
         }
-        if (tasksPageSubtitleElement && projectName !== "No project selected") {
-            tasksPageSubtitleElement.textContent = `Continue planning and delivery for ${projectName}.`;
+        if (tasksPageSubtitleElement && projectName !== i18n("tasks.noProject")) {
+            tasksPageSubtitleElement.textContent = i18n("tasks.subtitleProject", { projectName });
         }
     }
     function loadPreviewUser() {
@@ -166,7 +167,7 @@ var TasksPage;
                 return;
             }
             if (userNameElement) {
-                userNameElement.textContent = "Unavailable";
+                userNameElement.textContent = i18n("common.unavailable");
             }
         }
     }
@@ -224,13 +225,14 @@ var TasksPage;
     function formatProjectDate(dateString) {
         const date = new Date(dateString);
         if (Number.isNaN(date.getTime())) {
-            return "Created recently";
+            return i18n("common.createdRecently");
         }
-        return `Created ${date.toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric"
-        })}`;
+        const locale = window.I18n?.getLanguage() === "zh" ? "zh-CN" : window.I18n?.getLanguage() === "es" ? "es-ES" : "en-US";
+        return i18n("common.createdDate", { date: date.toLocaleDateString(locale, {
+                month: "short",
+                day: "numeric",
+                year: "numeric"
+            }) });
     }
 })(TasksPage || (TasksPage = {}));
 //# sourceMappingURL=tasks.js.map

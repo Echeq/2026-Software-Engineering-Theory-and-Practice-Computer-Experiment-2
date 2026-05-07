@@ -3,6 +3,7 @@ namespace ProjectsPage {
   const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
   const THEME_STORAGE_KEY = "dashboard-theme";
   const MOBILE_SIDEBAR_BREAKPOINT = 960;
+  const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 
   interface User {
     id: string;
@@ -167,9 +168,9 @@ namespace ProjectsPage {
     }
 
     const isDarkTheme = theme === "dark";
-    themeToggleButton.textContent = isDarkTheme ? "Light Mode" : "Dark Mode";
+    themeToggleButton.textContent = isDarkTheme ? i18n("theme.light") : i18n("theme.dark");
     themeToggleButton.setAttribute("aria-pressed", String(isDarkTheme));
-    themeToggleButton.setAttribute("aria-label", isDarkTheme ? "Switch to light mode" : "Switch to dark mode");
+    themeToggleButton.setAttribute("aria-label", isDarkTheme ? i18n("theme.toLight") : i18n("theme.toDark"));
   }
 
   function isMobileViewport(): boolean {
@@ -245,7 +246,7 @@ namespace ProjectsPage {
       userNameElement.textContent = currentUser.name;
     }
 
-    showProjectsMessage("Preview mode: the projects board is shown with demo data.", "success");
+    showProjectsMessage(i18n("projects.preview"), "success");
     renderProjectsBoard(PREVIEW_PROJECTS);
   }
 
@@ -295,8 +296,8 @@ namespace ProjectsPage {
 
     projectsBoardElement.innerHTML = `
       <article class="state-card">
-        <h3>Loading projects...</h3>
-        <p>Preparing your kanban board.</p>
+        <h3>${escapeHtml(i18n("dashboard.loadingTitle"))}</h3>
+        <p>${escapeHtml(i18n("projects.loadingText"))}</p>
       </article>
     `;
   }
@@ -343,8 +344,8 @@ namespace ProjectsPage {
       ? projects.map((project) => renderProjectCard(project)).join("")
       : `
           <article class="state-card empty-column-card">
-            <h3>No projects</h3>
-            <p>No projects are currently assigned to this column.</p>
+            <h3>${escapeHtml(i18n("projects.emptyColumn"))}</h3>
+            <p>${escapeHtml(i18n("projects.emptyColumnText"))}</p>
           </article>
         `;
 
@@ -352,8 +353,8 @@ namespace ProjectsPage {
       <section class="kanban-column" aria-labelledby="column-${column.id}">
         <header class="kanban-column-header">
           <div class="kanban-column-copy">
-            <h3 id="column-${column.id}" class="kanban-column-title">${column.title}</h3>
-            <p class="kanban-column-caption">${column.caption}</p>
+            <h3 id="column-${column.id}" class="kanban-column-title">${escapeHtml(getColumnTitle(column.id))}</h3>
+            <p class="kanban-column-caption">${escapeHtml(getColumnCaption(column.id))}</p>
           </div>
           <span class="kanban-count" aria-label="${projects.length} projects">${projects.length}</span>
         </header>
@@ -365,10 +366,11 @@ namespace ProjectsPage {
   }
 
   function renderProjectCard(project: Project): string {
-    const creatorName = escapeHtml(currentUser?.name || "You");
+    const creatorName = escapeHtml(currentUser?.name || i18n("common.you"));
     const description = project.description?.trim()
       ? `<p class="project-description">${escapeHtml(project.description.trim())}</p>`
       : '<p class="project-description is-empty">No description yet.</p>';
+    const normalizedStatus = project.status.trim().toLowerCase();
     const query = new URLSearchParams({
       projectId: project.id,
       projectName: project.name,
@@ -382,9 +384,9 @@ namespace ProjectsPage {
         <div class="project-head">
           <div class="project-title-wrap">
             <h3 class="project-name">${escapeHtml(project.name)}</h3>
-            <span class="project-task-count">${typeof project.taskCount === "number" ? project.taskCount : 0} tasks</span>
+            <span class="project-task-count">${escapeHtml(i18n("common.tasksCount", { count: typeof project.taskCount === "number" ? project.taskCount : 0 }))}</span>
           </div>
-          <span class="project-status">${escapeHtml(formatStatus(project.status))}</span>
+          <span class="project-status">${getStatusIconMarkup(normalizedStatus)}${escapeHtml(formatStatus(project.status))}</span>
         </div>
         ${description}
         <div class="project-meta">
@@ -404,7 +406,7 @@ namespace ProjectsPage {
 
     projectsBoardElement.innerHTML = `
       <article class="state-card">
-        <h3>Projects unavailable</h3>
+        <h3>${escapeHtml(i18n("dashboard.projectsUnavailable"))}</h3>
         <p>${escapeHtml(text)}</p>
       </article>
     `;
@@ -435,6 +437,22 @@ namespace ProjectsPage {
       credentials: "same-origin"
     });
     redirectToLogin();
+  }
+
+  function getStatusIconMarkup(status: string): string {
+    if (status === "active") {
+      return '<span class="status-indicator" aria-hidden="true"></span><svg class="status-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.75 8h2l1.25-3 2 6 1.5-4h3.75" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+
+    if (status === "planning" || status === "planned" || status === "start-next" || status === "queued") {
+      return '<svg class="status-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.25" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 5.25V8l1.75 1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+
+    if (["done", "completed", "complete", "closed", "shipped", "finished"].includes(status)) {
+      return '<svg class="status-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.25" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M5.5 8.1 7.2 9.8l3.3-3.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+
+    return "";
   }
 
   async function requestWithAuth<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -496,14 +514,39 @@ namespace ProjectsPage {
     const date = new Date(dateString);
 
     if (Number.isNaN(date.getTime())) {
-      return "Created recently";
+      return i18n("common.createdRecently");
     }
 
-    return `Created ${date.toLocaleDateString("en-US", {
+    const locale = window.I18n?.getLanguage() === "zh" ? "zh-CN" : window.I18n?.getLanguage() === "es" ? "es-ES" : "en-US";
+    return i18n("common.createdDate", { date: date.toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
       year: "numeric"
-    })}`;
+    }) });
+  }
+
+  function getColumnTitle(columnId: KanbanColumn["id"]): string {
+    if (columnId === "start-next") {
+      return i18n("projects.startNext");
+    }
+
+    if (columnId === "in-progress") {
+      return i18n("projects.inProgress");
+    }
+
+    return i18n("projects.done");
+  }
+
+  function getColumnCaption(columnId: KanbanColumn["id"]): string {
+    if (columnId === "start-next") {
+      return i18n("projects.startNextCaption");
+    }
+
+    if (columnId === "in-progress") {
+      return i18n("projects.inProgressCaption");
+    }
+
+    return i18n("projects.doneCaption");
   }
 
   function escapeHtml(text: string): string {

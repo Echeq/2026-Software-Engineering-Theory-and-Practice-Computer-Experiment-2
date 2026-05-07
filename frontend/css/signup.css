@@ -28,6 +28,70 @@ body {
   background: linear-gradient(180deg, var(--bg), #f1f5f9);
 }
 
+.language-switcher {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 200;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+body[data-theme="dark"] .language-switcher {
+  background: rgba(22, 27, 34, 0.92);
+}
+
+.language-option {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.language-option:hover,
+.language-option:focus-visible {
+  outline: none;
+  border-color: var(--surface-border);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.language-option.is-active {
+  border-color: rgba(79, 70, 229, 0.18);
+  background: var(--surface-accent);
+  color: var(--accent);
+}
+
+body[data-theme="dark"] {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #2f81f7;
+  --accent-hover: #58a6ff;
+  --success: #3fb950;
+  --error: #f85149;
+  --shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+  --surface-muted: #161b22;
+  --surface-accent: rgba(47, 129, 247, 0.12);
+  --surface-border: #30363d;
+  --text-subtle: #6e7681;
+  color-scheme: dark;
+}
+
 .signup-page {
   min-height: 100vh;
   display: grid;
@@ -44,6 +108,10 @@ body {
   background: rgba(255, 255, 255, 0.96);
   box-shadow: var(--shadow);
   backdrop-filter: blur(10px);
+}
+
+body[data-theme="dark"] .signup-card {
+  background: rgba(22, 27, 34, 0.96);
 }
 
 .brand-tag {
@@ -110,6 +178,10 @@ body {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+body[data-theme="dark"] .form-group input:focus {
+  box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.16);
 }
 
 .form-group input.input-error {
@@ -197,6 +269,13 @@ body {
 }
 
 @media (max-width: 360px) {
+  .language-switcher {
+    top: 8px;
+    right: 8px;
+    left: 8px;
+    justify-content: center;
+  }
+
   .signup-page {
     padding: 8px;
   }

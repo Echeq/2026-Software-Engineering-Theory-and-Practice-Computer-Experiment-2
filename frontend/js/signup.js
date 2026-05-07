@@ -1,6 +1,8 @@
 "use strict";
 (() => {
     const API_BASE_URL = `${window.location.origin}/api`;
+    const THEME_STORAGE_KEY = "dashboard-theme";
+    const i18n = (key, values) => window.I18n?.t(key, values) || key;
     const form = document.getElementById("signup-form");
     const nameInput = document.getElementById("name");
     const emailInput = document.getElementById("email");
@@ -8,7 +10,13 @@
     const confirmPasswordInput = document.getElementById("confirm-password");
     const messageBox = document.getElementById("form-message");
     const submitButton = document.querySelector(".submit-button");
+    initializeTheme();
     form.addEventListener("submit", handleFormSubmit);
+    function initializeTheme() {
+        const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+        const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.body.dataset.theme = storedTheme === "dark" || storedTheme === "light" ? storedTheme : preferredTheme;
+    }
     async function handleFormSubmit(event) {
         event.preventDefault();
         resetErrors();
@@ -18,20 +26,20 @@
         const confirmPassword = confirmPasswordInput.value.trim();
         const isValid = validateForm(name, email, password, confirmPassword);
         if (!isValid) {
-            showMessage("Fix the form errors and try again.", "error");
+            showMessage(i18n("signup.validation.fix"), "error");
             return;
         }
         setLoadingState(true);
         try {
             await registerUser(name, email, password);
-            showMessage("Account created successfully. Redirecting to the login page...", "success");
+            showMessage(i18n("signup.success"), "success");
             form.reset();
             setTimeout(() => {
                 window.location.href = "./index.html";
             }, 1500);
         }
         catch (error) {
-            showMessage(error instanceof Error ? error.message : "Sign up failed.", "error");
+            showMessage(error instanceof Error ? error.message : i18n("signup.failed"), "error");
         }
         finally {
             setLoadingState(false);
@@ -40,35 +48,35 @@
     function validateForm(name, email, password, confirmPassword) {
         let isValid = true;
         if (!name) {
-            setFieldError("name", "Full name is required.");
+            setFieldError("name", i18n("signup.validation.nameRequired"));
             isValid = false;
         }
         else if (name.length < 2) {
-            setFieldError("name", "Full name must be at least 2 characters.");
+            setFieldError("name", i18n("signup.validation.nameShort"));
             isValid = false;
         }
         if (!email) {
-            setFieldError("email", "Email is required.");
+            setFieldError("email", i18n("signup.validation.emailRequired"));
             isValid = false;
         }
         else if (!isEmailValid(email)) {
-            setFieldError("email", "Enter a valid email address.");
+            setFieldError("email", i18n("signup.validation.emailInvalid"));
             isValid = false;
         }
         if (!password) {
-            setFieldError("password", "Password is required.");
+            setFieldError("password", i18n("signup.validation.passwordRequired"));
             isValid = false;
         }
         else if (password.length < 6) {
-            setFieldError("password", "Password must be at least 6 characters.");
+            setFieldError("password", i18n("signup.validation.passwordShort"));
             isValid = false;
         }
         if (!confirmPassword) {
-            setFieldError("confirm-password", "Confirm your password.");
+            setFieldError("confirm-password", i18n("signup.validation.confirmRequired"));
             isValid = false;
         }
         else if (password !== confirmPassword) {
-            setFieldError("confirm-password", "Passwords do not match.");
+            setFieldError("confirm-password", i18n("signup.validation.confirmMismatch"));
             isValid = false;
         }
         return isValid;
@@ -98,7 +106,7 @@
     }
     function setLoadingState(isLoading) {
         submitButton.disabled = isLoading;
-        submitButton.textContent = isLoading ? "Creating account..." : "Sign Up";
+        submitButton.textContent = isLoading ? i18n("signup.submitting") : i18n("signup.submit");
     }
     async function registerUser(name, email, password) {
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -110,7 +118,7 @@
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-            throw new Error(data.message || "Sign up failed. Check the data or server status.");
+            throw new Error(data.message || i18n("signup.failedDefault"));
         }
         return data;
     }

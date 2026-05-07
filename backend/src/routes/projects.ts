@@ -6,6 +6,46 @@ import { AuthRequest } from '../middleware/auth';
 const router = Router();
 
 type FilterStatus = 'all' | 'active' | 'in-review' | 'planning';
+type Language = 'en' | 'zh' | 'es';
+
+const fragmentTranslations: Record<Language, Record<string, string>> = {
+  en: {
+    noProjects: 'No projects yet',
+    noProjectsText: 'Try another search or filter, or create a new project.',
+    createProject: 'Create New Project',
+    tasksCount: '{count} tasks',
+    createdRecently: 'Created recently',
+    createdDate: 'Created {date}',
+    planning: 'Planning',
+    active: 'Active',
+    inReview: 'In Review',
+    done: 'Done'
+  },
+  zh: {
+    noProjects: '还没有项目',
+    noProjectsText: '尝试其他搜索或筛选条件，或者创建一个新项目。',
+    createProject: '创建新项目',
+    tasksCount: '{count} 个任务',
+    createdRecently: '最近创建',
+    createdDate: '创建于 {date}',
+    planning: '规划中',
+    active: '进行中',
+    inReview: '评审中',
+    done: '已完成'
+  },
+  es: {
+    noProjects: 'Aún no hay proyectos',
+    noProjectsText: 'Prueba otra búsqueda o filtro, o crea un proyecto nuevo.',
+    createProject: 'Crear nuevo proyecto',
+    tasksCount: '{count} tareas',
+    createdRecently: 'Creado recientemente',
+    createdDate: 'Creado {date}',
+    planning: 'Planificación',
+    active: 'Activo',
+    inReview: 'En revisión',
+    done: 'Hecho'
+  }
+};
 
 function escapeHtml(text: string): string {
   return text
@@ -23,18 +63,55 @@ function formatStatus(status: string): string {
     .join(' ');
 }
 
-function formatProjectDate(dateString: string): string {
+function readLanguage(rawValue: unknown): Language {
+  if (rawValue === 'zh' || rawValue === 'es' || rawValue === 'en') {
+    return rawValue;
+  }
+
+  return 'en';
+}
+
+function translate(language: Language, key: string, values: Record<string, string | number> = {}): string {
+  const template = fragmentTranslations[language][key] || fragmentTranslations.en[key] || key;
+  return template.replace(/\{(\w+)\}/g, (_, token: string) => String(values[token] ?? ''));
+}
+
+function formatProjectDate(dateString: string, language: Language): string {
   const date = new Date(dateString);
 
   if (Number.isNaN(date.getTime())) {
-    return 'Created recently';
+    return translate(language, 'createdRecently');
   }
 
-  return `Created ${date.toLocaleDateString('en-US', {
+  const formattedDate = date.toLocaleDateString(language === 'zh' ? 'zh-CN' : language === 'es' ? 'es-ES' : 'en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
-  })}`;
+  });
+
+  return translate(language, 'createdDate', { date: formattedDate });
+}
+
+function formatStatusLabel(status: string, language: Language): string {
+  const normalized = normalizeStatus(status);
+
+  if (normalized === 'planning') {
+    return translate(language, 'planning');
+  }
+
+  if (normalized === 'active') {
+    return translate(language, 'active');
+  }
+
+  if (normalized === 'in-review') {
+    return translate(language, 'inReview');
+  }
+
+  if ([ 'done', 'completed', 'complete', 'closed', 'shipped', 'finished' ].includes(status.trim().toLowerCase())) {
+    return translate(language, 'done');
+  }
+
+  return formatStatus(status);
 }
 
 function normalizeStatus(status: string): FilterStatus {
@@ -81,7 +158,7 @@ function filterProjects(projects: ReturnType<typeof ProjectModel.findByOwnerId>,
   });
 }
 
-function renderProjectCards(projects: ReturnType<typeof ProjectModel.findByOwnerId>, ownerName: string): string {
+function renderProjectCards(projects: ReturnType<typeof ProjectModel.findByOwnerId>, ownerName: string, language: Language): string {
   if (projects.length === 0) {
     return `
       <article class="state-card empty-state-card">
@@ -96,9 +173,9 @@ function renderProjectCards(projects: ReturnType<typeof ProjectModel.findByOwner
             <path d="M30 96l10-10"></path>
           </svg>
         </div>
-        <h3>No projects yet</h3>
-        <p>Try another search or filter, or create a new project.</p>
-        <button type="button" class="submit-button empty-state-action" id="empty-state-create-project-btn">Create New Project</button>
+        <h3>${escapeHtml(translate(language, 'noProjects'))}</h3>
+        <p>${escapeHtml(translate(language, 'noProjectsText'))}</p>
+        <button type="button" class="submit-button empty-state-action" id="empty-state-create-project-btn">${escapeHtml(translate(language, 'createProject'))}</button>
       </article>
     `;
   }
@@ -116,27 +193,41 @@ function renderProjectCards(projects: ReturnType<typeof ProjectModel.findByOwner
       createdAt: project.created_at
     }).toString();
     const normalizedStatus = project.status.trim().toLowerCase();
-    const statusIndicator = normalizedStatus === 'active'
-      ? '<span class="status-indicator" aria-hidden="true"></span>'
-      : '';
+    const statusIndicator = getStatusIconMarkup(normalizedStatus);
 
     return `
       <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}">
         <div class="project-head">
           <div class="project-title-wrap">
             <h3 class="project-name">${escapeHtml(project.name)}</h3>
-            <span class="project-task-count">${taskCount} tasks</span>
+            <span class="project-task-count">${escapeHtml(translate(language, 'tasksCount', { count: taskCount }))}</span>
           </div>
-          <span class="project-status">${statusIndicator}${escapeHtml(formatStatus(project.status))}</span>
+          <span class="project-status">${statusIndicator}${escapeHtml(formatStatusLabel(project.status, language))}</span>
         </div>
         ${description}
         <div class="project-meta">
           <span class="project-owner">${escapeHtml(ownerName)}</span>
-          <span>${escapeHtml(formatProjectDate(project.created_at))}</span>
+          <span>${escapeHtml(formatProjectDate(project.created_at, language))}</span>
         </div>
       </a>
     `;
   }).join('');
+}
+
+function getStatusIconMarkup(status: string): string {
+  if (status === 'active') {
+    return '<span class="status-indicator" aria-hidden="true"></span><svg class="status-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.75 8h2l1.25-3 2 6 1.5-4h3.75" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+
+  if (status === 'planning' || status === 'planned' || status === 'start-next' || status === 'queued') {
+    return '<svg class="status-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.25" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 5.25V8l1.75 1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+
+  if ([ 'done', 'completed', 'complete', 'closed', 'shipped', 'finished' ].includes(status)) {
+    return '<svg class="status-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.25" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M5.5 8.1 7.2 9.8l3.3-3.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+
+  return '';
 }
 
 function attachTaskCounts(projects: ReturnType<typeof ProjectModel.findByOwnerId>) {
@@ -169,10 +260,11 @@ router.get('/fragment/cards', (req: AuthRequest, res: Response) => {
   }
 
   const status = readFilterStatus(req.query.status);
+  const language = readLanguage(req.query.lang);
   const projects = ProjectModel.findByOwnerId(req.user.id);
   const filteredProjects = filterProjects(projects, req.query.search, status);
 
-  res.type('html').send(renderProjectCards(filteredProjects, req.user.name));
+  res.type('html').send(renderProjectCards(filteredProjects, req.user.name, language));
 });
 
 // Get a single project by ID
