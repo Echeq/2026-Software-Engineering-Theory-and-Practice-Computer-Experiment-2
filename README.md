@@ -1,8 +1,33 @@
 # SPMP - Student Project Management Platform
 
-A full-stack web-based project and task management platform built with Node.js, Express, TypeScript, SQLite, and vanilla JavaScript/TypeScript.
+A full-stack web-based project and task management platform built with Node.js, Express, TypeScript, SQLite, and vanilla TypeScript.
 
-<<<<<<< HEAD
+## Quick Links
+
+[📁 Backend Docs](./docs/external_logs/deisgn_logs/backend_api.md) · [🗄️ Database Docs](./docs/external_logs/deisgn_logs/db.md) · [🎨 UI Design](./docs/external_logs/deisgn_logs/ui_design.md) · [🏗️ Architecture](./docs/external_logs/deisgn_logs/architect.md)
+
+---
+
+## Easy Start
+
+```bash
+# 1. Install all dependencies
+npm run install:all
+
+# 2. Run the development server
+npm run dev
+```
+
+Then open http://localhost:8080 in your browser.
+
+**Available npm scripts:**
+- `npm run install:all` - Install all dependencies
+- `npm run build:frontend` - Build frontend TypeScript
+- `npm run dev` - Run backend in development mode
+- `npm run start` - Run backend in production mode
+
+---
+
 ## Tech Stack
 
 ### Backend
@@ -23,28 +48,31 @@ A full-stack web-based project and task management platform built with Node.js, 
 ```
 ├── backend/                 # Backend server
 │   ├── src/
-│   │   ├── database/       # Database initialization and utilities
-│   │   ├── middleware/     # Authentication middleware
-│   │   ├── models/         # Data models (User, Project, Task)
-│   │   ├── routes/         # API routes (auth, projects, tasks)
-│   │   └── server.ts       # Main server file
-│   ├── dist/               # Compiled JavaScript output
-│   ├── data/               # SQLite database file (auto-created)
+│   │   ├── database/        # Database initialization and utilities
+│   │   ├── middleware/      # Authentication middleware
+│   │   ├── models/          # Data models (User, Project, Task)
+│   │   ├── routes/          # API routes (auth, projects, tasks)
+│   │   └── server.ts        # Main server file
+│   ├── dist/                # Compiled JavaScript output
+│   ├── data/                # SQLite database file (auto-created)
 │   ├── package.json
 │   └── tsconfig.json
-├── public/                  # Frontend files
-│   ├── src/                # TypeScript source files
+├── frontend/                # Frontend files
+│   ├── src/                 # TypeScript source files
 │   │   ├── login.ts
 │   │   ├── signup.ts
 │   │   └── dashboard.ts
-│   ├── js/                 # Compiled JavaScript (auto-generated)
-│   ├── css/                # Stylesheets
-│   ├── dashboard/          # Dashboard HTML page
-│   ├── index.html          # Login page
-│   ├── signup.html         # Registration page
+│   ├── js/                  # Compiled JavaScript (auto-generated)
+│   ├── css/                 # Stylesheets
+│   ├── dashboard/           # Dashboard HTML page
+│   ├── index.html           # Login page
+│   ├── signup.html          # Registration page
 │   ├── package.json
 │   └── tsconfig.json
-└── package.json            # Root package.json for convenience scripts
+├── docs/                    # Documentation
+│   └── external_logs/       # Development logs and notes
+├── package.json             # Root package.json for convenience scripts
+└── README.md
 ```
 
 ## Features
@@ -88,36 +116,30 @@ cd backend
 npm install
 
 # Install frontend dependencies
-cd ../public
+cd ../frontend
 npm install
 ```
 
-2. **Build the frontend TypeScript:**
+2. **Start the server (development mode):**
 ```bash
-cd public
-npm run build
-```
-
-3. **Build the backend TypeScript:**
-```bash
-cd backend
-npm run build
-```
-
-4. **Start the server:**
-```bash
-cd backend
-npm start
+npm run dev
 ```
 
 The server will start on `http://localhost:8080` (or the port specified in `.env`).
 
-### Development Mode
+### Build & Run Production
 
-For development with auto-reload:
 ```bash
+# Build frontend
+npm run build:frontend
+
+# Build backend
 cd backend
-npm run dev
+npm run build
+
+# Start production server
+cd backend
+npm start
 ```
 
 ## API Endpoints
@@ -163,29 +185,6 @@ NODE_ENV=development
    - Manage task status and priorities
    - View all your projects and assigned tasks
 
-## Team
-
-- **Elvis**: Project Leader
-- **孔刚**: Backend + Database
-- **李欣**: Backend + Database + APIs
-- **任杰**: Frontend + Testing + Documentation
-
 ## License
 
 MIT
-=======
-Basic System Functionalities
-- User management (register, login, logout, profile)
-- Project management (create, view, edit, delete projects)
-- Task management (create, edit, delete tasks inside projects)
-- Task assignment to team members
-- Change task status: Pending / In Progress / Completed
-- View tasks filtered by project or user
-- Optional: Add comments to tasks
-
-Technological Stack
-- Frontend: HTML5, CSS3, Vanilla TypeScript
-- Backend: Node.js, Express.js, TypeScript
-- Database: SQLite
-- Development Tools: VS Code, Git & GitHub, Thunder Client
->>>>>>> a8b5e5f88ce61c0a57ed569585ee27e7939a04d2
