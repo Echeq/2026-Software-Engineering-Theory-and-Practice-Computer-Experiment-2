@@ -214,10 +214,10 @@ Full API documentation: [Backend API Docs](./docs/external_logs/deisgn_logs/back
 
 | Name | Role |
 |------|------|
-| **陈昌发 (Chen Changfa)** | Project Leader + Documentation + Code Supervision |
-| **李欣 (Li Xin)** | Backend + APIs + Database Design & Management |
-| **任杰 (Ren Jie)** | Frontend + UI/UX Design |
-| **孔刚 (Kong Gang)** | Full Testing + Deployment Testing + Security |
+| **陈昌发** | Project Leader + Documentation + Code Supervision |
+| **李欣** | Backend + APIs + Database Design & Management |
+| **任杰** | Frontend + UI/UX Design |
+| **孔刚** | Full Testing + Deployment Testing + Security |
 
 ---
 
