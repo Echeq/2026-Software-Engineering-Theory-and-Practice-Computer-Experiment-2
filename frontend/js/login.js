@@ -6,6 +6,7 @@
     const passwordInput = document.getElementById("password");
     const messageBox = document.getElementById("form-message");
     const submitButton = document.querySelector(".submit-button");
+    let alertTimeoutId = 0;
     form.addEventListener("submit", handleFormSubmit);
     async function handleFormSubmit(event) {
         event.preventDefault();
@@ -66,8 +67,7 @@
         errorBox.textContent = text;
     }
     function resetErrors() {
-        messageBox.textContent = "";
-        messageBox.className = "form-message";
+        clearMessage();
         document.querySelectorAll(".field-error").forEach((element) => {
             element.textContent = "";
         });
@@ -76,8 +76,22 @@
         });
     }
     function showMessage(text, type) {
+        if (alertTimeoutId) {
+            window.clearTimeout(alertTimeoutId);
+        }
         messageBox.textContent = text;
-        messageBox.className = `form-message ${type}`;
+        messageBox.className = `form-message is-visible ${type}`;
+        alertTimeoutId = window.setTimeout(() => {
+            clearMessage();
+        }, 3000);
+    }
+    function clearMessage() {
+        if (alertTimeoutId) {
+            window.clearTimeout(alertTimeoutId);
+            alertTimeoutId = 0;
+        }
+        messageBox.textContent = "";
+        messageBox.className = "form-message";
     }
     function setLoadingState(isLoading) {
         submitButton.disabled = isLoading;

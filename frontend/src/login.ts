@@ -11,6 +11,7 @@
   const passwordInput = document.getElementById("password") as HTMLInputElement;
   const messageBox = document.getElementById("form-message") as HTMLElement;
   const submitButton = document.querySelector(".submit-button") as HTMLButtonElement;
+  let alertTimeoutId = 0;
 
   form.addEventListener("submit", handleFormSubmit);
 
@@ -84,8 +85,7 @@
   }
 
   function resetErrors(): void {
-    messageBox.textContent = "";
-    messageBox.className = "form-message";
+    clearMessage();
 
     document.querySelectorAll(".field-error").forEach((element) => {
       element.textContent = "";
@@ -97,8 +97,26 @@
   }
 
   function showMessage(text: string, type: string): void {
+    if (alertTimeoutId) {
+      window.clearTimeout(alertTimeoutId);
+    }
+
     messageBox.textContent = text;
-    messageBox.className = `form-message ${type}`;
+    messageBox.className = `form-message is-visible ${type}`;
+
+    alertTimeoutId = window.setTimeout(() => {
+      clearMessage();
+    }, 3000);
+  }
+
+  function clearMessage(): void {
+    if (alertTimeoutId) {
+      window.clearTimeout(alertTimeoutId);
+      alertTimeoutId = 0;
+    }
+
+    messageBox.textContent = "";
+    messageBox.className = "form-message";
   }
 
   function setLoadingState(isLoading: boolean): void {
