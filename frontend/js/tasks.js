@@ -179,6 +179,10 @@ var TasksPage;
     function logout() {
         closeSidebar();
         localStorage.removeItem("token");
+        void fetch(`${API_BASE_URL}/auth/logout`, {
+            method: "POST",
+            credentials: "same-origin"
+        });
         redirectToLogin();
     }
     async function requestWithAuth(path, init = {}) {
@@ -189,7 +193,8 @@ var TasksPage;
         }
         const response = await fetch(`${API_BASE_URL}${path}`, {
             ...init,
-            headers
+            headers,
+            credentials: "same-origin"
         });
         const data = await response.json().catch(() => ({}));
         if (response.status === 401 || response.status === 403) {

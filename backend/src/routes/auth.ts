@@ -5,6 +5,13 @@ import { authenticateToken, AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
+function writeAuthCookie(res: Response, token: string): void {
+    res.setHeader(
+        "Set-Cookie",
+        `token=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`
+    );
+}
+
 router.post("/register", async (req, res: Response) => {
     try {
         const { name, email, password }: CreateUserInput = req.body;
@@ -83,6 +90,8 @@ router.post("/login", async (req, res: Response) => {
             expiresIn: "24h",
         });
 
+        writeAuthCookie(res, token);
+
         res.json({
             message: "Login successful",
             token,
@@ -111,6 +120,14 @@ router.get("/me", authenticateToken, (req: AuthRequest, res: Response) => {
             email: req.user.email,
         },
     });
+});
+
+router.post("/logout", (req, res: Response) => {
+    res.setHeader(
+        "Set-Cookie",
+        "token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"
+    );
+    res.json({ message: "Logged out successfully" });
 });
 
 export default router;

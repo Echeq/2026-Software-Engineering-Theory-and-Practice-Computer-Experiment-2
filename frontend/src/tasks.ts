@@ -232,6 +232,10 @@ namespace TasksPage {
   function logout(): void {
     closeSidebar();
     localStorage.removeItem("token");
+    void fetch(`${API_BASE_URL}/auth/logout`, {
+      method: "POST",
+      credentials: "same-origin"
+    });
     redirectToLogin();
   }
 
@@ -245,7 +249,8 @@ namespace TasksPage {
 
     const response = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
-      headers
+      headers,
+      credentials: "same-origin"
     });
 
     const data = await response.json().catch(() => ({}));

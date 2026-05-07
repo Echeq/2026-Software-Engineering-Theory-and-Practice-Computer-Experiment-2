@@ -225,10 +225,15 @@ function renderProjectsLoading() {
         return;
     }
     projectsListElement.innerHTML = `
-    <article class="state-card">
-      <h3>Loading projects...</h3>
-      <p>Fetching your workspace.</p>
-    </article>
+    ${Array.from({ length: 3 }, () => `
+      <article class="project-card skeleton-card" aria-hidden="true">
+        <div class="skeleton-line skeleton-line-title"></div>
+        <div class="skeleton-line skeleton-line-badge"></div>
+        <div class="skeleton-line skeleton-line-body"></div>
+        <div class="skeleton-line skeleton-line-body is-short"></div>
+        <div class="skeleton-line skeleton-line-footer"></div>
+      </article>
+    `).join("")}
   `;
 }
 function renderProjects(projects) {
@@ -237,15 +242,33 @@ function renderProjects(projects) {
     }
     if (projects.length === 0) {
         projectsListElement.innerHTML = `
-      <article class="state-card">
+      <article class="state-card empty-state-card">
+        <div class="empty-state-illustration" aria-hidden="true">
+          <svg viewBox="0 0 160 120" class="empty-state-svg" focusable="false">
+            <rect x="26" y="24" width="108" height="72" rx="14"></rect>
+            <rect x="42" y="40" width="38" height="8" rx="4"></rect>
+            <rect x="42" y="56" width="62" height="6" rx="3"></rect>
+            <rect x="42" y="68" width="48" height="6" rx="3"></rect>
+            <circle cx="116" cy="52" r="10"></circle>
+            <path d="M118 18l6 8"></path>
+            <path d="M30 96l10-10"></path>
+          </svg>
+        </div>
         <h3>No projects yet</h3>
         <p>Create your first project to start organizing tasks and deliverables.</p>
+        <button type="button" class="submit-button empty-state-action" id="empty-state-create-project-btn">Create New Project</button>
       </article>
     `;
+        document.getElementById("empty-state-create-project-btn")?.addEventListener("click", openProjectModal, { once: true });
         return;
     }
     projectsListElement.innerHTML = projects.map((project) => {
         const creatorName = escapeHtml(currentUser?.name || "You");
+        const taskCount = typeof project.taskCount === "number" ? project.taskCount : 0;
+        const normalizedStatus = project.status.trim().toLowerCase();
+        const statusIndicator = normalizedStatus === "active"
+            ? '<span class="status-indicator" aria-hidden="true"></span>'
+            : "";
         const description = project.description?.trim()
             ? `<p class="project-description">${escapeHtml(project.description.trim())}</p>`
             : '<p class="project-description is-empty">No description yet.</p>';
@@ -259,8 +282,11 @@ function renderProjects(projects) {
         return `
       <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}">
         <div class="project-head">
-          <h3 class="project-name">${escapeHtml(project.name)}</h3>
-          <span class="project-status">${escapeHtml(formatStatus(project.status))}</span>
+          <div class="project-title-wrap">
+            <h3 class="project-name">${escapeHtml(project.name)}</h3>
+            <span class="project-task-count">${taskCount} tasks</span>
+          </div>
+          <span class="project-status">${statusIndicator}${escapeHtml(formatStatus(project.status))}</span>
         </div>
         ${description}
         <div class="project-meta">
@@ -438,6 +464,10 @@ function redirectToLogin() {
 function logout() {
     closeSidebar();
     localStorage.removeItem("token");
+    void fetch(`${API_BASE_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "same-origin"
+    });
     redirectToLogin();
 }
 async function requestWithAuth(path, init = {}) {
@@ -448,7 +478,8 @@ async function requestWithAuth(path, init = {}) {
     }
     const response = await fetch(`${API_BASE_URL}${path}`, {
         ...init,
-        headers
+        headers,
+        credentials: "same-origin"
     });
     const data = await response.json().catch(() => ({}));
     if (response.status === 401 || response.status === 403) {

@@ -293,7 +293,10 @@ var ProjectsPage;
         return `
       <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}">
         <div class="project-head">
-          <h3 class="project-name">${escapeHtml(project.name)}</h3>
+          <div class="project-title-wrap">
+            <h3 class="project-name">${escapeHtml(project.name)}</h3>
+            <span class="project-task-count">${typeof project.taskCount === "number" ? project.taskCount : 0} tasks</span>
+          </div>
           <span class="project-status">${escapeHtml(formatStatus(project.status))}</span>
         </div>
         ${description}
@@ -333,6 +336,10 @@ var ProjectsPage;
     function logout() {
         closeSidebar();
         localStorage.removeItem("token");
+        void fetch(`${API_BASE_URL}/auth/logout`, {
+            method: "POST",
+            credentials: "same-origin"
+        });
         redirectToLogin();
     }
     async function requestWithAuth(path, init = {}) {
@@ -343,7 +350,8 @@ var ProjectsPage;
         }
         const response = await fetch(`${API_BASE_URL}${path}`, {
             ...init,
-            headers
+            headers,
+            credentials: "same-origin"
         });
         const data = await response.json().catch(() => ({}));
         if (response.status === 401 || response.status === 403) {

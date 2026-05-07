@@ -6,6 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SPMP | Dashboard</title>
   <link rel="stylesheet" href="../css/dashboard.css">
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+  <script>
+    document.addEventListener("htmx:afterSwap", (event) => {
+      if (event.target && event.target.id === "projects-list") {
+        document.getElementById("empty-state-create-project-btn")?.addEventListener("click", () => {
+          document.getElementById("new-project-btn")?.click()
+        }, { once: true })
+      }
+    })
+  </script>
 </head>
 <body>
   <div id="sidebar-backdrop" class="sidebar-backdrop" hidden data-close-sidebar="true"></div>
@@ -92,6 +102,66 @@
             <p class="section-subtitle">Keep project workspaces visible, organized, and easy to scan.</p>
           </div>
         </div>
+
+        <section class="projects-toolbar" aria-label="Project search and filters">
+          <label class="search-field" for="project-search-input">
+            <span class="search-label">Search</span>
+            <input
+              id="project-search-input"
+              class="search-input"
+              type="search"
+              name="search"
+              placeholder="Search projects"
+              hx-get="/api/projects/fragment/cards"
+              hx-trigger="input changed delay:250ms, search"
+              hx-target="#projects-list"
+              hx-include="#project-search-input, .filter-button.is-active"
+            >
+          </label>
+
+          <div class="status-filters" role="group" aria-label="Filter projects by status">
+            <button
+              type="button"
+              class="filter-button is-active"
+              name="status"
+              value="all"
+              hx-get="/api/projects/fragment/cards"
+              hx-target="#projects-list"
+              hx-include="#project-search-input, .filter-button.is-active"
+              hx-on:click="document.querySelectorAll('.filter-button').forEach((button) => button.classList.remove('is-active')); this.classList.add('is-active')"
+            >All</button>
+            <button
+              type="button"
+              class="filter-button"
+              name="status"
+              value="active"
+              hx-get="/api/projects/fragment/cards"
+              hx-target="#projects-list"
+              hx-include="#project-search-input, .filter-button.is-active"
+              hx-on:click="document.querySelectorAll('.filter-button').forEach((button) => button.classList.remove('is-active')); this.classList.add('is-active')"
+            >Active</button>
+            <button
+              type="button"
+              class="filter-button"
+              name="status"
+              value="in-review"
+              hx-get="/api/projects/fragment/cards"
+              hx-target="#projects-list"
+              hx-include="#project-search-input, .filter-button.is-active"
+              hx-on:click="document.querySelectorAll('.filter-button').forEach((button) => button.classList.remove('is-active')); this.classList.add('is-active')"
+            >In Review</button>
+            <button
+              type="button"
+              class="filter-button"
+              name="status"
+              value="planning"
+              hx-get="/api/projects/fragment/cards"
+              hx-target="#projects-list"
+              hx-include="#project-search-input, .filter-button.is-active"
+              hx-on:click="document.querySelectorAll('.filter-button').forEach((button) => button.classList.remove('is-active')); this.classList.add('is-active')"
+            >Planning</button>
+          </div>
+        </section>
 
         <p class="form-message" id="projects-message" aria-live="polite"></p>
 
