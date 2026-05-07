@@ -10,19 +10,70 @@ A full-stack web-based project and task management platform built with Node.js, 
 
 ---
 
-## 🚀 Easy Start
+## 🚀 Quick Setup
+
+### Step 1: Configure Environment
+
+Create or edit `.env` file in `backend/` directory:
+
+```env
+# Server Configuration
+PORT=8000
+
+# Security
+JWT_SECRET=change-this-secret
+
+# Environment
+NODE_ENV=development
+
+# Default Manager Account (optional - for first-time setup)
+MANAGER_NAME=System Manager
+MANAGER_EMAIL=ur@email.com
+MANAGER_PASSWORD=urpassword
+```
+
+> **Tip:** A default `.env` file is already included in `backend/` with these values.
+
+---
+
+### Step 2: Install Dependencies
 
 ```bash
-# 1. Install all dependencies
 npm run install:all
+```
 
-# 2. Run the development server
+---
+
+### Step 3: Run the Server
+
+```bash
 npm run dev
 ```
 
-Then open **http://localhost:8080** in your browser.
+Then open **http://localhost:8000** in your browser.
 
-### Available npm Scripts
+---
+
+## 🧹 Database Reset
+
+If you encounter database issues or want a completely clean slate:
+
+```bash
+# Delete the database file
+rm backend/data/spmp.db
+
+# Restart the server - it will auto-create a new empty database
+npm run dev
+```
+
+> **Recommendation:** It's good practice to reset the database when:
+> - Starting a new project phase
+> - After major schema changes
+> - When experiencing unexpected data issues
+
+---
+
+## 📜 Available npm Scripts
 
 | Script | Description |
 |--------|-------------|
@@ -32,25 +83,6 @@ Then open **http://localhost:8080** in your browser.
 | `npm run build:frontend` | Build frontend TypeScript |
 | `npm run dev` | Run backend in development mode (auto-reload) |
 | `npm run start` | Run backend in production mode |
-
----
-
-## ⚙️ Environment Variables
-
-Create a `.env` file in the `backend/` directory:
-
-```env
-# Server Configuration
-PORT=8080
-
-# Security
-JWT_SECRET=your-secret-key-change-in-production
-
-# Environment
-NODE_ENV=development
-```
-
-> **Note:** A default `.env` file is included in `backend/` with development values.
 
 ---
 
@@ -167,7 +199,7 @@ Full API documentation: [Backend API Docs](./docs/external_logs/deisgn_logs/back
 
 ## 💻 Usage
 
-1. Open browser at **http://localhost:8080**
+1. Open browser at **http://localhost:8000**
 2. Click "Sign Up" to create an account
 3. Login with your credentials
 4. Access the dashboard to:
