@@ -98,3 +98,5 @@ async function loginUser(email: string, password: string): Promise<LoginResponse
   }
   return data;
 }
+
+export {};

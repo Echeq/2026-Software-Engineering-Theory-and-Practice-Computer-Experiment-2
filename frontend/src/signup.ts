@@ -132,3 +132,5 @@ async function registerUser(name: string, email: string, password: string, token
   }
   return data;
 }
+
+export {};

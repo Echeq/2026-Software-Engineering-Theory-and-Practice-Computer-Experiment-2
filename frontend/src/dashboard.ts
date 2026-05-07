@@ -482,3 +482,5 @@ function formatDate(dateString: string): string {
 (window as any).updateTaskStatus = updateTaskStatus;
 (window as any).scrollToSection = scrollToSection;
 (window as any).showSection = showSection;
+
+export {};
