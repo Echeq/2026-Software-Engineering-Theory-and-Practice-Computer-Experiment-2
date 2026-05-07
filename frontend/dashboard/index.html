@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPMP | Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">S</div>
+        <span class="brand-name">SPMP</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#overview" class="nav-item active" onclick="scrollToSection('overview', this)">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+          </svg>
+          <span class="nav-label">Overview</span>
+        </a>
+        <a href="#projects" class="nav-item" onclick="scrollToSection('projects', this)">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 7a2 2 0 0 1 2-2h3l2 2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          </svg>
+          <span class="nav-label">Projects</span>
+        </a>
+        <a href="#tasks" class="nav-item" onclick="scrollToSection('tasks', this)">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          <span class="nav-label">My Tasks</span>
+        </a>
+        <a href="#members" class="nav-item nav-item-members" onclick="scrollToSection('members', this)" style="display:none">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <span class="nav-label">Team</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <div class="user-details">
+            <span class="user-name" id="user-name">Loading...</span>
+            <span class="user-role" id="user-role-label"></span>
+          </div>
+        </div>
+        <button id="logout-btn" class="sidebar-logout" title="Log out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main wrapper -->
+    <div class="main-wrapper">
+
+      <!-- Top bar -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <h2 class="page-title" id="page-title">Overview</h2>
+        </div>
+        <div class="top-bar-right">
+          <button id="add-member-btn" class="btn btn-ghost" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="8.5" cy="7" r="4"/>
+              <line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
+            </svg>
+            Add Member
+          </button>
+          <button id="new-project-btn" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New Project
+          </button>
+        </div>
+      </header>
+
+      <!-- Main content -->
+      <main class="main-content">
+
+        <!-- Stats section -->
+        <section id="overview" class="content-section">
+
+          <!-- Welcome banner -->
+          <div class="welcome-card">
+            <div class="welcome-body">
+              <p class="welcome-greeting" id="welcome-greeting">Welcome back,</p>
+              <h2 class="welcome-name" id="welcome-name-big">...</h2>
+              <p class="welcome-sub" id="welcome-sub">Here's what's happening with your projects today.</p>
+            </div>
+            <div class="welcome-date-block">
+              <div class="welcome-day" id="welcome-day"></div>
+              <div class="welcome-datestr" id="welcome-datestr"></div>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card si-indigo stat-clickable" onclick="scrollToSection('projects', null)" title="View projects">
+              <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 7a2 2 0 0 1 2-2h3l2 2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                </svg>
+              </div>
+              <div class="stat-body">
+                <span class="stat-label">Total Projects</span>
+                <span class="stat-value" id="stat-projects">—</span>
+              </div>
+              <span class="stat-link-dot"></span>
+            </div>
+            <div class="stat-card si-green stat-clickable" onclick="scrollToSection('tasks', null)" title="View tasks">
+              <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+              </div>
+              <div class="stat-body">
+                <span class="stat-label" id="stat-tasks-label">My Tasks</span>
+                <span class="stat-value" id="stat-tasks">—</span>
+              </div>
+              <span class="stat-link-dot"></span>
+            </div>
+            <div class="stat-card si-amber stat-clickable" onclick="scrollToSection('tasks', null)" title="View in-progress tasks">
+              <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div class="stat-body">
+                <span class="stat-label">In Progress</span>
+                <span class="stat-value" id="stat-inprogress">—</span>
+              </div>
+              <span class="stat-link-dot"></span>
+            </div>
+            <div class="stat-card si-red stat-clickable" onclick="scrollToSection('tasks', null)" title="View overdue tasks">
+              <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </div>
+              <div class="stat-body">
+                <span class="stat-label">Overdue</span>
+                <span class="stat-value" id="stat-overdue">—</span>
+              </div>
+              <span class="stat-link-dot"></span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Projects section -->
+        <section id="projects" class="content-section" style="display:none">
+          <div class="section-header">
+            <h3 class="section-title">Projects</h3>
+          </div>
+          <div id="projects-list" class="projects-grid"></div>
+        </section>
+
+        <!-- Tasks section -->
+        <section id="tasks" class="content-section" style="display:none">
+          <div class="section-header">
+            <h3 class="section-title">My Tasks</h3>
+          </div>
+          <div id="tasks-list" class="tasks-list"></div>
+        </section>
+
+        <!-- Members section (manager only) -->
+        <section id="members" class="content-section members-section" style="display:none">
+          <div class="section-header">
+            <h3 class="section-title">Team Members</h3>
+          </div>
+          <div id="members-list" class="members-grid"></div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- New Project Modal -->
+  <div id="project-modal" class="modal" style="display:none" onclick="closeProjectModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">New Project</h3>
+        <button class="modal-close" onclick="closeProjectModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <form id="project-form">
+        <div class="form-group">
+          <label class="form-label" for="project-name">Project Name</label>
+          <input class="form-input" type="text" id="project-name" name="name" placeholder="e.g. Marketing Campaign" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="project-description">Description <span class="optional">(optional)</span></label>
+          <textarea class="form-input form-textarea" id="project-description" name="description" rows="3" placeholder="What is this project about?"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeProjectModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Project</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Task Modal -->
+  <div id="task-modal" class="modal" style="display:none" onclick="closeTaskModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Task</h3>
+        <button class="modal-close" onclick="closeTaskModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <form id="task-form">
+        <input type="hidden" id="task-project-id" name="project_id">
+        <div class="form-group">
+          <label class="form-label" for="task-title">Task Title</label>
+          <input class="form-input" type="text" id="task-title" name="title" placeholder="What needs to be done?" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="task-description">Description <span class="optional">(optional)</span></label>
+          <textarea class="form-input form-textarea" id="task-description" name="description" rows="2" placeholder="Add more details..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="task-priority">Priority</label>
+            <select class="form-input form-select" id="task-priority" name="priority">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="task-due-date">Due Date <span class="optional">(optional)</span></label>
+            <input class="form-input" type="date" id="task-due-date" name="due_date">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="task-assign">Assign To <span class="optional">(optional)</span></label>
+          <select class="form-input form-select" id="task-assign" name="assigned_to">
+            <option value="">— Unassigned —</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeTaskModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Member Modal (manager only) -->
+  <div id="member-modal" class="modal" style="display:none" onclick="closeMemberModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Team Member</h3>
+        <button class="modal-close" onclick="closeMemberModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <form id="member-form">
+        <div class="form-group">
+          <label class="form-label" for="member-name">Full Name</label>
+          <input class="form-input" type="text" id="member-name" name="name" placeholder="Jane Smith" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="member-email">Email Address</label>
+          <input class="form-input" type="email" id="member-email" name="email" placeholder="jane@company.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="member-password">Temporary Password</label>
+          <input class="form-input" type="password" id="member-password" name="password" placeholder="Min. 6 characters" required minlength="6">
+        </div>
+        <p class="form-hint">The member will use this password to log in for the first time.</p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeMemberModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Task Modal (manager only) -->
+  <div id="edit-task-modal" class="modal" style="display:none" onclick="closeEditTaskModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Task</h3>
+        <button class="modal-close" onclick="closeEditTaskModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <form id="edit-task-form">
+        <input type="hidden" id="edit-task-id">
+        <div class="form-group">
+          <label class="form-label" for="edit-task-title">Task Title</label>
+          <input class="form-input" type="text" id="edit-task-title" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="edit-task-description">Description <span class="optional">(optional)</span></label>
+          <textarea class="form-input form-textarea" id="edit-task-description" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="edit-task-priority">Priority</label>
+            <select class="form-input form-select" id="edit-task-priority">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-task-due-date">Due Date <span class="optional">(optional)</span></label>
+            <input class="form-input" type="date" id="edit-task-due-date">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="edit-task-status">Status</label>
+            <select class="form-input form-select" id="edit-task-status">
+              <option value="pending">Pending</option>
+              <option value="in-progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edit-task-assign">Assigned To</label>
+            <select class="form-input form-select" id="edit-task-assign">
+              <option value="">— Unassigned —</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeEditTaskModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/dashboard.js" defer></script>
+</body>
+</html>
