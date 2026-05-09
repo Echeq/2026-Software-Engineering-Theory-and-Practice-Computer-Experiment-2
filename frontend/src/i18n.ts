@@ -22,6 +22,23 @@ interface Window {
 
 const LANGUAGE_STORAGE_KEY = "app-language";
 const DEFAULT_LANGUAGE: Language = "en";
+const LANGUAGE_ORDER: Language[] = ["en", "zh", "es"];
+const LANGUAGE_OPTIONS: Record<Language, { label: string; flag: string }> = {
+  en: {
+    label: "English",
+    flag: "\u{1F1FA}\u{1F1F8}"
+  },
+  zh: {
+    label: "\u4E2D\u6587",
+    flag: "\u{1F1E8}\u{1F1F3}"
+  },
+  es: {
+    label: "Espa\u00F1ol",
+    flag: "\u{1F1EA}\u{1F1F8}"
+  }
+};
+
+let languageMenuEventsBound = false;
 
 const translations: Record<Language, TranslationDictionary> = {
   en: {
@@ -156,6 +173,31 @@ const translations: Record<Language, TranslationDictionary> = {
     "tasks.sectionSubtitle": "This page is ready as the navigation target for project cards.",
     "tasks.detailText": "The selected project context is loaded from the projects board. This keeps the click-through flow working now and leaves room for a fuller task board later.",
     "tasks.subtitleProject": "Continue planning and delivery for {projectName}.",
+    "settings.pageTag": "Settings",
+    "settings.topbarLabel": "Manage your profile details, account actions, and appearance preferences.",
+    "settings.title": "Workspace Settings",
+    "settings.subtitle": "Adjust the frontend-only profile form and appearance preferences stored on this device.",
+    "settings.stateLabel": "Local State",
+    "settings.stateName": "Frontend Store",
+    "settings.stateText": "Profile changes stay in local state only. No backend update is sent.",
+    "settings.sectionTag": "Preferences",
+    "settings.sectionTitle": "Settings Form",
+    "settings.sectionSubtitle": "Update local profile inputs, account actions, and appearance controls.",
+    "settings.profileTitle": "Profile",
+    "settings.profileText": "Edit your name and email in local frontend state.",
+    "settings.name": "Name",
+    "settings.namePlaceholder": "Anna Ivanova",
+    "settings.email": "Email",
+    "settings.emailPlaceholder": "student@example.com",
+    "settings.accountTitle": "Account",
+    "settings.accountText": "Account security actions are available here as frontend-only interactions.",
+    "settings.changePassword": "Change Password",
+    "settings.changePasswordHint": "Password change is not connected to the backend in this frontend-only view.",
+    "settings.accountHint": "This button is a frontend placeholder and does not send a backend request.",
+    "settings.appearanceTitle": "Appearance",
+    "settings.appearanceText": "Switch between light and dark mode and keep the choice in local state.",
+    "settings.themeSwitchLabel": "Theme",
+    "settings.appearanceHint": "The selected mode also syncs with the header theme control.",
     "status.planning": "Planning",
     "status.active": "Active",
     "status.inReview": "In Review",
@@ -299,6 +341,31 @@ const translations: Record<Language, TranslationDictionary> = {
     "tasks.sectionSubtitle": "此页面已准备好作为项目卡片的导航目标。",
     "tasks.detailText": "所选项目的上下文来自项目看板。这保证了当前点击跳转流程可用，并为后续更完整的任务看板预留空间。",
     "tasks.subtitleProject": "继续为 {projectName} 规划和推进工作。",
+    "settings.pageTag": "设置",
+    "settings.topbarLabel": "管理你的个人资料、账户操作和外观偏好。",
+    "settings.title": "工作区设置",
+    "settings.subtitle": "调整仅在前端保存的个人资料表单和外观偏好。",
+    "settings.stateLabel": "本地状态",
+    "settings.stateName": "前端存储",
+    "settings.stateText": "个人资料修改仅保存在本地状态中，不会发送到后端。",
+    "settings.sectionTag": "偏好",
+    "settings.sectionTitle": "设置表单",
+    "settings.sectionSubtitle": "更新本地资料输入、账户操作和外观控制。",
+    "settings.profileTitle": "个人资料",
+    "settings.profileText": "在本地前端状态中编辑你的姓名和邮箱。",
+    "settings.name": "姓名",
+    "settings.namePlaceholder": "Anna Ivanova",
+    "settings.email": "邮箱",
+    "settings.emailPlaceholder": "student@example.com",
+    "settings.accountTitle": "账户",
+    "settings.accountText": "这里的账户安全操作仅作为前端交互展示。",
+    "settings.changePassword": "修改密码",
+    "settings.changePasswordHint": "当前前端视图中的修改密码功能未连接后端。",
+    "settings.accountHint": "这个按钮只是前端占位，不会发送后端请求。",
+    "settings.appearanceTitle": "外观",
+    "settings.appearanceText": "在浅色和深色模式之间切换，并将选择保存在本地状态中。",
+    "settings.themeSwitchLabel": "主题",
+    "settings.appearanceHint": "所选模式会同步到顶部栏主题控制。",
     "status.planning": "规划中",
     "status.active": "进行中",
     "status.inReview": "评审中",
@@ -442,6 +509,31 @@ const translations: Record<Language, TranslationDictionary> = {
     "tasks.sectionSubtitle": "Esta página está lista como destino de navegación para las tarjetas de proyecto.",
     "tasks.detailText": "El contexto del proyecto seleccionado se carga desde el tablero de proyectos. Esto mantiene el flujo actual y deja espacio para un tablero de tareas más completo más adelante.",
     "tasks.subtitleProject": "Continúa planificando y ejecutando para {projectName}.",
+    "settings.pageTag": "Configuración",
+    "settings.topbarLabel": "Gestiona los datos de tu perfil, acciones de cuenta y preferencias de apariencia.",
+    "settings.title": "Configuración del espacio",
+    "settings.subtitle": "Ajusta el formulario de perfil y las preferencias de apariencia guardadas solo en este dispositivo.",
+    "settings.stateLabel": "Estado local",
+    "settings.stateName": "Store frontend",
+    "settings.stateText": "Los cambios del perfil se guardan solo en el estado local. No se envía ninguna actualización al backend.",
+    "settings.sectionTag": "Preferencias",
+    "settings.sectionTitle": "Formulario de configuración",
+    "settings.sectionSubtitle": "Actualiza entradas locales de perfil, acciones de cuenta y controles de apariencia.",
+    "settings.profileTitle": "Perfil",
+    "settings.profileText": "Edita tu nombre y correo en el estado local del frontend.",
+    "settings.name": "Nombre",
+    "settings.namePlaceholder": "Anna Ivanova",
+    "settings.email": "Correo electrónico",
+    "settings.emailPlaceholder": "student@example.com",
+    "settings.accountTitle": "Cuenta",
+    "settings.accountText": "Las acciones de seguridad de la cuenta están disponibles aquí como interacciones solo de frontend.",
+    "settings.changePassword": "Cambiar contraseña",
+    "settings.changePasswordHint": "El cambio de contraseña no está conectado al backend en esta vista solo de frontend.",
+    "settings.accountHint": "Este botón es un marcador frontend y no envía ninguna solicitud al backend.",
+    "settings.appearanceTitle": "Apariencia",
+    "settings.appearanceText": "Cambia entre modo claro y oscuro y guarda la elección en el estado local.",
+    "settings.themeSwitchLabel": "Tema",
+    "settings.appearanceHint": "El modo seleccionado también se sincroniza con el control de tema del encabezado.",
     "status.planning": "Planificación",
     "status.active": "Activo",
     "status.inReview": "En revisión",
@@ -489,6 +581,10 @@ function getLanguage(): Language {
   return stored === "en" || stored === "zh" || stored === "es" ? stored : DEFAULT_LANGUAGE;
 }
 
+function getLanguageOption(language: Language): { label: string; flag: string } {
+  return LANGUAGE_OPTIONS[language];
+}
+
 function applyTranslations(root: ParentNode = document): void {
   root.querySelectorAll<HTMLElement>("[data-i18n]").forEach((element) => {
     element.textContent = t(element.dataset.i18n || "");
@@ -516,10 +612,53 @@ function applyTranslations(root: ParentNode = document): void {
 }
 
 function updateSwitcherSelection(): void {
+  const currentLanguage = getLanguage();
+
   document.querySelectorAll<HTMLButtonElement>(".language-option").forEach((button) => {
-    const isActive = button.dataset.language === getLanguage();
+    const language = button.dataset.language;
+    if (language !== "en" && language !== "zh" && language !== "es") {
+      return;
+    }
+
+    const option = getLanguageOption(language);
+    const labelElement = button.querySelector<HTMLElement>(".language-option-label");
+    const flagElement = button.querySelector<HTMLElement>(".language-option-flag");
+    const isActive = language === currentLanguage;
+
+    if (labelElement) {
+      labelElement.textContent = option.label;
+    } else {
+      button.textContent = option.label;
+    }
+
+    if (flagElement) {
+      flagElement.textContent = option.flag;
+    }
+
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
+    if (button.getAttribute("role") === "menuitemradio") {
+      button.setAttribute("aria-checked", String(isActive));
+    }
+  });
+
+  document.querySelectorAll<HTMLElement>(".language-switcher--dropdown").forEach((switcher) => {
+    const option = getLanguageOption(currentLanguage);
+    const currentFlag = switcher.querySelector<HTMLElement>(".language-switcher-current-flag");
+    const currentLabel = switcher.querySelector<HTMLElement>(".language-switcher-current-label");
+    const trigger = switcher.querySelector<HTMLButtonElement>(".language-switcher-trigger");
+
+    if (currentFlag) {
+      currentFlag.textContent = option.flag;
+    }
+
+    if (currentLabel) {
+      currentLabel.textContent = option.label;
+    }
+
+    if (trigger) {
+      trigger.setAttribute("aria-label", `Language: ${option.label}`);
+    }
   });
 }
 
@@ -536,6 +675,115 @@ function setLanguage(language: Language): void {
   updateSwitcherSelection();
   refreshHtmxProjectsList();
   document.dispatchEvent(new CustomEvent("app-language-change", { detail: { language } }));
+}
+
+function setLanguageMenuOpen(switcher: HTMLElement, isOpen: boolean): void {
+  const trigger = switcher.querySelector<HTMLButtonElement>(".language-switcher-trigger");
+  const menu = switcher.querySelector<HTMLElement>(".language-switcher-menu");
+
+  if (!trigger || !menu) {
+    return;
+  }
+
+  switcher.classList.toggle("is-open", isOpen);
+  trigger.setAttribute("aria-expanded", String(isOpen));
+  menu.hidden = !isOpen;
+}
+
+function closeLanguageMenus(): void {
+  document.querySelectorAll<HTMLElement>(".language-switcher--dropdown.is-open").forEach((switcher) => {
+    setLanguageMenuOpen(switcher, false);
+  });
+}
+
+function bindLanguageMenuEvents(): void {
+  if (languageMenuEventsBound) {
+    return;
+  }
+
+  document.addEventListener("click", (event) => {
+    if (!(event.target instanceof Element) || !event.target.closest(".language-switcher--dropdown")) {
+      closeLanguageMenus();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeLanguageMenus();
+    }
+  });
+
+  languageMenuEventsBound = true;
+}
+
+function upgradeExistingLanguageSwitcher(switcher: HTMLElement | null): void {
+  if (!switcher || switcher.classList.contains("language-switcher--dropdown")) {
+    return;
+  }
+
+  const buttons = Array.from(switcher.querySelectorAll<HTMLButtonElement>(".language-option"));
+  if (!buttons.length) {
+    return;
+  }
+
+  const optionMarkup = buttons
+    .map((button) => {
+      const language = button.dataset.language;
+      if (language !== "en" && language !== "zh" && language !== "es") {
+        return "";
+      }
+
+      const option = getLanguageOption(language);
+      return `
+        <button type="button" class="language-option" role="menuitemradio" aria-checked="false" data-language="${language}">
+          <span class="language-option-flag" aria-hidden="true">${option.flag}</span>
+          <span class="language-option-label">${option.label}</span>
+        </button>
+      `;
+    })
+    .join("");
+
+  switcher.classList.add("language-switcher--dropdown");
+  switcher.innerHTML = `
+    <button type="button" class="language-switcher-trigger" aria-haspopup="menu" aria-expanded="false">
+      <span class="language-switcher-current">
+        <span class="language-switcher-current-flag" aria-hidden="true"></span>
+        <span class="language-switcher-current-label"></span>
+      </span>
+      <span class="language-switcher-caret" aria-hidden="true"></span>
+    </button>
+    <div class="language-switcher-menu" role="menu" hidden>
+      ${optionMarkup}
+    </div>
+  `;
+
+  switcher.querySelector<HTMLButtonElement>(".language-switcher-trigger")?.addEventListener("click", () => {
+    const shouldOpen = !switcher.classList.contains("is-open");
+    closeLanguageMenus();
+    setLanguageMenuOpen(switcher, shouldOpen);
+  });
+
+  switcher.querySelectorAll<HTMLButtonElement>(".language-option").forEach((button) => {
+    button.addEventListener("click", () => {
+      const language = button.dataset.language;
+      if (language === "en" || language === "zh" || language === "es") {
+        setLanguage(language);
+        setLanguageMenuOpen(switcher, false);
+      }
+    });
+  });
+
+  bindLanguageMenuEvents();
+  updateSwitcherSelection();
+}
+
+function upgradeDashboardLanguageSwitcher(): void {
+  const topbarActions = document.querySelector(".topbar-actions");
+  upgradeExistingLanguageSwitcher(topbarActions?.querySelector<HTMLElement>(".language-switcher") || null);
+}
+
+function upgradeLoginLanguageSwitcher(): void {
+  upgradeExistingLanguageSwitcher(document.querySelector<HTMLElement>(".login-page + .language-switcher"));
 }
 
 function injectLanguageSwitcher(): void {
@@ -561,13 +809,25 @@ function injectLanguageSwitcher(): void {
     });
   });
 
-  document.body.appendChild(wrapper);
+  const dashboardTopbarActions = document.querySelector(".topbar-actions");
+  if (dashboardTopbarActions) {
+    dashboardTopbarActions.appendChild(wrapper);
+  } else {
+    const loginPage = document.querySelector(".login-page");
+    if (loginPage?.parentElement) {
+      loginPage.insertAdjacentElement("afterend", wrapper);
+    } else {
+      document.body.appendChild(wrapper);
+    }
+  }
   updateSwitcherSelection();
 }
 
 function initializeI18n(): void {
   localStorage.setItem(LANGUAGE_STORAGE_KEY, getPreferredLanguage());
   injectLanguageSwitcher();
+  upgradeDashboardLanguageSwitcher();
+  upgradeLoginLanguageSwitcher();
   applyTranslations();
 }
 
