@@ -1,127 +1,154 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+(() => {
+  const API_BASE_URL = `${window.location.origin}/api`;
+  const THEME_STORAGE_KEY = "dashboard-theme";
+  const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 
-export {};
-
-interface LoginResponse {
-  token?: string;
-  message: string;
-}
-
-const form = document.getElementById("login-form") as HTMLFormElement;
-const emailInput = document.getElementById("email") as HTMLInputElement;
-const passwordInput = document.getElementById("password") as HTMLInputElement;
-const messageBox = document.getElementById("form-message") as HTMLElement;
-const submitButton = document.querySelector(".submit-button") as HTMLButtonElement;
-
-form.addEventListener("submit", handleFormSubmit);
-
-async function handleFormSubmit(event: Event): Promise<void> {
-  event.preventDefault();
-  resetErrors();
-
-  const email = emailInput.value.trim();
-  const password = passwordInput.value.trim();
-  const isValid = validateForm(email, password);
-
-  if (!isValid) {
-    showMessage("Fix the form errors and try again.", "error");
-    return;
+  interface LoginResponse {
+    token?: string;
+    message: string;
   }
 
-  setLoadingState(true);
+  const form = document.getElementById("login-form") as HTMLFormElement;
+  const emailInput = document.getElementById("email") as HTMLInputElement;
+  const passwordInput = document.getElementById("password") as HTMLInputElement;
+  const messageBox = document.getElementById("form-message") as HTMLElement;
+  const submitButton = document.querySelector(".submit-button") as HTMLButtonElement;
+  let alertTimeoutId = 0;
 
-  try {
-    const data = await loginUser(email, password);
+  initializeTheme();
+  form.addEventListener("submit", handleFormSubmit);
 
-    if (data.token) {
-      localStorage.setItem("token", data.token);
+  function initializeTheme(): void {
+    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    document.body.dataset.theme = storedTheme === "dark" || storedTheme === "light" ? storedTheme : preferredTheme;
+  }
+
+  async function handleFormSubmit(event: Event): Promise<void> {
+    event.preventDefault();
+    resetErrors();
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+    const isValid = validateForm(email, password);
+
+    if (!isValid) {
+      showMessage(i18n("login.validation.fix"), "error");
+      return;
     }
 
-    showMessage("Login successful. Redirecting to dashboard...", "success");
-    form.reset();
+    setLoadingState(true);
 
-    // Redirect to dashboard after successful login
-    setTimeout(() => {
-      window.location.href = "./dashboard/index.html";
-    }, 1000);
-  } catch (error: any) {
-    showMessage(error.message, "error");
-  } finally {
-    setLoadingState(false);
-  }
-}
+    try {
+      const data = await loginUser(email, password);
 
-function validateForm(email: string, password: string): boolean {
-  let isValid = true;
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
 
-  if (!email) {
-    setFieldError("email", "Email is required.");
-    isValid = false;
-  } else if (!isEmailValid(email)) {
-    setFieldError("email", "Enter a valid email address.");
-    isValid = false;
+      showMessage(i18n("login.success"), "success");
+      form.reset();
+
+      setTimeout(() => {
+        window.location.href = "./dashboard/index.html";
+      }, 1000);
+    } catch (error: unknown) {
+      showMessage(error instanceof Error ? error.message : i18n("login.failed"), "error");
+    } finally {
+      setLoadingState(false);
+    }
   }
 
-  if (!password) {
-    setFieldError("password", "Password is required.");
-    isValid = false;
-  } else if (password.length < 6) {
-    setFieldError("password", "Password must be at least 6 characters.");
-    isValid = false;
+  function validateForm(email: string, password: string): boolean {
+    let isValid = true;
+
+    if (!email) {
+      setFieldError("email", i18n("login.validation.emailRequired"));
+      isValid = false;
+    } else if (!isEmailValid(email)) {
+      setFieldError("email", i18n("login.validation.emailInvalid"));
+      isValid = false;
+    }
+
+    if (!password) {
+      setFieldError("password", i18n("login.validation.passwordRequired"));
+      isValid = false;
+    } else if (password.length < 6) {
+      setFieldError("password", i18n("login.validation.passwordShort"));
+      isValid = false;
+    }
+
+    return isValid;
   }
 
-  return isValid;
-}
-
-function isEmailValid(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function setFieldError(fieldId: string, text: string): void {
-  const input = document.getElementById(fieldId) as HTMLInputElement;
-  const errorBox = document.querySelector(`[data-error-for="${fieldId}"]`) as HTMLElement;
-
-  input.classList.add("input-error");
-  errorBox.textContent = text;
-}
-
-function resetErrors(): void {
-  messageBox.textContent = "";
-  messageBox.className = "form-message";
-
-  document.querySelectorAll(".field-error").forEach((element) => {
-    element.textContent = "";
-  });
-
-  document.querySelectorAll(".input-error").forEach((input) => {
-    input.classList.remove("input-error");
-  });
-}
-
-function showMessage(text: string, type: string): void {
-  messageBox.textContent = text;
-  messageBox.className = `form-message ${type}`;
-}
-
-function setLoadingState(isLoading: boolean): void {
-  submitButton.disabled = isLoading;
-  submitButton.textContent = isLoading ? "Logging in..." : "Log In";
-}
-
-async function loginUser(email: string, password: string): Promise<LoginResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ email, password })
-  });
-
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(data.message || "Login failed. Check your credentials or server status.");
+  function isEmailValid(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
-  return data;
-}
+  function setFieldError(fieldId: string, text: string): void {
+    const input = document.getElementById(fieldId) as HTMLInputElement;
+    const errorBox = document.querySelector(`[data-error-for="${fieldId}"]`) as HTMLElement;
+
+    input.classList.add("input-error");
+    errorBox.textContent = text;
+  }
+
+  function resetErrors(): void {
+    clearMessage();
+
+    document.querySelectorAll(".field-error").forEach((element) => {
+      element.textContent = "";
+    });
+
+    document.querySelectorAll(".input-error").forEach((input) => {
+      input.classList.remove("input-error");
+    });
+  }
+
+  function showMessage(text: string, type: string): void {
+    if (alertTimeoutId) {
+      window.clearTimeout(alertTimeoutId);
+    }
+
+    messageBox.textContent = text;
+    messageBox.className = `form-message is-visible ${type}`;
+
+    alertTimeoutId = window.setTimeout(() => {
+      clearMessage();
+    }, 3000);
+  }
+
+  function clearMessage(): void {
+    if (alertTimeoutId) {
+      window.clearTimeout(alertTimeoutId);
+      alertTimeoutId = 0;
+    }
+
+    messageBox.textContent = "";
+    messageBox.className = "form-message";
+  }
+
+  function setLoadingState(isLoading: boolean): void {
+    submitButton.disabled = isLoading;
+    submitButton.textContent = isLoading ? i18n("login.submitting") : i18n("login.submit");
+  }
+
+  async function loginUser(email: string, password: string): Promise<LoginResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.message || i18n("login.failedDefault"));
+    }
+
+    return data;
+  }
+})();

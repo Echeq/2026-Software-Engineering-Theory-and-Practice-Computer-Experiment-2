@@ -5,48 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SPMP | Login</title>
   <link rel="stylesheet" href="./css/login.css">
+  <script src="./js/i18n.js" defer></script>
 </head>
 <body>
   <main class="login-page">
     <section class="login-card" aria-labelledby="login-title">
       <span class="brand-tag">SPMP</span>
-      <h1 id="login-title">Log In</h1>
-      <p class="subtitle">
+      <h1 id="login-title" data-i18n="login.title">Log In</h1>
+      <p class="subtitle" data-i18n="login.subtitle">
         A platform for managing projects and tasks.
       </p>
 
       <form class="login-form" id="login-form" novalidate>
+        <p class="form-message" id="form-message" aria-live="polite"></p>
+
         <div class="form-group">
-          <label for="email">Email</label>
+          <label for="email" data-i18n="login.email">Email</label>
           <input
             id="email"
             name="email"
             type="email"
             placeholder="student@example.com"
+            data-i18n-placeholder="login.emailPlaceholder"
             autocomplete="email"
           >
           <small class="field-error" data-error-for="email"></small>
         </div>
 
         <div class="form-group">
-          <label for="password">Password</label>
+          <label for="password" data-i18n="login.password">Password</label>
           <input
             id="password"
             name="password"
             type="password"
             placeholder="Enter your password"
+            data-i18n-placeholder="login.passwordPlaceholder"
             autocomplete="current-password"
           >
           <small class="field-error" data-error-for="password"></small>
         </div>
 
-        <p class="form-message" id="form-message" aria-live="polite"></p>
-
-        <button type="submit" class="submit-button">Log In</button>
+        <button type="submit" class="submit-button" data-i18n="login.submit">Log In</button>
       </form>
 
       <p class="auth-switch">
+<<<<<<< HEAD
         Accounts are created by the manager.
+=======
+        <span data-i18n="login.noAccount">Don't have an account?</span>
+        <a href="./signup.html" class="auth-link" data-i18n="login.signUpLink">Sign Up</a>
+>>>>>>> main
       </p>
     </section>
   </main>

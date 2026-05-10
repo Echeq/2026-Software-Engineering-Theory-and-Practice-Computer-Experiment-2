@@ -5,13 +5,32 @@ import { UserModel, User } from "../models/User";
 export interface AuthRequest extends Request {
     user?: User;
 }
+
+function readCookieToken(cookieHeader?: string): string {
+    if (!cookieHeader) {
+        return "";
+    }
+
+    const tokenPair = cookieHeader
+        .split(";")
+        .map((part) => part.trim())
+        .find((part) => part.startsWith("token="));
+
+    if (!tokenPair) {
+        return "";
+    }
+
+    return decodeURIComponent(tokenPair.slice("token=".length));
+}
+
 export async function authenticateToken(
     req: AuthRequest,
     res: Response,
     next: NextFunction,
 ): Promise<void> {
     const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1];
+    const bearerToken = authHeader && authHeader.split(" ")[1];
+    const token = bearerToken || readCookieToken(req.headers.cookie);
 
     if (!token) {
         res.status(401).json({ message: "Authentication required" });

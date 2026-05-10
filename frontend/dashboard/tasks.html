@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPMP | Tasks</title>
+  <link rel="stylesheet" href="../css/dashboard.css">
+  <script src="../js/i18n.js" defer></script>
+</head>
+<body>
+  <div id="sidebar-backdrop" class="sidebar-backdrop" hidden data-close-sidebar="true"></div>
+
+  <main class="dashboard-app">
+    <aside id="dashboard-sidebar" class="dashboard-sidebar" aria-label="Primary navigation">
+      <div class="sidebar-top">
+        <div class="sidebar-brand-wrap">
+          <a href="./index.html" class="sidebar-brand" aria-label="SPMP dashboard home">
+            <span class="sidebar-logo">SP</span>
+            <span class="sidebar-brand-copy">
+              <strong>SPMP</strong>
+              <span>Project workspace</span>
+            </span>
+          </a>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Workspace navigation">
+          <a href="./index.html" class="sidebar-link">
+            <svg class="nav-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.75 3.75h4.5v4.5h-4.5zM8.75 3.75h4.5v2.5h-4.5zM8.75 7.75h4.5v4.5h-4.5zM2.75 9.75h4.5v2.5h-4.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            <span data-i18n="sidebar.dashboard">Dashboard</span>
+          </a>
+          <a href="./projects.html" class="sidebar-link">
+            <svg class="nav-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.75 4.25h4.5l1 1.5h5v6.5a1 1 0 0 1-1 1h-9.5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M2.75 5.75v-2a1 1 0 0 1 1-1h3l1 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span data-i18n="sidebar.projects">Projects</span>
+          </a>
+          <a href="./tasks.html" class="sidebar-link is-active">
+            <svg class="nav-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.75 3.25h6.5a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-8.5a1 1 0 0 1-1-1v-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5.25 2.75 3.5 4.5l1.75 1.75" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.75 6.25h4.5M6.75 9h4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <span data-i18n="sidebar.tasks">Tasks</span>
+          </a>
+          <a href="#tasks-page-title" class="sidebar-link">
+            <svg class="nav-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.25a1.75 1.75 0 1 1 0 3.5 1.75 1.75 0 0 1 0-3.5Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3.75 8h-1m10.5 0h-1M8 12.25v1m0-10.5v1M4.94 4.94l-.7-.7m7.52 7.52-.7-.7m0-6.12.7-.7m-7.52 7.52.7-.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="8" r="4.25" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+            <span data-i18n="sidebar.settings">Settings</span>
+          </a>
+        </nav>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-panel" aria-live="polite">
+          <span class="user-label" data-i18n="sidebar.signedInAs">Signed in as</span>
+          <strong id="user-name" class="user-display">Loading...</strong>
+        </div>
+        <button id="logout-btn" type="button" class="secondary-button sidebar-logout"><svg class="button-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.25 2.75h-2.5a1 1 0 0 0-1 1v8.5a1 1 0 0 0 1 1h2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.25 5.25 12 8l-2.75 2.75" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8H5.75" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span data-i18n="sidebar.logout">Log Out</span></button>
+      </div>
+    </aside>
+
+    <section class="dashboard-main" aria-labelledby="tasks-page-title">
+      <header class="main-topbar">
+        <div class="topbar-left">
+          <button
+            id="sidebar-toggle-btn"
+            type="button"
+            class="menu-toggle"
+            aria-expanded="false"
+            aria-controls="dashboard-sidebar"
+            aria-label="Open navigation menu"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+
+          <div class="topbar-copy">
+            <span class="section-tag" data-i18n="tasks.pageTag">Tasks</span>
+            <p class="topbar-label" data-i18n="tasks.topbarLabel">Task-level view for the selected project.</p>
+          </div>
+        </div>
+
+        <button id="theme-toggle-btn" type="button" class="theme-toggle" aria-pressed="false" data-i18n="theme.dark" data-i18n-aria-label="theme.toDark">Dark Mode</button>
+      </header>
+
+      <section class="overview-panel" aria-labelledby="tasks-page-title">
+        <div class="overview-copy">
+          <span class="brand-tag">SPMP</span>
+          <h1 id="tasks-page-title" data-i18n="tasks.title">Tasks Workspace</h1>
+          <p id="tasks-page-subtitle" class="subtitle" data-i18n="tasks.subtitleDefault">
+            Open a project from the projects board to continue into its task workflow.
+          </p>
+        </div>
+
+        <div class="overview-actions">
+          <div class="overview-note">
+            <span class="overview-note-label" data-i18n="tasks.selectedProject">Selected Project</span>
+            <strong id="selected-project-name" data-i18n="tasks.noProject">No project selected</strong>
+            <p id="selected-project-meta" data-i18n="tasks.noProjectMeta">Choose a project card from the projects board to view task context.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="projects-section task-detail-section" aria-labelledby="task-detail-title">
+        <div class="section-header">
+          <div class="section-copy">
+            <span class="section-tag" data-i18n="tasks.sectionTag">Tasks</span>
+            <h2 id="task-detail-title" data-i18n="tasks.sectionTitle">Task Board Placeholder</h2>
+            <p class="section-subtitle" data-i18n="tasks.sectionSubtitle">This page is ready as the navigation target for project cards.</p>
+          </div>
+        </div>
+
+        <div class="detail-panel">
+          <p data-i18n="tasks.detailText">
+            The selected project context is loaded from the projects board. This keeps the click-through flow working now and leaves room for a fuller task board later.
+          </p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="../js/tasks.js" defer></script>
+</body>
+</html>
