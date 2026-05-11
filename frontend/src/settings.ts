@@ -19,19 +19,27 @@ namespace SettingsPage {
   interface SettingsState {
     profileName: string;
     profileEmail: string;
+    emailNotifications: boolean;
+    browserNotifications: boolean;
+    defaultProjectView: ProjectView;
     theme: SettingsTheme;
   }
 
   type SettingsTheme = "light" | "dark";
+  type ProjectView = "grid" | "list";
 
   let currentUser: User | null = null;
   let settingsState: SettingsState = {
     profileName: "",
     profileEmail: "",
+    emailNotifications: true,
+    browserNotifications: false,
+    defaultProjectView: "grid",
     theme: "light"
   };
 
   let userNameElement: HTMLElement | null = null;
+  let userAvatarElement: HTMLElement | null = null;
   let logoutButton: HTMLButtonElement | null = null;
   let themeToggleButton: HTMLButtonElement | null = null;
   let appearanceThemeSwitchButton: HTMLButtonElement | null = null;
@@ -40,6 +48,12 @@ namespace SettingsPage {
   let settingsMessageBox: HTMLElement | null = null;
   let nameInput: HTMLInputElement | null = null;
   let emailInput: HTMLInputElement | null = null;
+  let emailNotificationsSwitchButton: HTMLButtonElement | null = null;
+  let browserNotificationsSwitchButton: HTMLButtonElement | null = null;
+  let emailNotificationsValueElement: HTMLElement | null = null;
+  let browserNotificationsValueElement: HTMLElement | null = null;
+  let projectViewButtons: NodeListOf<HTMLButtonElement>;
+  let clearLocalDataButton: HTMLButtonElement | null = null;
   let sidebarToggleButton: HTMLButtonElement | null = null;
   let sidebarElement: HTMLElement | null = null;
   let sidebarBackdropElement: HTMLElement | null = null;
@@ -68,6 +82,7 @@ namespace SettingsPage {
 
   function cacheElements(): void {
     userNameElement = document.getElementById("user-name");
+    userAvatarElement = document.getElementById("user-avatar");
     logoutButton = document.getElementById("logout-btn") as HTMLButtonElement | null;
     themeToggleButton = document.getElementById("theme-toggle-btn") as HTMLButtonElement | null;
     appearanceThemeSwitchButton = document.getElementById("appearance-theme-switch") as HTMLButtonElement | null;
@@ -76,6 +91,12 @@ namespace SettingsPage {
     settingsMessageBox = document.getElementById("settings-message");
     nameInput = document.getElementById("settings-name") as HTMLInputElement | null;
     emailInput = document.getElementById("settings-email") as HTMLInputElement | null;
+    emailNotificationsSwitchButton = document.getElementById("email-notifications-switch") as HTMLButtonElement | null;
+    browserNotificationsSwitchButton = document.getElementById("browser-notifications-switch") as HTMLButtonElement | null;
+    emailNotificationsValueElement = document.getElementById("email-notifications-value");
+    browserNotificationsValueElement = document.getElementById("browser-notifications-value");
+    projectViewButtons = document.querySelectorAll("[data-project-view]");
+    clearLocalDataButton = document.getElementById("clear-local-data-btn") as HTMLButtonElement | null;
     sidebarToggleButton = document.getElementById("sidebar-toggle-btn") as HTMLButtonElement | null;
     sidebarElement = document.getElementById("dashboard-sidebar");
     sidebarBackdropElement = document.getElementById("sidebar-backdrop");
@@ -88,6 +109,17 @@ namespace SettingsPage {
     changePasswordButton?.addEventListener("click", handleChangePasswordClick);
     nameInput?.addEventListener("input", handleNameInput);
     emailInput?.addEventListener("input", handleEmailInput);
+    emailNotificationsSwitchButton?.addEventListener("click", () => setEmailNotifications(!settingsState.emailNotifications));
+    browserNotificationsSwitchButton?.addEventListener("click", () => setBrowserNotifications(!settingsState.browserNotifications));
+    projectViewButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const view = button.dataset.projectView;
+        if (view === "grid" || view === "list") {
+          setDefaultProjectView(view);
+        }
+      });
+    });
+    clearLocalDataButton?.addEventListener("click", clearAllLocalData);
     sidebarToggleButton?.addEventListener("click", toggleSidebar);
     sidebarBackdropElement?.addEventListener("click", handleSidebarBackdropClick);
     window.addEventListener("resize", syncSidebarState);
@@ -116,6 +148,9 @@ namespace SettingsPage {
       settingsState = {
         profileName: stored.profileName,
         profileEmail: stored.profileEmail,
+        emailNotifications: stored.emailNotifications,
+        browserNotifications: stored.browserNotifications,
+        defaultProjectView: stored.defaultProjectView,
         theme: stored.theme
       };
       applyTheme(settingsState.theme);
@@ -125,6 +160,9 @@ namespace SettingsPage {
     settingsState = {
       profileName: "",
       profileEmail: "",
+      emailNotifications: true,
+      browserNotifications: false,
+      defaultProjectView: "grid",
       theme: settingsState.theme
     };
     persistSettingsState();
@@ -146,11 +184,17 @@ namespace SettingsPage {
       if (
         typeof parsed.profileName === "string" &&
         typeof parsed.profileEmail === "string" &&
+        typeof parsed.emailNotifications === "boolean" &&
+        typeof parsed.browserNotifications === "boolean" &&
+        (parsed.defaultProjectView === "grid" || parsed.defaultProjectView === "list") &&
         (parsed.theme === "light" || parsed.theme === "dark")
       ) {
         return {
           profileName: parsed.profileName,
           profileEmail: parsed.profileEmail,
+          emailNotifications: parsed.emailNotifications,
+          browserNotifications: parsed.browserNotifications,
+          defaultProjectView: parsed.defaultProjectView,
           theme: parsed.theme
         };
       }
@@ -183,6 +227,23 @@ namespace SettingsPage {
       appearanceThemeSwitchButton.setAttribute("aria-checked", String(isDarkTheme));
       appearanceThemeSwitchButton.classList.toggle("is-dark", isDarkTheme);
     }
+
+    renderPreferenceSwitch(
+      emailNotificationsSwitchButton,
+      emailNotificationsValueElement,
+      settingsState.emailNotifications
+    );
+    renderPreferenceSwitch(
+      browserNotificationsSwitchButton,
+      browserNotificationsValueElement,
+      settingsState.browserNotifications
+    );
+
+    projectViewButtons.forEach((button) => {
+      const isActive = button.dataset.projectView === settingsState.defaultProjectView;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    });
   }
 
   function handleNameInput(event: Event): void {
@@ -195,6 +256,24 @@ namespace SettingsPage {
     const target = event.target as HTMLInputElement | null;
     settingsState.profileEmail = target?.value ?? "";
     persistSettingsState();
+  }
+
+  function setEmailNotifications(isEnabled: boolean): void {
+    settingsState.emailNotifications = isEnabled;
+    persistSettingsState();
+    renderSettingsState();
+  }
+
+  function setBrowserNotifications(isEnabled: boolean): void {
+    settingsState.browserNotifications = isEnabled;
+    persistSettingsState();
+    renderSettingsState();
+  }
+
+  function setDefaultProjectView(view: ProjectView): void {
+    settingsState.defaultProjectView = view;
+    persistSettingsState();
+    renderSettingsState();
   }
 
   function getNextTheme(): SettingsTheme {
@@ -223,6 +302,26 @@ namespace SettingsPage {
 
   function handleChangePasswordClick(): void {
     showSettingsMessage(i18n("settings.changePasswordHint"), "success");
+  }
+
+  function renderPreferenceSwitch(
+    button: HTMLButtonElement | null,
+    valueElement: HTMLElement | null,
+    isEnabled: boolean
+  ): void {
+    if (button) {
+      button.setAttribute("aria-checked", String(isEnabled));
+      button.classList.toggle("is-active", isEnabled);
+    }
+
+    if (valueElement) {
+      valueElement.textContent = isEnabled ? i18n("settings.toggleOn") : i18n("settings.toggleOff");
+    }
+  }
+
+  function clearAllLocalData(): void {
+    localStorage.clear();
+    window.location.reload();
   }
 
   function showSettingsMessage(text: string, type: "success" | "error" | "" = ""): void {
@@ -316,6 +415,7 @@ namespace SettingsPage {
     if (userNameElement) {
       userNameElement.textContent = currentUser.name;
     }
+    updateUserAvatar(currentUser.name);
   }
 
   async function loadUserData(): Promise<void> {
@@ -337,6 +437,7 @@ namespace SettingsPage {
       if (userNameElement) {
         userNameElement.textContent = currentUser.name;
       }
+      updateUserAvatar(currentUser.name);
     } catch (error) {
       console.error("Error loading user data:", error);
 
@@ -347,6 +448,7 @@ namespace SettingsPage {
       if (userNameElement) {
         userNameElement.textContent = i18n("common.unavailable");
       }
+      updateUserAvatar(i18n("common.unavailable"));
     }
   }
 
@@ -366,6 +468,31 @@ namespace SettingsPage {
       credentials: "same-origin"
     });
     redirectToLogin();
+  }
+
+  function updateUserAvatar(name: string): void {
+    if (!userAvatarElement) {
+      return;
+    }
+
+    userAvatarElement.textContent = getInitials(name);
+  }
+
+  function getInitials(name: string): string {
+    const parts = name
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (parts.length === 0) {
+      return "U";
+    }
+
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
   }
 
   async function requestWithAuth<T>(path: string, init: RequestInit = {}): Promise<T> {

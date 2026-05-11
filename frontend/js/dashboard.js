@@ -34,8 +34,12 @@ const PREVIEW_PROJECTS = [
 ];
 let currentUser = null;
 let userNameElement = null;
+let userAvatarElement = null;
+let greetingTitleElement = null;
+let greetingDateElement = null;
 let projectsMessageBox = null;
 let projectsListElement = null;
+let projectSortSelectElement = null;
 let newProjectButton = null;
 let logoutButton = null;
 let themeToggleButton = null;
@@ -56,6 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
 async function initializeDashboard() {
     cacheElements();
     initializeTheme();
+    refreshGreetingBanner();
     syncSidebarState();
     setupEventListeners();
     const token = getStoredToken();
@@ -69,8 +74,12 @@ async function initializeDashboard() {
 }
 function cacheElements() {
     userNameElement = document.getElementById("user-name");
+    userAvatarElement = document.getElementById("user-avatar");
+    greetingTitleElement = document.getElementById("greeting-banner-title");
+    greetingDateElement = document.getElementById("greeting-banner-date");
     projectsMessageBox = document.getElementById("projects-message");
     projectsListElement = document.getElementById("projects-list");
+    projectSortSelectElement = document.getElementById("project-sort-select");
     newProjectButton = document.getElementById("new-project-btn");
     logoutButton = document.getElementById("logout-btn");
     themeToggleButton = document.getElementById("theme-toggle-btn");
@@ -96,8 +105,11 @@ function setupEventListeners() {
     cancelProjectModalButton?.addEventListener("click", closeProjectModal);
     projectFormElement?.addEventListener("submit", handleProjectSubmit);
     projectModalElement?.addEventListener("click", handleProjectModalClick);
+    projectSortSelectElement?.addEventListener("change", handleProjectSortChange);
     window.addEventListener("resize", syncSidebarState);
     document.addEventListener("keydown", handleEscapeKey);
+    document.addEventListener("app-language-change", refreshGreetingBanner);
+    document.addEventListener("htmx:afterSwap", handleProjectsAfterSwap);
     document.querySelectorAll(".sidebar-link").forEach((link) => {
         link.addEventListener("click", () => {
             if (isMobileViewport()) {
@@ -183,6 +195,8 @@ function loadPreviewDashboard() {
     if (userNameElement) {
         userNameElement.textContent = currentUser.name;
     }
+    updateUserAvatar(currentUser.name);
+    refreshGreetingBanner();
     showProjectsMessage(i18n("dashboard.preview"), "success");
     renderProjects(PREVIEW_PROJECTS);
 }
@@ -193,6 +207,8 @@ async function loadUserData() {
         if (userNameElement) {
             userNameElement.textContent = currentUser.name;
         }
+        updateUserAvatar(currentUser.name);
+        refreshGreetingBanner();
     }
     catch (error) {
         console.error("Error loading user data:", error);
@@ -200,8 +216,10 @@ async function loadUserData() {
             return;
         }
         if (userNameElement) {
-            userNameElement.textContent = "Unavailable";
+            userNameElement.textContent = i18n("common.unavailable");
         }
+        updateUserAvatar(i18n("common.unavailable"));
+        refreshGreetingBanner();
     }
 }
 async function loadProjects(options = {}) {
@@ -241,7 +259,8 @@ function renderProjects(projects) {
     if (!projectsListElement) {
         return;
     }
-    if (projects.length === 0) {
+    const sortedProjects = sortProjects(projects, readSelectedSort());
+    if (sortedProjects.length === 0) {
         projectsListElement.innerHTML = `
       <article class="state-card empty-state-card">
         <div class="empty-state-illustration" aria-hidden="true">
@@ -263,7 +282,7 @@ function renderProjects(projects) {
         document.getElementById("empty-state-create-project-btn")?.addEventListener("click", openProjectModal, { once: true });
         return;
     }
-    projectsListElement.innerHTML = projects.map((project) => {
+    projectsListElement.innerHTML = sortedProjects.map((project) => {
         const creatorName = escapeHtml(currentUser?.name || "You");
         const taskCount = typeof project.taskCount === "number" ? project.taskCount : 0;
         const normalizedStatus = project.status.trim().toLowerCase();
@@ -454,6 +473,49 @@ function handleEscapeKey(event) {
         closeSidebar();
     }
 }
+function handleProjectSortChange() {
+    sortRenderedProjectCards();
+}
+function handleProjectsAfterSwap(event) {
+    const customEvent = event;
+    if (!(customEvent.target instanceof HTMLElement) || customEvent.target.id !== "projects-list") {
+        return;
+    }
+    document.getElementById("empty-state-create-project-btn")?.addEventListener("click", openProjectModal, { once: true });
+    sortRenderedProjectCards();
+}
+function refreshGreetingBanner() {
+    const today = new Date();
+    const displayName = currentUser?.name.trim() || "";
+    if (greetingTitleElement) {
+        greetingTitleElement.textContent = displayName
+            ? i18n("dashboard.greetingMorning", { name: displayName })
+            : i18n("dashboard.greetingMorningFallback");
+    }
+    if (greetingDateElement) {
+        greetingDateElement.textContent = formatGreetingDate(today);
+        greetingDateElement.dateTime = today.toISOString().slice(0, 10);
+    }
+}
+function updateUserAvatar(name) {
+    if (!userAvatarElement) {
+        return;
+    }
+    userAvatarElement.textContent = getInitials(name);
+}
+function getInitials(name) {
+    const parts = name
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+    if (parts.length === 0) {
+        return "U";
+    }
+    if (parts.length === 1) {
+        return parts[0].slice(0, 2).toUpperCase();
+    }
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
 function getStoredToken() {
     return localStorage.getItem("token")?.trim() || "";
 }
@@ -480,6 +542,64 @@ function getStatusIconMarkup(status) {
         return '<svg class="status-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.25" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M5.5 8.1 7.2 9.8l3.3-3.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     }
     return "";
+}
+function readSelectedSort() {
+    const value = projectSortSelectElement?.value;
+    if (value === "oldest" || value === "az") {
+        return value;
+    }
+    return "newest";
+}
+function sortProjects(projects, sort) {
+    const copy = [...projects];
+    if (sort === "az") {
+        copy.sort((left, right) => left.name.localeCompare(right.name, getCurrentLocale(), { sensitivity: "base" }));
+        return copy;
+    }
+    copy.sort((left, right) => {
+        const leftTime = new Date(left.created_at).getTime();
+        const rightTime = new Date(right.created_at).getTime();
+        const safeLeftTime = Number.isNaN(leftTime) ? 0 : leftTime;
+        const safeRightTime = Number.isNaN(rightTime) ? 0 : rightTime;
+        return sort === "oldest" ? safeLeftTime - safeRightTime : safeRightTime - safeLeftTime;
+    });
+    return copy;
+}
+function sortRenderedProjectCards() {
+    if (!projectsListElement) {
+        return;
+    }
+    const cards = Array.from(projectsListElement.querySelectorAll(".project-card-link"));
+    if (cards.length <= 1) {
+        return;
+    }
+    const sort = readSelectedSort();
+    const collator = new Intl.Collator(getCurrentLocale(), { sensitivity: "base" });
+    cards.sort((left, right) => {
+        if (sort === "az") {
+            return collator.compare(readProjectName(left), readProjectName(right));
+        }
+        const leftTime = readProjectCreatedAt(left);
+        const rightTime = readProjectCreatedAt(right);
+        return sort === "oldest" ? leftTime - rightTime : rightTime - leftTime;
+    });
+    cards.forEach((card) => {
+        projectsListElement?.appendChild(card);
+    });
+}
+function readProjectName(card) {
+    return card.querySelector(".project-name")?.textContent?.trim() || "";
+}
+function readProjectCreatedAt(card) {
+    const href = card.getAttribute("href") || "";
+    const queryStartIndex = href.indexOf("?");
+    if (queryStartIndex === -1) {
+        return 0;
+    }
+    const params = new URLSearchParams(href.slice(queryStartIndex + 1));
+    const createdAt = params.get("createdAt") || "";
+    const timestamp = new Date(createdAt).getTime();
+    return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 async function requestWithAuth(path, init = {}) {
     const token = getStoredToken();
@@ -528,12 +648,29 @@ function formatProjectDate(dateString) {
     if (Number.isNaN(date.getTime())) {
         return i18n("common.createdRecently");
     }
-    const locale = window.I18n?.getLanguage() === "zh" ? "zh-CN" : window.I18n?.getLanguage() === "es" ? "es-ES" : "en-US";
-    return i18n("common.createdDate", { date: date.toLocaleDateString(locale, {
+    return i18n("common.createdDate", { date: date.toLocaleDateString(getCurrentLocale(), {
             month: "short",
             day: "numeric",
             year: "numeric"
         }) });
+}
+function formatGreetingDate(date) {
+    return new Intl.DateTimeFormat(getCurrentLocale(), {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric"
+    }).format(date);
+}
+function getCurrentLocale() {
+    const language = window.I18n?.getLanguage();
+    if (language === "zh") {
+        return "zh-CN";
+    }
+    if (language === "es") {
+        return "es-ES";
+    }
+    return "en-US";
 }
 function escapeHtml(text) {
     const div = document.createElement("div");

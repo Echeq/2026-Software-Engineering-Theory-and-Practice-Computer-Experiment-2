@@ -81,7 +81,7 @@
 
       <div class="sidebar-footer">
         <div class="user-panel" aria-live="polite">
-          <span class="user-label" data-i18n="sidebar.signedInAs">Signed in as</span>
+          <span id="user-avatar" class="user-avatar" aria-hidden="true">U</span>
           <strong id="user-name" class="user-display">Loading...</strong>
         </div>
         <button id="logout-btn" type="button" class="secondary-button sidebar-logout"><svg class="button-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5H5.5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2H8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 6.5 15 10l-4 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 10H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span data-i18n="sidebar.logout">Log Out</span></button>
@@ -112,6 +112,11 @@
 
         <div class="topbar-actions"></div>
       </header>
+
+      <section class="greeting-banner" aria-label="Daily greeting">
+        <p id="local-greeting-title" class="greeting-title" aria-live="polite">Good morning</p>
+        <time id="local-greeting-date" class="greeting-date" aria-live="polite"></time>
+      </section>
 
       <section class="overview-panel" aria-labelledby="dashboard-title">
         <div class="overview-copy">
@@ -155,8 +160,21 @@
               hx-get="/api/projects/fragment/cards"
               hx-trigger="input changed delay:250ms, search"
               hx-target="#projects-list"
-              hx-include="#project-search-input, .filter-button.is-active"
+              hx-include="#project-search-input, .filter-button.is-active, #project-sort-select"
             >
+          </label>
+
+          <label class="sort-field" for="project-sort-select">
+            <span class="search-label" data-i18n="dashboard.sort">Sort</span>
+            <select
+              id="project-sort-select"
+              class="sort-select"
+              name="sort"
+            >
+              <option value="newest" data-i18n="dashboard.sortNewest">Newest first</option>
+              <option value="oldest" data-i18n="dashboard.sortOldest">Oldest first</option>
+              <option value="az" data-i18n="dashboard.sortAZ">A-Z</option>
+            </select>
           </label>
 
           <div class="status-filters" role="group" aria-label="Filter projects by status">
@@ -167,7 +185,7 @@
               value="all"
               hx-get="/api/projects/fragment/cards"
               hx-target="#projects-list"
-              hx-include="#project-search-input, .filter-button.is-active"
+              hx-include="#project-search-input, .filter-button.is-active, #project-sort-select"
               hx-on:click="document.querySelectorAll('.filter-button').forEach((button) => button.classList.remove('is-active')); this.classList.add('is-active')"
               data-i18n="dashboard.filter.all"
             >All</button>
@@ -178,7 +196,7 @@
               value="active"
               hx-get="/api/projects/fragment/cards"
               hx-target="#projects-list"
-              hx-include="#project-search-input, .filter-button.is-active"
+              hx-include="#project-search-input, .filter-button.is-active, #project-sort-select"
               hx-on:click="document.querySelectorAll('.filter-button').forEach((button) => button.classList.remove('is-active')); this.classList.add('is-active')"
               data-i18n="dashboard.filter.active"
             >Active</button>
@@ -189,7 +207,7 @@
               value="in-review"
               hx-get="/api/projects/fragment/cards"
               hx-target="#projects-list"
-              hx-include="#project-search-input, .filter-button.is-active"
+              hx-include="#project-search-input, .filter-button.is-active, #project-sort-select"
               hx-on:click="document.querySelectorAll('.filter-button').forEach((button) => button.classList.remove('is-active')); this.classList.add('is-active')"
               data-i18n="dashboard.filter.inReview"
             >In Review</button>
@@ -200,7 +218,7 @@
               value="planning"
               hx-get="/api/projects/fragment/cards"
               hx-target="#projects-list"
-              hx-include="#project-search-input, .filter-button.is-active"
+              hx-include="#project-search-input, .filter-button.is-active, #project-sort-select"
               hx-on:click="document.querySelectorAll('.filter-button').forEach((button) => button.classList.remove('is-active')); this.classList.add('is-active')"
               data-i18n="dashboard.filter.planning"
             >Planning</button>

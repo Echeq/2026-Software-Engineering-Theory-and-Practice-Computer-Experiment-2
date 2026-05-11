@@ -39,12 +39,19 @@ const LANGUAGE_OPTIONS: Record<Language, { label: string; flag: string }> = {
 };
 
 let languageMenuEventsBound = false;
+let notificationCenterEventsBound = false;
+const NOTIFICATION_COUNT = 3;
 
 const translations: Record<Language, TranslationDictionary> = {
   en: {
     "language.english": "English",
     "language.chinese": "Chinese",
     "language.spanish": "Spanish",
+    "notifications.buttonLabel": "Notifications",
+    "notifications.title": "Notifications",
+    "notifications.item1": "Design review has been scheduled for tomorrow morning.",
+    "notifications.item2": "A new comment was added to the Frontend Showcase project.",
+    "notifications.item3": "Your workspace preferences were saved on this device.",
     "login.title": "Log In",
     "login.subtitle": "A platform for managing projects and tasks.",
     "login.email": "Email",
@@ -102,6 +109,8 @@ const translations: Record<Language, TranslationDictionary> = {
     "theme.toLight": "Switch to light mode",
     "dashboard.topbarTag": "Workspace",
     "dashboard.topbarLabel": "Navigation, projects, and account controls in one place.",
+    "dashboard.greetingMorning": "Good morning, {name}",
+    "dashboard.greetingMorningFallback": "Good morning",
     "dashboard.title": "Projects Dashboard",
     "dashboard.subtitle": "A focused workspace for tracking projects, planning new work, and staying organized across your study flow.",
     "dashboard.currentView": "Current View",
@@ -112,6 +121,10 @@ const translations: Record<Language, TranslationDictionary> = {
     "dashboard.projectsTitle": "My Projects",
     "dashboard.projectsSubtitle": "Keep project workspaces visible, organized, and easy to scan.",
     "dashboard.search": "Search",
+    "dashboard.sort": "Sort",
+    "dashboard.sortNewest": "Newest first",
+    "dashboard.sortOldest": "Oldest first",
+    "dashboard.sortAZ": "A-Z",
     "dashboard.searchPlaceholder": "Search projects",
     "dashboard.filter.all": "All",
     "dashboard.filter.active": "Active",
@@ -194,10 +207,24 @@ const translations: Record<Language, TranslationDictionary> = {
     "settings.changePassword": "Change Password",
     "settings.changePasswordHint": "Password change is not connected to the backend in this frontend-only view.",
     "settings.accountHint": "This button is a frontend placeholder and does not send a backend request.",
+    "settings.notificationsTitle": "Notification preferences",
+    "settings.notificationsText": "Choose which alerts stay enabled on this device.",
+    "settings.emailNotifications": "Email notifications",
+    "settings.browserNotifications": "Browser notifications",
+    "settings.toggleOn": "On",
+    "settings.toggleOff": "Off",
     "settings.appearanceTitle": "Appearance",
     "settings.appearanceText": "Switch between light and dark mode and keep the choice in local state.",
     "settings.themeSwitchLabel": "Theme",
     "settings.appearanceHint": "The selected mode also syncs with the header theme control.",
+    "settings.displayTitle": "Display preferences",
+    "settings.displayText": "Choose how the projects page should open by default on this device.",
+    "settings.defaultProjectView": "Default project view",
+    "settings.viewGrid": "Grid",
+    "settings.viewList": "List",
+    "settings.dangerTitle": "Reset & Clear",
+    "settings.dangerText": "Remove all locally saved preferences and session data from this browser.",
+    "settings.clearLocalData": "Clear all local data",
     "status.planning": "Planning",
     "status.active": "Active",
     "status.inReview": "In Review",
@@ -270,6 +297,8 @@ const translations: Record<Language, TranslationDictionary> = {
     "theme.toLight": "切换到浅色模式",
     "dashboard.topbarTag": "工作区",
     "dashboard.topbarLabel": "将导航、项目和账户操作集中在一个地方。",
+    "dashboard.greetingMorning": "\u65e9\u4e0a\u597d\uff0c{name}",
+    "dashboard.greetingMorningFallback": "\u65e9\u4e0a\u597d",
     "dashboard.title": "项目仪表盘",
     "dashboard.subtitle": "一个专注的工作区，用于跟踪项目、规划工作，并让学习流程保持有序。",
     "dashboard.currentView": "当前视图",
@@ -280,6 +309,10 @@ const translations: Record<Language, TranslationDictionary> = {
     "dashboard.projectsTitle": "我的项目",
     "dashboard.projectsSubtitle": "让项目工作区更清晰、更有条理、更易于浏览。",
     "dashboard.search": "搜索",
+    "dashboard.sort": "排序",
+    "dashboard.sortNewest": "最新优先",
+    "dashboard.sortOldest": "最早优先",
+    "dashboard.sortAZ": "A-Z",
     "dashboard.searchPlaceholder": "搜索项目",
     "dashboard.filter.all": "全部",
     "dashboard.filter.active": "进行中",
@@ -362,10 +395,24 @@ const translations: Record<Language, TranslationDictionary> = {
     "settings.changePassword": "修改密码",
     "settings.changePasswordHint": "当前前端视图中的修改密码功能未连接后端。",
     "settings.accountHint": "这个按钮只是前端占位，不会发送后端请求。",
+    "settings.notificationsTitle": "通知偏好",
+    "settings.notificationsText": "选择在此设备上保留启用的提醒方式。",
+    "settings.emailNotifications": "邮件通知",
+    "settings.browserNotifications": "浏览器通知",
+    "settings.toggleOn": "开启",
+    "settings.toggleOff": "关闭",
     "settings.appearanceTitle": "外观",
     "settings.appearanceText": "在浅色和深色模式之间切换，并将选择保存在本地状态中。",
     "settings.themeSwitchLabel": "主题",
     "settings.appearanceHint": "所选模式会同步到顶部栏主题控制。",
+    "settings.displayTitle": "显示偏好",
+    "settings.displayText": "选择此设备上项目页面默认打开的视图。",
+    "settings.defaultProjectView": "默认项目视图",
+    "settings.viewGrid": "网格",
+    "settings.viewList": "列表",
+    "settings.dangerTitle": "重置与清除",
+    "settings.dangerText": "移除此浏览器中本地保存的偏好设置和会话数据。",
+    "settings.clearLocalData": "清除所有本地数据",
     "status.planning": "规划中",
     "status.active": "进行中",
     "status.inReview": "评审中",
@@ -438,6 +485,8 @@ const translations: Record<Language, TranslationDictionary> = {
     "theme.toLight": "Cambiar a modo claro",
     "dashboard.topbarTag": "Espacio de trabajo",
     "dashboard.topbarLabel": "Navegación, proyectos y controles de cuenta en un solo lugar.",
+    "dashboard.greetingMorning": "Buenos d\u00edas, {name}",
+    "dashboard.greetingMorningFallback": "Buenos d\u00edas",
     "dashboard.title": "Panel de proyectos",
     "dashboard.subtitle": "Un espacio enfocado para seguir proyectos, planificar trabajo nuevo y mantener todo organizado.",
     "dashboard.currentView": "Vista actual",
@@ -448,6 +497,10 @@ const translations: Record<Language, TranslationDictionary> = {
     "dashboard.projectsTitle": "Mis proyectos",
     "dashboard.projectsSubtitle": "Mantén los proyectos visibles, organizados y fáciles de revisar.",
     "dashboard.search": "Buscar",
+    "dashboard.sort": "Ordenar",
+    "dashboard.sortNewest": "Más recientes primero",
+    "dashboard.sortOldest": "Más antiguos primero",
+    "dashboard.sortAZ": "A-Z",
     "dashboard.searchPlaceholder": "Buscar proyectos",
     "dashboard.filter.all": "Todos",
     "dashboard.filter.active": "Activos",
@@ -530,10 +583,24 @@ const translations: Record<Language, TranslationDictionary> = {
     "settings.changePassword": "Cambiar contraseña",
     "settings.changePasswordHint": "El cambio de contraseña no está conectado al backend en esta vista solo de frontend.",
     "settings.accountHint": "Este botón es un marcador frontend y no envía ninguna solicitud al backend.",
+    "settings.notificationsTitle": "Preferencias de notificaciones",
+    "settings.notificationsText": "Elige qué alertas permanecen activas en este dispositivo.",
+    "settings.emailNotifications": "Notificaciones por correo",
+    "settings.browserNotifications": "Notificaciones del navegador",
+    "settings.toggleOn": "Activado",
+    "settings.toggleOff": "Desactivado",
     "settings.appearanceTitle": "Apariencia",
     "settings.appearanceText": "Cambia entre modo claro y oscuro y guarda la elección en el estado local.",
     "settings.themeSwitchLabel": "Tema",
     "settings.appearanceHint": "El modo seleccionado también se sincroniza con el control de tema del encabezado.",
+    "settings.displayTitle": "Preferencias de visualización",
+    "settings.displayText": "Elige cómo debe abrirse por defecto la página de proyectos en este dispositivo.",
+    "settings.defaultProjectView": "Vista predeterminada de proyectos",
+    "settings.viewGrid": "Cuadrícula",
+    "settings.viewList": "Lista",
+    "settings.dangerTitle": "Restablecer y borrar",
+    "settings.dangerText": "Elimina de este navegador todas las preferencias guardadas localmente y los datos de sesión.",
+    "settings.clearLocalData": "Borrar todos los datos locales",
     "status.planning": "Planificación",
     "status.active": "Activo",
     "status.inReview": "En revisión",
@@ -777,6 +844,110 @@ function upgradeExistingLanguageSwitcher(switcher: HTMLElement | null): void {
   updateSwitcherSelection();
 }
 
+function setNotificationCenterOpen(center: HTMLElement, isOpen: boolean): void {
+  const trigger = center.querySelector<HTMLButtonElement>(".notification-center-trigger");
+  const panel = center.querySelector<HTMLElement>(".notification-center-panel");
+
+  if (!trigger || !panel) {
+    return;
+  }
+
+  center.classList.toggle("is-open", isOpen);
+  trigger.setAttribute("aria-expanded", String(isOpen));
+  panel.hidden = !isOpen;
+}
+
+function closeNotificationCenters(): void {
+  document.querySelectorAll<HTMLElement>(".notification-center.is-open").forEach((center) => {
+    setNotificationCenterOpen(center, false);
+  });
+}
+
+function bindNotificationCenterEvents(): void {
+  if (notificationCenterEventsBound) {
+    return;
+  }
+
+  document.addEventListener("click", (event) => {
+    if (!(event.target instanceof Element) || !event.target.closest(".notification-center")) {
+      closeNotificationCenters();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeNotificationCenters();
+    }
+  });
+
+  notificationCenterEventsBound = true;
+}
+
+function upgradeNotificationCenter(center: HTMLElement | null): void {
+  if (!center || center.dataset.upgraded === "true") {
+    return;
+  }
+
+  center.dataset.upgraded = "true";
+
+  center.querySelector<HTMLButtonElement>(".notification-center-trigger")?.addEventListener("click", () => {
+    const shouldOpen = !center.classList.contains("is-open");
+    closeNotificationCenters();
+    setNotificationCenterOpen(center, shouldOpen);
+  });
+
+  bindNotificationCenterEvents();
+}
+
+function injectNotificationCenter(): void {
+  const dashboardTopbarActions = document.querySelector(".topbar-actions");
+  if (!dashboardTopbarActions || dashboardTopbarActions.querySelector(".notification-center")) {
+    return;
+  }
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "notification-center";
+  wrapper.innerHTML = `
+    <button
+      type="button"
+      class="notification-center-trigger"
+      aria-haspopup="dialog"
+      aria-expanded="false"
+      aria-label="${t("notifications.buttonLabel")}"
+    >
+      <span class="notification-bell-icon" aria-hidden="true">
+        <svg viewBox="0 0 20 20" focusable="false">
+          <path d="M10 3.5a4 4 0 0 0-4 4v1.1c0 .9-.26 1.78-.74 2.54L4 13.1h12l-1.26-1.96A4.7 4.7 0 0 1 14 8.6V7.5a4 4 0 0 0-4-4Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8.2 15.2a2 2 0 0 0 3.6 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="notification-badge" aria-hidden="true">${NOTIFICATION_COUNT}</span>
+      <span class="notification-center-label">${t("notifications.buttonLabel")}</span>
+    </button>
+
+    <section class="notification-center-panel" role="dialog" aria-label="${t("notifications.title")}" hidden>
+      <div class="notification-center-header">
+        <strong>${t("notifications.title")}</strong>
+        <span class="notification-center-count">${NOTIFICATION_COUNT}</span>
+      </div>
+      <div class="notification-center-list">
+        <article class="notification-item">
+          <p>${t("notifications.item1")}</p>
+        </article>
+        <article class="notification-item">
+          <p>${t("notifications.item2")}</p>
+        </article>
+        <article class="notification-item">
+          <p>${t("notifications.item3")}</p>
+        </article>
+      </div>
+    </section>
+  `;
+
+  dashboardTopbarActions.insertAdjacentElement("afterbegin", wrapper);
+  upgradeNotificationCenter(wrapper);
+}
+
 function upgradeDashboardLanguageSwitcher(): void {
   const topbarActions = document.querySelector(".topbar-actions");
   upgradeExistingLanguageSwitcher(topbarActions?.querySelector<HTMLElement>(".language-switcher") || null);
@@ -825,7 +996,9 @@ function injectLanguageSwitcher(): void {
 
 function initializeI18n(): void {
   localStorage.setItem(LANGUAGE_STORAGE_KEY, getPreferredLanguage());
+  injectNotificationCenter();
   injectLanguageSwitcher();
+  upgradeNotificationCenter(document.querySelector<HTMLElement>(".notification-center"));
   upgradeDashboardLanguageSwitcher();
   upgradeLoginLanguageSwitcher();
   applyTranslations();

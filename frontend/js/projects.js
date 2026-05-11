@@ -52,6 +52,7 @@ var ProjectsPage;
     let currentUser = null;
     let isPreviewMode = false;
     let userNameElement = null;
+    let userAvatarElement = null;
     let projectsMessageBox = null;
     let projectsBoardElement = null;
     let logoutButton = null;
@@ -78,6 +79,7 @@ var ProjectsPage;
     }
     function cacheElements() {
         userNameElement = document.getElementById("user-name");
+        userAvatarElement = document.getElementById("user-avatar");
         projectsMessageBox = document.getElementById("projects-message");
         projectsBoardElement = document.getElementById("projects-board");
         logoutButton = document.getElementById("logout-btn");
@@ -180,6 +182,7 @@ var ProjectsPage;
         if (userNameElement) {
             userNameElement.textContent = currentUser.name;
         }
+        updateUserAvatar(currentUser.name);
         showProjectsMessage(i18n("projects.preview"), "success");
         renderProjectsBoard(PREVIEW_PROJECTS);
     }
@@ -190,6 +193,7 @@ var ProjectsPage;
             if (userNameElement) {
                 userNameElement.textContent = currentUser.name;
             }
+            updateUserAvatar(currentUser.name);
         }
         catch (error) {
             console.error("Error loading user data:", error);
@@ -197,8 +201,9 @@ var ProjectsPage;
                 return;
             }
             if (userNameElement) {
-                userNameElement.textContent = "Unavailable";
+                userNameElement.textContent = i18n("common.unavailable");
             }
+            updateUserAvatar(i18n("common.unavailable"));
         }
     }
     async function loadProjects() {
@@ -343,6 +348,25 @@ var ProjectsPage;
             credentials: "same-origin"
         });
         redirectToLogin();
+    }
+    function updateUserAvatar(name) {
+        if (!userAvatarElement) {
+            return;
+        }
+        userAvatarElement.textContent = getInitials(name);
+    }
+    function getInitials(name) {
+        const parts = name
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+        if (parts.length === 0) {
+            return "U";
+        }
+        if (parts.length === 1) {
+            return parts[0].slice(0, 2).toUpperCase();
+        }
+        return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
     }
     function getStatusIconMarkup(status) {
         if (status === "active") {

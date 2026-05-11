@@ -19,6 +19,7 @@ namespace TasksPage {
 
   let currentUser: User | null = null;
   let userNameElement: HTMLElement | null = null;
+  let userAvatarElement: HTMLElement | null = null;
   let logoutButton: HTMLButtonElement | null = null;
   let themeToggleButton: HTMLButtonElement | null = null;
   let sidebarToggleButton: HTMLButtonElement | null = null;
@@ -51,6 +52,7 @@ namespace TasksPage {
 
   function cacheElements(): void {
     userNameElement = document.getElementById("user-name");
+    userAvatarElement = document.getElementById("user-avatar");
     logoutButton = document.getElementById("logout-btn") as HTMLButtonElement | null;
     themeToggleButton = document.getElementById("theme-toggle-btn") as HTMLButtonElement | null;
     sidebarToggleButton = document.getElementById("sidebar-toggle-btn") as HTMLButtonElement | null;
@@ -199,6 +201,7 @@ namespace TasksPage {
     if (userNameElement) {
       userNameElement.textContent = currentUser.name;
     }
+    updateUserAvatar(currentUser.name);
   }
 
   async function loadUserData(): Promise<void> {
@@ -209,6 +212,7 @@ namespace TasksPage {
       if (userNameElement) {
         userNameElement.textContent = currentUser.name;
       }
+      updateUserAvatar(currentUser.name);
     } catch (error) {
       console.error("Error loading user data:", error);
 
@@ -219,6 +223,7 @@ namespace TasksPage {
       if (userNameElement) {
         userNameElement.textContent = i18n("common.unavailable");
       }
+      updateUserAvatar(i18n("common.unavailable"));
     }
   }
 
@@ -238,6 +243,31 @@ namespace TasksPage {
       credentials: "same-origin"
     });
     redirectToLogin();
+  }
+
+  function updateUserAvatar(name: string): void {
+    if (!userAvatarElement) {
+      return;
+    }
+
+    userAvatarElement.textContent = getInitials(name);
+  }
+
+  function getInitials(name: string): string {
+    const parts = name
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (parts.length === 0) {
+      return "U";
+    }
+
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
   }
 
   async function requestWithAuth<T>(path: string, init: RequestInit = {}): Promise<T> {

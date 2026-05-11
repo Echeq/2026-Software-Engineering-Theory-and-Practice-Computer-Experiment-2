@@ -45,7 +45,7 @@
 
       <div class="sidebar-footer">
         <div class="user-panel" aria-live="polite">
-          <span class="user-label" data-i18n="sidebar.signedInAs">Signed in as</span>
+          <span id="user-avatar" class="user-avatar" aria-hidden="true">U</span>
           <strong id="user-name" class="user-display">Loading...</strong>
         </div>
         <button id="logout-btn" type="button" class="secondary-button sidebar-logout"><svg class="button-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5H5.5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2H8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 6.5 15 10l-4 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 10H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span data-i18n="sidebar.logout">Log Out</span></button>
@@ -117,5 +117,57 @@
   </main>
 
   <script src="../js/projects.js" defer></script>
+  <script>
+    (() => {
+      const root = document.getElementById("projects-board");
+
+      if (!root) {
+        return;
+      }
+
+      const statusMatchers = [
+        { value: "active", labels: ["active", "进行中", "activo"] },
+        { value: "in-review", labels: ["in review", "评审中", "en revisión"] },
+        { value: "planning", labels: ["planning", "规划中", "planificación"] }
+      ];
+
+      function readCardStatus(text) {
+        const normalized = (text || "").trim().toLowerCase();
+
+        for (const matcher of statusMatchers) {
+          if (matcher.labels.some((label) => normalized.includes(label))) {
+            return matcher.value;
+          }
+        }
+
+        return "";
+      }
+
+      function applyProjectCardStatus() {
+        root.querySelectorAll(".project-card").forEach((card) => {
+          const statusText = card.querySelector(".project-status")?.textContent || "";
+          const status = readCardStatus(statusText);
+
+          if (status) {
+            card.setAttribute("data-project-status", status);
+            return;
+          }
+
+          card.removeAttribute("data-project-status");
+        });
+      }
+
+      applyProjectCardStatus();
+
+      const observer = new MutationObserver(() => {
+        applyProjectCardStatus();
+      });
+
+      observer.observe(root, {
+        childList: true,
+        subtree: true
+      });
+    })();
+  </script>
 </body>
 </html>

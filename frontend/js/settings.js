@@ -11,9 +11,13 @@ var SettingsPage;
     let settingsState = {
         profileName: "",
         profileEmail: "",
+        emailNotifications: true,
+        browserNotifications: false,
+        defaultProjectView: "grid",
         theme: "light"
     };
     let userNameElement = null;
+    let userAvatarElement = null;
     let logoutButton = null;
     let themeToggleButton = null;
     let appearanceThemeSwitchButton = null;
@@ -22,6 +26,12 @@ var SettingsPage;
     let settingsMessageBox = null;
     let nameInput = null;
     let emailInput = null;
+    let emailNotificationsSwitchButton = null;
+    let browserNotificationsSwitchButton = null;
+    let emailNotificationsValueElement = null;
+    let browserNotificationsValueElement = null;
+    let projectViewButtons;
+    let clearLocalDataButton = null;
     let sidebarToggleButton = null;
     let sidebarElement = null;
     let sidebarBackdropElement = null;
@@ -44,6 +54,7 @@ var SettingsPage;
     }
     function cacheElements() {
         userNameElement = document.getElementById("user-name");
+        userAvatarElement = document.getElementById("user-avatar");
         logoutButton = document.getElementById("logout-btn");
         themeToggleButton = document.getElementById("theme-toggle-btn");
         appearanceThemeSwitchButton = document.getElementById("appearance-theme-switch");
@@ -52,6 +63,12 @@ var SettingsPage;
         settingsMessageBox = document.getElementById("settings-message");
         nameInput = document.getElementById("settings-name");
         emailInput = document.getElementById("settings-email");
+        emailNotificationsSwitchButton = document.getElementById("email-notifications-switch");
+        browserNotificationsSwitchButton = document.getElementById("browser-notifications-switch");
+        emailNotificationsValueElement = document.getElementById("email-notifications-value");
+        browserNotificationsValueElement = document.getElementById("browser-notifications-value");
+        projectViewButtons = document.querySelectorAll("[data-project-view]");
+        clearLocalDataButton = document.getElementById("clear-local-data-btn");
         sidebarToggleButton = document.getElementById("sidebar-toggle-btn");
         sidebarElement = document.getElementById("dashboard-sidebar");
         sidebarBackdropElement = document.getElementById("sidebar-backdrop");
@@ -63,6 +80,17 @@ var SettingsPage;
         changePasswordButton?.addEventListener("click", handleChangePasswordClick);
         nameInput?.addEventListener("input", handleNameInput);
         emailInput?.addEventListener("input", handleEmailInput);
+        emailNotificationsSwitchButton?.addEventListener("click", () => setEmailNotifications(!settingsState.emailNotifications));
+        browserNotificationsSwitchButton?.addEventListener("click", () => setBrowserNotifications(!settingsState.browserNotifications));
+        projectViewButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                const view = button.dataset.projectView;
+                if (view === "grid" || view === "list") {
+                    setDefaultProjectView(view);
+                }
+            });
+        });
+        clearLocalDataButton?.addEventListener("click", clearAllLocalData);
         sidebarToggleButton?.addEventListener("click", toggleSidebar);
         sidebarBackdropElement?.addEventListener("click", handleSidebarBackdropClick);
         window.addEventListener("resize", syncSidebarState);
@@ -88,6 +116,9 @@ var SettingsPage;
             settingsState = {
                 profileName: stored.profileName,
                 profileEmail: stored.profileEmail,
+                emailNotifications: stored.emailNotifications,
+                browserNotifications: stored.browserNotifications,
+                defaultProjectView: stored.defaultProjectView,
                 theme: stored.theme
             };
             applyTheme(settingsState.theme);
@@ -96,6 +127,9 @@ var SettingsPage;
         settingsState = {
             profileName: "",
             profileEmail: "",
+            emailNotifications: true,
+            browserNotifications: false,
+            defaultProjectView: "grid",
             theme: settingsState.theme
         };
         persistSettingsState();
@@ -113,10 +147,16 @@ var SettingsPage;
             const parsed = JSON.parse(raw);
             if (typeof parsed.profileName === "string" &&
                 typeof parsed.profileEmail === "string" &&
+                typeof parsed.emailNotifications === "boolean" &&
+                typeof parsed.browserNotifications === "boolean" &&
+                (parsed.defaultProjectView === "grid" || parsed.defaultProjectView === "list") &&
                 (parsed.theme === "light" || parsed.theme === "dark")) {
                 return {
                     profileName: parsed.profileName,
                     profileEmail: parsed.profileEmail,
+                    emailNotifications: parsed.emailNotifications,
+                    browserNotifications: parsed.browserNotifications,
+                    defaultProjectView: parsed.defaultProjectView,
                     theme: parsed.theme
                 };
             }
@@ -144,6 +184,13 @@ var SettingsPage;
             appearanceThemeSwitchButton.setAttribute("aria-checked", String(isDarkTheme));
             appearanceThemeSwitchButton.classList.toggle("is-dark", isDarkTheme);
         }
+        renderPreferenceSwitch(emailNotificationsSwitchButton, emailNotificationsValueElement, settingsState.emailNotifications);
+        renderPreferenceSwitch(browserNotificationsSwitchButton, browserNotificationsValueElement, settingsState.browserNotifications);
+        projectViewButtons.forEach((button) => {
+            const isActive = button.dataset.projectView === settingsState.defaultProjectView;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-pressed", String(isActive));
+        });
     }
     function handleNameInput(event) {
         const target = event.target;
@@ -154,6 +201,21 @@ var SettingsPage;
         const target = event.target;
         settingsState.profileEmail = target?.value ?? "";
         persistSettingsState();
+    }
+    function setEmailNotifications(isEnabled) {
+        settingsState.emailNotifications = isEnabled;
+        persistSettingsState();
+        renderSettingsState();
+    }
+    function setBrowserNotifications(isEnabled) {
+        settingsState.browserNotifications = isEnabled;
+        persistSettingsState();
+        renderSettingsState();
+    }
+    function setDefaultProjectView(view) {
+        settingsState.defaultProjectView = view;
+        persistSettingsState();
+        renderSettingsState();
     }
     function getNextTheme() {
         return settingsState.theme === "dark" ? "light" : "dark";
@@ -176,6 +238,19 @@ var SettingsPage;
     }
     function handleChangePasswordClick() {
         showSettingsMessage(i18n("settings.changePasswordHint"), "success");
+    }
+    function renderPreferenceSwitch(button, valueElement, isEnabled) {
+        if (button) {
+            button.setAttribute("aria-checked", String(isEnabled));
+            button.classList.toggle("is-active", isEnabled);
+        }
+        if (valueElement) {
+            valueElement.textContent = isEnabled ? i18n("settings.toggleOn") : i18n("settings.toggleOff");
+        }
+    }
+    function clearAllLocalData() {
+        localStorage.clear();
+        window.location.reload();
     }
     function showSettingsMessage(text, type = "") {
         if (!settingsMessageBox) {
@@ -246,6 +321,7 @@ var SettingsPage;
         if (userNameElement) {
             userNameElement.textContent = currentUser.name;
         }
+        updateUserAvatar(currentUser.name);
     }
     async function loadUserData() {
         try {
@@ -262,6 +338,7 @@ var SettingsPage;
             if (userNameElement) {
                 userNameElement.textContent = currentUser.name;
             }
+            updateUserAvatar(currentUser.name);
         }
         catch (error) {
             console.error("Error loading user data:", error);
@@ -271,6 +348,7 @@ var SettingsPage;
             if (userNameElement) {
                 userNameElement.textContent = i18n("common.unavailable");
             }
+            updateUserAvatar(i18n("common.unavailable"));
         }
     }
     function getStoredToken() {
@@ -287,6 +365,25 @@ var SettingsPage;
             credentials: "same-origin"
         });
         redirectToLogin();
+    }
+    function updateUserAvatar(name) {
+        if (!userAvatarElement) {
+            return;
+        }
+        userAvatarElement.textContent = getInitials(name);
+    }
+    function getInitials(name) {
+        const parts = name
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+        if (parts.length === 0) {
+            return "U";
+        }
+        if (parts.length === 1) {
+            return parts[0].slice(0, 2).toUpperCase();
+        }
+        return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
     }
     async function requestWithAuth(path, init = {}) {
         const token = getStoredToken();
