@@ -207,13 +207,13 @@ body[data-theme="dark"] {
   --border: #30363d;
   --text: #e6edf3;
   --muted: #8b949e;
-  --accent: #2f81f7;
-  --accent-hover: #58a6ff;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
   --success: #3fb950;
   --error: #f85149;
   --shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
   --surface-muted: #161b22;
-  --surface-accent: rgba(47, 129, 247, 0.12);
+  --surface-accent: rgba(79, 70, 229, 0.14);
   --surface-border: #30363d;
   --text-subtle: #6e7681;
   color-scheme: dark;
@@ -314,7 +314,7 @@ body[data-theme="dark"] .login-card {
 }
 
 body[data-theme="dark"] .form-group input:focus {
-  box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.16);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.16);
 }
 
 .form-group input.input-error {
@@ -379,6 +379,26 @@ body[data-theme="dark"] .form-message.success {
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+body:not([data-theme="dark"]) {
+  --muted: #475569;
+  --text-subtle: #64748b;
+}
+
+body:not([data-theme="dark"]) .subtitle,
+body:not([data-theme="dark"]) .auth-switch,
+body:not([data-theme="dark"]) .form-message {
+  color: #475569;
+  font-weight: 600;
+}
+
+body:not([data-theme="dark"]) .login-card h1,
+body:not([data-theme="dark"]) .form-group label,
+body:not([data-theme="dark"]) .form-group input,
+body:not([data-theme="dark"]) .submit-button,
+body:not([data-theme="dark"]) .auth-link {
+  font-weight: 600;
 }
 
 .submit-button:hover {

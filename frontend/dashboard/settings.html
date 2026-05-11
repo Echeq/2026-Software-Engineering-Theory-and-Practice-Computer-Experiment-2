@@ -45,7 +45,7 @@
 
       <div class="sidebar-footer">
         <div class="user-panel" aria-live="polite">
-          <span class="user-label" data-i18n="sidebar.signedInAs">Signed in as</span>
+          <span id="user-avatar" class="user-avatar" aria-hidden="true">U</span>
           <strong id="user-name" class="user-display">Loading...</strong>
         </div>
         <button id="logout-btn" type="button" class="secondary-button sidebar-logout"><svg class="button-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5H5.5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2H8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 6.5 15 10l-4 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 10H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span data-i18n="sidebar.logout">Log Out</span></button>
@@ -152,6 +152,59 @@
 
           <article class="settings-card">
             <div class="settings-card-header">
+              <h3 data-i18n="settings.notificationsTitle">Notification preferences</h3>
+              <p data-i18n="settings.notificationsText">Choose which alerts stay enabled on this device.</p>
+            </div>
+
+            <div class="settings-option-list">
+              <div class="settings-option-row">
+                <div class="settings-option-copy">
+                  <span id="email-notifications-label" class="settings-option-title" data-i18n="settings.emailNotifications">Email notifications</span>
+                </div>
+
+                <button
+                  id="email-notifications-switch"
+                  type="button"
+                  class="settings-switch"
+                  role="switch"
+                  aria-checked="false"
+                  aria-labelledby="email-notifications-label email-notifications-value"
+                >
+                  <span class="settings-switch-copy">
+                    <span id="email-notifications-value" class="settings-switch-value" data-i18n="settings.toggleOff">Off</span>
+                  </span>
+                  <span class="settings-switch-track" aria-hidden="true">
+                    <span class="settings-switch-thumb"></span>
+                  </span>
+                </button>
+              </div>
+
+              <div class="settings-option-row">
+                <div class="settings-option-copy">
+                  <span id="browser-notifications-label" class="settings-option-title" data-i18n="settings.browserNotifications">Browser notifications</span>
+                </div>
+
+                <button
+                  id="browser-notifications-switch"
+                  type="button"
+                  class="settings-switch"
+                  role="switch"
+                  aria-checked="false"
+                  aria-labelledby="browser-notifications-label browser-notifications-value"
+                >
+                  <span class="settings-switch-copy">
+                    <span id="browser-notifications-value" class="settings-switch-value" data-i18n="settings.toggleOff">Off</span>
+                  </span>
+                  <span class="settings-switch-track" aria-hidden="true">
+                    <span class="settings-switch-thumb"></span>
+                  </span>
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <article class="settings-card">
+            <div class="settings-card-header">
               <h3 data-i18n="settings.appearanceTitle">Appearance</h3>
               <p data-i18n="settings.appearanceText">Switch between light and dark mode and keep the choice in local state.</p>
             </div>
@@ -170,6 +223,35 @@
                   <span class="settings-theme-switch-thumb"></span>
                 </span>
               </button>
+            </div>
+          </article>
+
+          <article class="settings-card">
+            <div class="settings-card-header">
+              <h3 data-i18n="settings.displayTitle">Display preferences</h3>
+              <p data-i18n="settings.displayText">Choose how the projects page should open by default on this device.</p>
+            </div>
+
+            <div class="settings-choice-row">
+              <div class="settings-option-copy">
+                <span id="project-view-label" class="settings-option-title" data-i18n="settings.defaultProjectView">Default project view</span>
+              </div>
+
+              <div class="settings-choice-group" role="group" aria-labelledby="project-view-label">
+                <button id="project-view-grid-btn" type="button" class="settings-choice-button is-active" data-project-view="grid" aria-pressed="true" data-i18n="settings.viewGrid">Grid</button>
+                <button id="project-view-list-btn" type="button" class="settings-choice-button" data-project-view="list" aria-pressed="false" data-i18n="settings.viewList">List</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="settings-card settings-card-danger">
+            <div class="settings-card-header">
+              <h3 data-i18n="settings.dangerTitle">Reset &amp; Clear</h3>
+              <p data-i18n="settings.dangerText">Remove all locally saved preferences and session data from this browser.</p>
+            </div>
+
+            <div class="settings-actions">
+              <button id="clear-local-data-btn" type="button" class="danger-button" data-i18n="settings.clearLocalData">Clear all local data</button>
             </div>
           </article>
         </form>
