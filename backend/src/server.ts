@@ -8,7 +8,7 @@ import { ensureManagerUser } from './bootstrap/manager';
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
 import taskRoutes from './routes/tasks';
-import { authenticateToken } from './middleware/auth';
+import { authenticateToken, readCsrfToken } from './middleware/readSession';
 
 // Load environment variables
 dotenv.config();
@@ -21,6 +21,7 @@ const frontendDistPath = path.join(__dirname, '../../frontend/dist');
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(readCsrfToken);
 
 // API Routes
 app.use('/api/auth', authRoutes);

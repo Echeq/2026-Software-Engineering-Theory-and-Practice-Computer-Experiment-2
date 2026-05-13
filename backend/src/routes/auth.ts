@@ -1,6 +1,7 @@
 import { Router, Response } from "express";
+import crypto from "crypto";
 import { UserModel } from "../models/User";
-import { authenticateToken, AuthRequest } from "../middleware/auth";
+import { authenticateToken, AuthRequest } from "../middleware/readSession";
 import { SessionModel } from "../models/Session";
 
 const router = Router();
@@ -53,8 +54,10 @@ router.post("/login", async (req, res: Response) => {
         SessionModel.deleteExpired();
 
         const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
+        const csrfToken = crypto.randomBytes(32).toString("hex");
         const session = SessionModel.create({
             user_id: user.id,
+            csrf_token: csrfToken,
             expires_at: expiresAt,
             ip_address: req.ip || null,
             user_agent: req.get("user-agent") || null,
@@ -64,6 +67,7 @@ router.post("/login", async (req, res: Response) => {
         res.json({
             message: "Login successful",
             redirectTo: "/dashboard",
+            csrfToken,
         });
         return;
     } catch (error) {

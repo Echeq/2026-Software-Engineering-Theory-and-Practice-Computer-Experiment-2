@@ -4,11 +4,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="">
   <title>SPMP | Dashboard</title>
   <link rel="stylesheet" href="../css/dashboard.css">
   <script src="../js/i18n.js" defer></script>
   <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
   <script>
+    function getCsrfToken() {
+      const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content")?.trim()
+      if (metaToken) {
+        return metaToken
+      }
+
+      const inputToken = document.querySelector('input[name="csrf_token"]')?.value?.trim()
+      return inputToken || ""
+    }
+
+    document.addEventListener("htmx:configRequest", (event) => {
+      const method = (event.detail.verb || "GET").toUpperCase()
+      if (method === "GET" || method === "HEAD") {
+        return
+      }
+
+      const csrfToken = getCsrfToken()
+      if (!csrfToken) {
+        return
+      }
+
+      event.detail.headers["X-CSRF-Token"] = csrfToken
+    })
+
     document.addEventListener("htmx:afterSwap", (event) => {
       if (event.target && event.target.id === "projects-list") {
         document.getElementById("empty-state-create-project-btn")?.addEventListener("click", () => {

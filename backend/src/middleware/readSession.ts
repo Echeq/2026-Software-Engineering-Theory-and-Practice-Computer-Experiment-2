@@ -4,7 +4,24 @@ import { SessionModel } from "../models/Session";
 export interface AuthRequest extends Request {
     user?: User;
     sessionId?: string;
+    csrfToken?: string;
 }
+
+export function readCsrfToken(
+    req: AuthRequest,
+    _res: Response,
+    next: NextFunction,
+): void {
+    const csrfHeader = req.header("X-CSRF-Token") || req.header("x-csrf-token");
+    req.csrfToken = csrfHeader?.trim() || undefined;
+    next();
+}
+
+function requiresCsrfValidation(method: string): boolean {
+    const normalizedMethod = method.toUpperCase();
+    return !["GET", "HEAD", "OPTIONS"].includes(normalizedMethod);
+}
+
 function readCookieValue(
     cookieHeader: string | undefined,
     cookieName: string,
@@ -43,6 +60,18 @@ export async function authenticateToken(
         if (!session) {
             res.status(403).json({ message: "Invalid or expired session" });
             return;
+        }
+
+        if (requiresCsrfValidation(req.method)) {
+            if (!session.csrf_token || !req.csrfToken) {
+                res.status(403).json({ message: "CSRF token required" });
+                return;
+            }
+
+            if (req.csrfToken !== session.csrf_token) {
+                res.status(403).json({ message: "Invalid CSRF token" });
+                return;
+            }
         }
 
         const user = await UserModel.findById(session.user_id);
