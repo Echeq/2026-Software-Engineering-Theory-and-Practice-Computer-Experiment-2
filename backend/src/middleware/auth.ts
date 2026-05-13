@@ -1,26 +1,27 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
 import { UserModel, User } from "../models/User";
+import { SessionModel } from "../models/Session";
 
 export interface AuthRequest extends Request {
     user?: User;
+    sessionId?: string;
 }
 
-function readCookieToken(cookieHeader?: string): string {
+function readCookieValue(cookieHeader: string | undefined, cookieName: string): string {
     if (!cookieHeader) {
         return "";
     }
 
-    const tokenPair = cookieHeader
+    const cookiePair = cookieHeader
         .split(";")
         .map((part) => part.trim())
-        .find((part) => part.startsWith("token="));
+        .find((part) => part.startsWith(`${cookieName}=`));
 
-    if (!tokenPair) {
+    if (!cookiePair) {
         return "";
     }
 
-    return decodeURIComponent(tokenPair.slice("token=".length));
+    return decodeURIComponent(cookiePair.slice(`${cookieName}=`.length));
 }
 
 export async function authenticateToken(
@@ -28,30 +29,35 @@ export async function authenticateToken(
     res: Response,
     next: NextFunction,
 ): Promise<void> {
-    const authHeader = req.headers["authorization"];
-    const bearerToken = authHeader && authHeader.split(" ")[1];
-    const token = bearerToken || readCookieToken(req.headers.cookie);
+    const sessionId = readCookieValue(req.headers.cookie, "sessionId");
 
-    if (!token) {
+    if (!sessionId) {
         res.status(401).json({ message: "Authentication required" });
         return;
     }
 
     try {
-        const secret = process.env.JWT_SECRET || "default-secret";
-        const decoded = jwt.verify(token, secret) as { userId: string };
+        const session = SessionModel.findActiveById(sessionId);
 
-        const user = await UserModel.findById(decoded.userId);
-
-        if (!user) {
-            res.status(403).json({ message: "Invalid token" });
+        if (!session) {
+            res.status(403).json({ message: "Invalid or expired session" });
             return;
         }
 
+        const user = await UserModel.findById(session.user_id);
+
+        if (!user) {
+            SessionModel.delete(sessionId);
+            res.status(403).json({ message: "Invalid session" });
+            return;
+        }
+
+        SessionModel.touch(sessionId);
         req.user = user;
+        req.sessionId = sessionId;
         next();
     } catch (error) {
-        res.status(403).json({ message: "Invalid or expired token" });
+        res.status(500).json({ message: "Session validation failed" });
     }
 }
 

@@ -92,6 +92,21 @@ function initializeDatabase(): void {
     )
   `);
 
+  // Create sessions table
+  database.run(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      csrf_token TEXT,
+      ip_address TEXT,
+      user_agent TEXT,
+      expires_at DATETIME NOT NULL,
+      last_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
   console.log('Database initialized successfully');
 }
 
