@@ -8,6 +8,28 @@
   <script src="./js/i18n.js" defer></script>
 </head>
 <body>
+  <div class="auth-page-controls">
+    <button
+      id="theme-toggle-btn"
+      type="button"
+      class="theme-toggle"
+      aria-pressed="false"
+      aria-label="Switch to dark mode"
+      title="Switch to dark mode"
+    >
+      <span class="theme-toggle-icon theme-toggle-icon-moon" aria-hidden="true">
+        <svg viewBox="0 0 20 20" focusable="false">
+          <path d="M15.2 12.9A6.5 6.5 0 0 1 7.1 4.8a6.7 6.7 0 1 0 8.1 8.1Z"></path>
+        </svg>
+      </span>
+      <span class="theme-toggle-icon theme-toggle-icon-sun" aria-hidden="true">
+        <svg viewBox="0 0 20 20" focusable="false">
+          <circle cx="10" cy="10" r="3.2"></circle>
+          <path d="M10 2.4v2.1M10 15.5v2.1M17.6 10h-2.1M4.5 10H2.4M15.4 4.6l-1.5 1.5M6.1 13.9l-1.5 1.5M15.4 15.4l-1.5-1.5M6.1 6.1 4.6 4.6"></path>
+        </svg>
+      </span>
+    </button>
+  </div>
   <main class="signup-page">
     <section class="signup-card" aria-labelledby="signup-title">
       <span class="brand-tag">SPMP</span>

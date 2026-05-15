@@ -13,15 +13,40 @@
   const passwordInput = document.getElementById("password") as HTMLInputElement;
   const messageBox = document.getElementById("form-message") as HTMLElement;
   const submitButton = document.querySelector(".submit-button") as HTMLButtonElement;
+  const themeToggleButton = document.getElementById("theme-toggle-btn") as HTMLButtonElement | null;
   let alertTimeoutId = 0;
 
   initializeTheme();
+  updateThemeToggle();
   form.addEventListener("submit", handleFormSubmit);
+  themeToggleButton?.addEventListener("click", toggleTheme);
+  document.addEventListener("app-language-change", updateThemeToggle);
 
   function initializeTheme(): void {
     const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
     const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     document.body.dataset.theme = storedTheme === "dark" || storedTheme === "light" ? storedTheme : preferredTheme;
+  }
+
+  function toggleTheme(): void {
+    const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
+    document.body.dataset.theme = nextTheme;
+    localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    updateThemeToggle();
+  }
+
+  function updateThemeToggle(): void {
+    if (!themeToggleButton) {
+      return;
+    }
+
+    const isDarkTheme = document.body.dataset.theme === "dark";
+    const nextThemeLabel = isDarkTheme ? i18n("theme.toLight") : i18n("theme.toDark");
+
+    themeToggleButton.setAttribute("aria-pressed", String(isDarkTheme));
+    themeToggleButton.setAttribute("aria-label", nextThemeLabel);
+    themeToggleButton.setAttribute("title", nextThemeLabel);
+    themeToggleButton.classList.toggle("is-dark", isDarkTheme);
   }
 
   async function handleFormSubmit(event: Event): Promise<void> {
