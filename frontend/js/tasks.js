@@ -8,6 +8,7 @@ var TasksPage;
     const i18n = (key, values) => window.I18n?.t(key, values) || key;
     let currentUser = null;
     let userNameElement = null;
+    let userAvatarElement = null;
     let logoutButton = null;
     let themeToggleButton = null;
     let sidebarToggleButton = null;
@@ -34,6 +35,7 @@ var TasksPage;
     }
     function cacheElements() {
         userNameElement = document.getElementById("user-name");
+        userAvatarElement = document.getElementById("user-avatar");
         logoutButton = document.getElementById("logout-btn");
         themeToggleButton = document.getElementById("theme-toggle-btn");
         sidebarToggleButton = document.getElementById("sidebar-toggle-btn");
@@ -152,6 +154,7 @@ var TasksPage;
         if (userNameElement) {
             userNameElement.textContent = currentUser.name;
         }
+        updateUserAvatar(currentUser.name);
     }
     async function loadUserData() {
         try {
@@ -160,6 +163,7 @@ var TasksPage;
             if (userNameElement) {
                 userNameElement.textContent = currentUser.name;
             }
+            updateUserAvatar(currentUser.name);
         }
         catch (error) {
             console.error("Error loading user data:", error);
@@ -169,6 +173,7 @@ var TasksPage;
             if (userNameElement) {
                 userNameElement.textContent = i18n("common.unavailable");
             }
+            updateUserAvatar(i18n("common.unavailable"));
         }
     }
     function getStoredToken() {
@@ -185,6 +190,25 @@ var TasksPage;
             credentials: "same-origin"
         });
         redirectToLogin();
+    }
+    function updateUserAvatar(name) {
+        if (!userAvatarElement) {
+            return;
+        }
+        userAvatarElement.textContent = getInitials(name);
+    }
+    function getInitials(name) {
+        const parts = name
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+        if (parts.length === 0) {
+            return "U";
+        }
+        if (parts.length === 1) {
+            return parts[0].slice(0, 2).toUpperCase();
+        }
+        return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
     }
     async function requestWithAuth(path, init = {}) {
         const token = getStoredToken();

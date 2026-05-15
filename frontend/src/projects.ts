@@ -85,6 +85,7 @@ namespace ProjectsPage {
   let currentUser: User | null = null;
   let isPreviewMode = false;
   let userNameElement: HTMLElement | null = null;
+  let userAvatarElement: HTMLElement | null = null;
   let projectsMessageBox: HTMLElement | null = null;
   let projectsBoardElement: HTMLElement | null = null;
   let logoutButton: HTMLButtonElement | null = null;
@@ -117,6 +118,7 @@ namespace ProjectsPage {
 
   function cacheElements(): void {
     userNameElement = document.getElementById("user-name");
+    userAvatarElement = document.getElementById("user-avatar");
     projectsMessageBox = document.getElementById("projects-message");
     projectsBoardElement = document.getElementById("projects-board");
     logoutButton = document.getElementById("logout-btn") as HTMLButtonElement | null;
@@ -245,6 +247,7 @@ namespace ProjectsPage {
     if (userNameElement) {
       userNameElement.textContent = currentUser.name;
     }
+    updateUserAvatar(currentUser.name);
 
     showProjectsMessage(i18n("projects.preview"), "success");
     renderProjectsBoard(PREVIEW_PROJECTS);
@@ -258,6 +261,7 @@ namespace ProjectsPage {
       if (userNameElement) {
         userNameElement.textContent = currentUser.name;
       }
+      updateUserAvatar(currentUser.name);
     } catch (error) {
       console.error("Error loading user data:", error);
 
@@ -266,8 +270,9 @@ namespace ProjectsPage {
       }
 
       if (userNameElement) {
-        userNameElement.textContent = "Unavailable";
+        userNameElement.textContent = i18n("common.unavailable");
       }
+      updateUserAvatar(i18n("common.unavailable"));
     }
   }
 
@@ -437,6 +442,31 @@ namespace ProjectsPage {
       credentials: "same-origin"
     });
     redirectToLogin();
+  }
+
+  function updateUserAvatar(name: string): void {
+    if (!userAvatarElement) {
+      return;
+    }
+
+    userAvatarElement.textContent = getInitials(name);
+  }
+
+  function getInitials(name: string): string {
+    const parts = name
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+    if (parts.length === 0) {
+      return "U";
+    }
+
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
   }
 
   function getStatusIconMarkup(status: string): string {
