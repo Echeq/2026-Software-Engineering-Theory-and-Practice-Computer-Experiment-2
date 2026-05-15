@@ -7,6 +7,7 @@ frontend/dist/
 public/js/*.js
 public/js/*.js.map
 
+*/dist
 # Environment variables
 backend/.env
 
