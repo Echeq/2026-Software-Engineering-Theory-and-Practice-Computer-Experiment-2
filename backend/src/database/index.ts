@@ -47,10 +47,18 @@ function initializeDatabase(): void {
       name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Keep a small migration guard so older DB files get the new column too.
+  ensureColumnExists(
+    'users',
+    'role',
+    "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'"
+  );
 
   // Create projects table
   database.run(`
@@ -84,7 +92,36 @@ function initializeDatabase(): void {
     )
   `);
 
+  // Create sessions table
+  database.run(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      csrf_token TEXT,
+      ip_address TEXT,
+      user_agent TEXT,
+      expires_at DATETIME NOT NULL,
+      last_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
   console.log('Database initialized successfully');
+}
+
+function ensureColumnExists(tableName: string, columnName: string, statement: string): void {
+  const database = db!;
+  const columns = database.exec(`PRAGMA table_info(${tableName})`);
+
+  if (columns.length === 0 || columns[0].values.length === 0) {
+    return;
+  }
+
+  const hasColumn = columns[0].values.some((row) => row[1] === columnName);
+  if (!hasColumn) {
+    database.run(statement);
+  }
 }
 
 export function closeDatabase(): void {
