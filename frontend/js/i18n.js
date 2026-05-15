@@ -874,7 +874,8 @@ function upgradeDashboardLanguageSwitcher() {
     upgradeExistingLanguageSwitcher(topbarActions?.querySelector(".language-switcher") || null);
 }
 function upgradeLoginLanguageSwitcher() {
-    upgradeExistingLanguageSwitcher(document.querySelector(".login-page + .language-switcher"));
+    // Keep the login page switcher as the same fixed button group used on signup.
+    return;
 }
 function injectLanguageSwitcher() {
     const existing = document.querySelector(".language-switcher");
@@ -896,9 +897,13 @@ function injectLanguageSwitcher() {
             }
         });
     });
+    const authPageControls = document.querySelector(".auth-page-controls");
     const dashboardTopbarActions = document.querySelector(".topbar-actions");
     if (dashboardTopbarActions) {
         dashboardTopbarActions.appendChild(wrapper);
+    }
+    else if (authPageControls) {
+        authPageControls.appendChild(wrapper);
     }
     else {
         const loginPage = document.querySelector(".login-page");

@@ -954,7 +954,8 @@ function upgradeDashboardLanguageSwitcher(): void {
 }
 
 function upgradeLoginLanguageSwitcher(): void {
-  upgradeExistingLanguageSwitcher(document.querySelector<HTMLElement>(".login-page + .language-switcher"));
+  // Keep the login page switcher as the same fixed button group used on signup.
+  return;
 }
 
 function injectLanguageSwitcher(): void {
@@ -980,9 +981,12 @@ function injectLanguageSwitcher(): void {
     });
   });
 
+  const authPageControls = document.querySelector(".auth-page-controls");
   const dashboardTopbarActions = document.querySelector(".topbar-actions");
   if (dashboardTopbarActions) {
     dashboardTopbarActions.appendChild(wrapper);
+  } else if (authPageControls) {
+    authPageControls.appendChild(wrapper);
   } else {
     const loginPage = document.querySelector(".login-page");
     if (loginPage?.parentElement) {

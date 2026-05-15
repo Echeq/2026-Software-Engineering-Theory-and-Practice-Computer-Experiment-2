@@ -35,10 +35,18 @@ body {
   padding: 16px;
 }
 
-.language-switcher {
+.auth-page-controls {
   position: fixed;
   top: 12px;
   right: 12px;
+  z-index: 220;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.language-switcher {
+  position: static;
   z-index: 200;
   display: inline-flex;
   align-items: center;
@@ -55,12 +63,77 @@ body[data-theme="dark"] .language-switcher {
   background: rgba(22, 27, 34, 0.92);
 }
 
-.login-page + .language-switcher {
+.theme-toggle {
   position: relative;
-  top: auto;
-  right: auto;
-  z-index: 20;
-  max-width: 100%;
+  width: 46px;
+  height: 46px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--surface-border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  outline: none;
+  border-color: rgba(79, 70, 229, 0.24);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1);
+  transform: translateY(-1px);
+}
+
+.theme-toggle:focus-visible {
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14), 0 10px 22px rgba(15, 23, 42, 0.1);
+}
+
+.theme-toggle-icon {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.theme-toggle-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.theme-toggle-icon-sun {
+  opacity: 0;
+  transform: scale(0.72) rotate(-18deg);
+}
+
+.theme-toggle-icon-moon {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.theme-toggle.is-dark .theme-toggle-icon-sun {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.theme-toggle.is-dark .theme-toggle-icon-moon {
+  opacity: 0;
+  transform: scale(0.72) rotate(18deg);
+}
+
+body[data-theme="dark"] .theme-toggle {
+  background: rgba(22, 27, 34, 0.92);
 }
 
 .language-option {
@@ -225,11 +298,6 @@ body[data-theme="dark"] {
   display: grid;
   place-items: center;
   padding: 0;
-}
-
-body > .login-page + .language-switcher {
-  position: static;
-  order: 2;
 }
 
 .login-card {
@@ -450,18 +518,23 @@ body:not([data-theme="dark"]) .auth-link {
     padding: 8px;
   }
 
-  .login-page + .language-switcher {
-    width: 100%;
+  .language-switcher {
+    top: 8px;
+    right: 8px;
+    left: 8px;
+    justify-content: center;
   }
 
-  .login-page + .language-switcher .language-switcher-trigger {
-    width: 100%;
+  .auth-page-controls {
+    top: 8px;
+    right: 8px;
+    left: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
-  .login-page + .language-switcher .language-switcher-menu {
-    left: 0;
-    right: 0;
-    min-width: 0;
+  .language-switcher {
+    justify-content: center;
   }
 
   .login-card h1 {
