@@ -1,0 +1,38 @@
+<aside id="dashboard-sidebar" class="dashboard-sidebar" aria-label="Primary navigation">
+  <div class="sidebar-top">
+    <div class="sidebar-brand-wrap">
+      <a href="{{=it.routes.dashboard}}" class="sidebar-brand" aria-label="SPMP dashboard home">
+        <span class="sidebar-logo">SP</span>
+        <span class="sidebar-brand-copy">
+          <strong>SPMP</strong>
+          <span data-i18n="sidebar.workspace">Project workspace</span>
+        </span>
+      </a>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Workspace navigation">
+      <a href="{{=it.routes.dashboard}}" class="sidebar-link{{=it.activePage === "dashboard" ? " is-active" : ""}}">
+        <span data-i18n="sidebar.dashboard">Dashboard</span>
+      </a>
+      <a href="{{=it.routes.projects}}" class="sidebar-link{{=it.activePage === "projects" ? " is-active" : ""}}">
+        <span data-i18n="sidebar.projects">Projects</span>
+      </a>
+      <a href="{{=it.routes.tasks}}" class="sidebar-link{{=it.activePage === "tasks" ? " is-active" : ""}}">
+        <span data-i18n="sidebar.tasks">Tasks</span>
+      </a>
+      <a href="{{=it.routes.settings}}" class="sidebar-link{{=it.activePage === "settings" ? " is-active" : ""}}">
+        <span data-i18n="sidebar.settings">Settings</span>
+      </a>
+    </nav>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="user-panel" aria-live="polite">
+      <span id="user-avatar" class="user-avatar" aria-hidden="true">U</span>
+      <strong id="user-name" class="user-display">Loading...</strong>
+    </div>
+    <button id="logout-btn" type="button" class="secondary-button sidebar-logout">
+      <span data-i18n="sidebar.logout">Log Out</span>
+    </button>
+  </div>
+</aside>

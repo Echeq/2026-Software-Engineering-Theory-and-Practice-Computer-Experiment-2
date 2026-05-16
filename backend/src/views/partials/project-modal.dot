@@ -1,0 +1,35 @@
+<div id="project-modal" class="modal" hidden aria-hidden="true">
+  <div class="modal-scrim" data-close-modal="true"></div>
+
+  <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
+    <div class="modal-header">
+      <div>
+        <span class="brand-tag">SPMP</span>
+        <h2 id="project-modal-title" data-i18n="dashboard.projectModalTitle">Create New Project</h2>
+        <p class="subtitle" data-i18n="dashboard.projectModalSubtitle">Add a new project to your dashboard.</p>
+      </div>
+      <button id="close-project-modal" type="button" class="close-btn" aria-label="Close create project dialog">&times;</button>
+    </div>
+
+    <form id="project-form" class="project-form" novalidate>
+      <div class="form-group">
+        <label for="project-name" data-i18n="dashboard.projectName">Project Name</label>
+        <input id="project-name" name="name" type="text" maxlength="120" placeholder="Semester Project Planner" data-i18n-placeholder="dashboard.projectNamePlaceholder">
+        <small class="field-error" data-error-for="project-name"></small>
+      </div>
+
+      <div class="form-group">
+        <label for="project-description" data-i18n="dashboard.projectDescription">Description</label>
+        <textarea id="project-description" name="description" rows="4" maxlength="500" placeholder="Briefly describe the goal of this project" data-i18n-placeholder="dashboard.projectDescriptionPlaceholder"></textarea>
+        <small class="field-error" data-error-for="project-description"></small>
+      </div>
+
+      <p class="form-message" id="project-form-message" aria-live="polite"></p>
+
+      <div class="modal-actions">
+        <button id="cancel-project-btn" type="button" class="secondary-button" data-i18n="dashboard.cancel">Cancel</button>
+        <button id="project-submit-btn" type="submit" class="submit-button" data-i18n="dashboard.projectSubmit">Create Project</button>
+      </div>
+    </form>
+  </section>
+</div>

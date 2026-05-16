@@ -1,0 +1,28 @@
+<section class="overview-panel" aria-labelledby="projects-page-title">
+  <div class="overview-copy">
+    <span class="brand-tag">SPMP</span>
+    <h1 id="projects-page-title" data-i18n="projects.title">Projects Board</h1>
+    <p class="subtitle" data-i18n="projects.subtitle">A kanban-style view for deciding what to start next.</p>
+  </div>
+
+  <div class="overview-actions">
+    <div class="overview-note">
+      <span class="overview-note-label" data-i18n="projects.boardMode">Board Mode</span>
+      <strong data-i18n="projects.boardModeName">Projects Pipeline</strong>
+      <p data-i18n="projects.boardModeText">Open any project card to continue into the tasks view.</p>
+    </div>
+  </div>
+</section>
+
+<section class="projects-section projects-board-section" aria-labelledby="projects-board-title">
+  <div class="section-header">
+    <div class="section-copy">
+      <span class="section-tag" data-i18n="projects.kanbanTag">Kanban</span>
+      <h2 id="projects-board-title" data-i18n="projects.flowTitle">Project Flow</h2>
+      <p class="section-subtitle" data-i18n="projects.flowSubtitle">Each column groups projects by their current delivery phase.</p>
+    </div>
+  </div>
+
+  <p class="form-message" id="projects-message" aria-live="polite"></p>
+  <div id="projects-board" class="kanban-board"></div>
+</section>

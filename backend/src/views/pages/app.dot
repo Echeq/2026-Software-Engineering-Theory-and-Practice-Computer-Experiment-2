@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{=it.title}}</title>
+  {{~it.styles :href}}<link rel="stylesheet" href="{{=href}}">{{~}}
+</head>
+<body>
+  <script>window.__APP_CONTEXT__ = {{=it.appContextJson}};</script>
+  <div id="sidebar-backdrop" class="sidebar-backdrop" hidden data-close-sidebar="true"></div>
+
+  <main class="dashboard-app">
+    {{=it.sidebar}}
+
+    <section class="dashboard-main">
+      {{=it.topbar}}
+      {{=it.content}}
+    </section>
+  </main>
+
+  {{=it.extraMarkup}}
+  {{~it.scripts :src}}<script type="module" src="{{=src}}"></script>{{~}}
+</body>
+</html>

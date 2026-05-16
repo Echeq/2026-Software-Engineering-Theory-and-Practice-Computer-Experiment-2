@@ -1,0 +1,137 @@
+<section class="overview-panel" aria-labelledby="settings-page-title">
+  <div class="overview-copy">
+    <span class="brand-tag">SPMP</span>
+    <h1 id="settings-page-title" data-i18n="settings.title">Workspace Settings</h1>
+    <p class="subtitle" data-i18n="settings.subtitle">Adjust profile and appearance preferences stored on this device.</p>
+  </div>
+
+  <div class="overview-actions">
+    <div class="overview-note">
+      <span class="overview-note-label" data-i18n="settings.stateLabel">Local State</span>
+      <strong data-i18n="settings.stateName">Frontend Store</strong>
+      <p data-i18n="settings.stateText">Profile changes stay in local state only.</p>
+    </div>
+  </div>
+</section>
+
+<section class="projects-section settings-section" aria-labelledby="settings-section-title">
+  <div class="section-header">
+    <div class="section-copy">
+      <span class="section-tag" data-i18n="settings.sectionTag">Preferences</span>
+      <h2 id="settings-section-title" data-i18n="settings.sectionTitle">Settings Form</h2>
+      <p class="section-subtitle" data-i18n="settings.sectionSubtitle">Update local profile inputs, account actions, and appearance controls.</p>
+    </div>
+  </div>
+
+  <p class="form-message" id="settings-message" aria-live="polite"></p>
+
+  <form id="settings-form" class="settings-form" novalidate>
+    <article class="settings-card">
+      <div class="settings-card-header">
+        <h3 data-i18n="settings.profileTitle">Profile</h3>
+        <p data-i18n="settings.profileText">Edit your name and email in local frontend state.</p>
+      </div>
+
+      <div class="settings-field-grid">
+        <label class="form-group" for="settings-name">
+          <span data-i18n="settings.name">Name</span>
+          <input id="settings-name" type="text" autocomplete="name" placeholder="Anna Ivanova" data-i18n-placeholder="settings.namePlaceholder">
+        </label>
+
+        <label class="form-group" for="settings-email">
+          <span data-i18n="settings.email">Email</span>
+          <input id="settings-email" type="email" autocomplete="email" placeholder="student@example.com" data-i18n-placeholder="settings.emailPlaceholder">
+        </label>
+      </div>
+    </article>
+
+    <article class="settings-card">
+      <div class="settings-card-header">
+        <h3 data-i18n="settings.accountTitle">Account</h3>
+        <p data-i18n="settings.accountText">Account security actions are available here as frontend-only interactions.</p>
+      </div>
+
+      <div class="settings-actions">
+        <button id="change-password-btn" type="button" class="secondary-button" data-i18n="settings.changePassword">Change Password</button>
+        <p class="settings-inline-note" data-i18n="settings.accountHint">This button is a frontend placeholder.</p>
+      </div>
+    </article>
+
+    <article class="settings-card">
+      <div class="settings-card-header">
+        <h3 data-i18n="settings.notificationsTitle">Notification preferences</h3>
+        <p data-i18n="settings.notificationsText">Choose which alerts stay enabled on this device.</p>
+      </div>
+
+      <div class="settings-option-list">
+        <div class="settings-option-row">
+          <div class="settings-option-copy">
+            <span id="email-notifications-label" class="settings-option-title" data-i18n="settings.emailNotifications">Email notifications</span>
+          </div>
+          <button id="email-notifications-switch" type="button" class="settings-switch" role="switch" aria-checked="false" aria-labelledby="email-notifications-label email-notifications-value">
+            <span class="settings-switch-copy"><span id="email-notifications-value" class="settings-switch-value" data-i18n="settings.toggleOff">Off</span></span>
+            <span class="settings-switch-track" aria-hidden="true"><span class="settings-switch-thumb"></span></span>
+          </button>
+        </div>
+
+        <div class="settings-option-row">
+          <div class="settings-option-copy">
+            <span id="browser-notifications-label" class="settings-option-title" data-i18n="settings.browserNotifications">Browser notifications</span>
+          </div>
+          <button id="browser-notifications-switch" type="button" class="settings-switch" role="switch" aria-checked="false" aria-labelledby="browser-notifications-label browser-notifications-value">
+            <span class="settings-switch-copy"><span id="browser-notifications-value" class="settings-switch-value" data-i18n="settings.toggleOff">Off</span></span>
+            <span class="settings-switch-track" aria-hidden="true"><span class="settings-switch-thumb"></span></span>
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <article class="settings-card">
+      <div class="settings-card-header">
+        <h3 data-i18n="settings.appearanceTitle">Appearance</h3>
+        <p data-i18n="settings.appearanceText">Switch between light and dark mode and keep the choice in local state.</p>
+      </div>
+
+      <div class="settings-appearance-row">
+        <div class="settings-appearance-copy">
+          <span class="settings-switch-label" data-i18n="settings.themeSwitchLabel">Theme</span>
+          <p class="settings-inline-note" data-i18n="settings.appearanceHint">The selected mode also syncs with the header theme control.</p>
+        </div>
+
+        <button id="appearance-theme-switch" type="button" class="settings-theme-switch" role="switch" aria-checked="false">
+          <span class="settings-theme-switch-copy"><span id="appearance-theme-value" class="settings-theme-switch-value">Light Mode</span></span>
+          <span class="settings-theme-switch-track" aria-hidden="true"><span class="settings-theme-switch-thumb"></span></span>
+        </button>
+      </div>
+    </article>
+
+    <article class="settings-card">
+      <div class="settings-card-header">
+        <h3 data-i18n="settings.displayTitle">Display preferences</h3>
+        <p data-i18n="settings.displayText">Choose how the projects page should open by default on this device.</p>
+      </div>
+
+      <div class="settings-choice-row">
+        <div class="settings-option-copy">
+          <span id="project-view-label" class="settings-option-title" data-i18n="settings.defaultProjectView">Default project view</span>
+        </div>
+
+        <div class="settings-choice-group" role="group" aria-labelledby="project-view-label">
+          <button type="button" class="settings-choice-button is-active" data-project-view="grid" aria-pressed="true" data-i18n="settings.viewGrid">Grid</button>
+          <button type="button" class="settings-choice-button" data-project-view="list" aria-pressed="false" data-i18n="settings.viewList">List</button>
+        </div>
+      </div>
+    </article>
+
+    <article class="settings-card settings-card-danger">
+      <div class="settings-card-header">
+        <h3 data-i18n="settings.dangerTitle">Reset &amp; Clear</h3>
+        <p data-i18n="settings.dangerText">Remove all locally saved preferences and session data from this browser.</p>
+      </div>
+
+      <div class="settings-actions">
+        <button id="clear-local-data-btn" type="button" class="danger-button" data-i18n="settings.clearLocalData">Clear all local data</button>
+      </div>
+    </article>
+  </form>
+</section>

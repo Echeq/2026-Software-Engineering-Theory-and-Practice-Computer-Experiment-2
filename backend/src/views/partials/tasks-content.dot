@@ -1,0 +1,67 @@
+<section class="overview-panel" aria-labelledby="tasks-page-title">
+  <div class="overview-copy">
+    <span class="brand-tag">SPMP</span>
+    <h1 id="tasks-page-title" data-i18n="tasks.title">Tasks Workspace</h1>
+    <p id="tasks-page-subtitle" class="subtitle" data-i18n="tasks.subtitleDefault">Open a project from the projects board to continue into its task workflow.</p>
+  </div>
+
+  <div class="overview-actions">
+    <div class="overview-note">
+      <span class="overview-note-label" data-i18n="tasks.selectedProject">Selected Project</span>
+      <strong id="selected-project-name" data-i18n="tasks.noProject">No project selected</strong>
+      <p id="selected-project-meta" data-i18n="tasks.noProjectMeta">Choose a project card from the projects board to view task context.</p>
+    </div>
+  </div>
+</section>
+
+<section class="projects-section task-detail-section" aria-labelledby="task-detail-title">
+  <div class="section-header">
+    <div class="section-copy">
+      <span class="section-tag" data-i18n="tasks.sectionTag">Tasks</span>
+      <h2 id="task-detail-title">Task Board</h2>
+      <p class="section-subtitle">Create tasks and track them by status for the selected project.</p>
+    </div>
+  </div>
+
+  <form id="task-form" class="settings-form" novalidate>
+    <article class="settings-card">
+      <div class="settings-card-header">
+        <h3>Create Task</h3>
+        <p>Add a task to the selected project.</p>
+      </div>
+
+      <div class="settings-field-grid task-compose-grid">
+        <label class="form-group" for="task-title">
+          <span>Title</span>
+          <input id="task-title" type="text" placeholder="Prepare sprint review">
+        </label>
+
+        <label class="form-group" for="task-priority">
+          <span>Priority</span>
+          <select id="task-priority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="form-group" for="task-description">
+        <span>Description</span>
+        <textarea id="task-description" rows="3" placeholder="Describe the task outcome"></textarea>
+      </label>
+
+      <label class="form-group" for="task-due-date">
+        <span>Due date</span>
+        <input id="task-due-date" type="date">
+      </label>
+
+      <div class="modal-actions">
+        <button type="submit" class="submit-button">Create Task</button>
+      </div>
+    </article>
+  </form>
+
+  <p class="form-message" id="tasks-message" aria-live="polite"></p>
+  <div id="tasks-board" class="kanban-board"></div>
+</section>

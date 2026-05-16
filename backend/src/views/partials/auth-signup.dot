@@ -1,0 +1,33 @@
+<form class="signup-form" id="signup-form" novalidate>
+  <div class="form-group">
+    <label for="name" data-i18n="signup.name">Full Name</label>
+    <input id="name" name="name" type="text" autocomplete="name" placeholder="Anna Ivanova" data-i18n-placeholder="signup.namePlaceholder">
+    <small class="field-error" data-error-for="name"></small>
+  </div>
+
+  <div class="form-group">
+    <label for="email" data-i18n="signup.email">Email</label>
+    <input id="email" name="email" type="email" autocomplete="email" placeholder="student@example.com" data-i18n-placeholder="signup.emailPlaceholder">
+    <small class="field-error" data-error-for="email"></small>
+  </div>
+
+  <div class="form-group">
+    <label for="password" data-i18n="signup.password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="new-password" placeholder="Create a password" data-i18n-placeholder="signup.passwordPlaceholder">
+    <small class="field-error" data-error-for="password"></small>
+  </div>
+
+  <div class="form-group">
+    <label for="confirm-password" data-i18n="signup.confirmPassword">Confirm Password</label>
+    <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" placeholder="Repeat your password" data-i18n-placeholder="signup.confirmPasswordPlaceholder">
+    <small class="field-error" data-error-for="confirm-password"></small>
+  </div>
+
+  <p class="form-message" id="form-message" aria-live="polite"></p>
+  <button type="submit" class="submit-button" data-i18n="signup.submit">Sign Up</button>
+</form>
+
+<p class="auth-switch">
+  <span data-i18n="signup.haveAccount">Already have an account?</span>
+  <a href="{{=it.routes.login}}" class="auth-link" data-i18n="signup.loginLink">Log In</a>
+</p>

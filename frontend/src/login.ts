@@ -1,179 +1,100 @@
-(() => {
-  const API_BASE_URL = `${window.location.origin}/api`;
-  const THEME_STORAGE_KEY = "dashboard-theme";
-  const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
+import "./i18n";
+import "../css/login.css";
+import { getAppContext, t } from "./core/app";
+import { setupAuthTheme } from "./core/auth-theme";
+import { login } from "./core/services";
 
-  interface LoginResponse {
-    token?: string;
-    message: string;
+const form = document.getElementById("login-form") as HTMLFormElement | null;
+const emailInput = document.getElementById("email") as HTMLInputElement | null;
+const passwordInput = document.getElementById("password") as HTMLInputElement | null;
+const messageBox = document.getElementById("form-message") as HTMLElement | null;
+const submitButton = document.querySelector(".submit-button") as HTMLButtonElement | null;
+
+setupAuthTheme();
+
+form?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  clearErrors();
+
+  const email = emailInput?.value.trim() || "";
+  const password = passwordInput?.value.trim() || "";
+  let isValid = true;
+
+  if (!email) {
+    setFieldError("email", t("login.validation.emailRequired"));
+    isValid = false;
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    setFieldError("email", t("login.validation.emailInvalid"));
+    isValid = false;
   }
 
-  const form = document.getElementById("login-form") as HTMLFormElement;
-  const emailInput = document.getElementById("email") as HTMLInputElement;
-  const passwordInput = document.getElementById("password") as HTMLInputElement;
-  const messageBox = document.getElementById("form-message") as HTMLElement;
-  const submitButton = document.querySelector(".submit-button") as HTMLButtonElement;
-  const themeToggleButton = document.getElementById("theme-toggle-btn") as HTMLButtonElement | null;
-  let alertTimeoutId = 0;
-
-  initializeTheme();
-  updateThemeToggle();
-  form.addEventListener("submit", handleFormSubmit);
-  themeToggleButton?.addEventListener("click", toggleTheme);
-  document.addEventListener("app-language-change", updateThemeToggle);
-
-  function initializeTheme(): void {
-    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-    const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    document.body.dataset.theme = storedTheme === "dark" || storedTheme === "light" ? storedTheme : preferredTheme;
+  if (!password) {
+    setFieldError("password", t("login.validation.passwordRequired"));
+    isValid = false;
+  } else if (password.length < 6) {
+    setFieldError("password", t("login.validation.passwordShort"));
+    isValid = false;
   }
 
-  function toggleTheme(): void {
-    const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
-    document.body.dataset.theme = nextTheme;
-    localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
-    updateThemeToggle();
+  if (!isValid) {
+    showMessage(t("login.validation.fix"), "error");
+    return;
   }
 
-  function updateThemeToggle(): void {
-    if (!themeToggleButton) {
-      return;
-    }
+  setSubmitting(true, t("login.submitting"));
 
-    const isDarkTheme = document.body.dataset.theme === "dark";
-    const nextThemeLabel = isDarkTheme ? i18n("theme.toLight") : i18n("theme.toDark");
-
-    themeToggleButton.setAttribute("aria-pressed", String(isDarkTheme));
-    themeToggleButton.setAttribute("aria-label", nextThemeLabel);
-    themeToggleButton.setAttribute("title", nextThemeLabel);
-    themeToggleButton.classList.toggle("is-dark", isDarkTheme);
+  try {
+    const response = await login(email, password);
+    showMessage(t("login.success"), "success");
+    form?.reset();
+    window.setTimeout(() => {
+      window.location.href = response.redirectTo || getAppContext().routes.dashboard;
+    }, 500);
+  } catch (error) {
+    showMessage(error instanceof Error ? error.message : t("login.failedDefault"), "error");
+  } finally {
+    setSubmitting(false, t("login.submit"));
   }
+});
 
-  async function handleFormSubmit(event: Event): Promise<void> {
-    event.preventDefault();
-    resetErrors();
-
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
-    const isValid = validateForm(email, password);
-
-    if (!isValid) {
-      showMessage(i18n("login.validation.fix"), "error");
-      return;
-    }
-
-    setLoadingState(true);
-
-    try {
-      const data = await loginUser(email, password);
-
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-
-      showMessage(i18n("login.success"), "success");
-      form.reset();
-
-      setTimeout(() => {
-        window.location.href = "./dashboard/index.html";
-      }, 1000);
-    } catch (error: unknown) {
-      showMessage(error instanceof Error ? error.message : i18n("login.failed"), "error");
-    } finally {
-      setLoadingState(false);
-    }
-  }
-
-  function validateForm(email: string, password: string): boolean {
-    let isValid = true;
-
-    if (!email) {
-      setFieldError("email", i18n("login.validation.emailRequired"));
-      isValid = false;
-    } else if (!isEmailValid(email)) {
-      setFieldError("email", i18n("login.validation.emailInvalid"));
-      isValid = false;
-    }
-
-    if (!password) {
-      setFieldError("password", i18n("login.validation.passwordRequired"));
-      isValid = false;
-    } else if (password.length < 6) {
-      setFieldError("password", i18n("login.validation.passwordShort"));
-      isValid = false;
-    }
-
-    return isValid;
-  }
-
-  function isEmailValid(email: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  }
-
-  function setFieldError(fieldId: string, text: string): void {
-    const input = document.getElementById(fieldId) as HTMLInputElement;
-    const errorBox = document.querySelector(`[data-error-for="${fieldId}"]`) as HTMLElement;
-
-    input.classList.add("input-error");
+function setFieldError(fieldId: string, text: string): void {
+  const input = document.getElementById(fieldId) as HTMLInputElement | null;
+  const errorBox = document.querySelector(`[data-error-for="${fieldId}"]`) as HTMLElement | null;
+  input?.classList.add("input-error");
+  if (errorBox) {
     errorBox.textContent = text;
   }
+}
 
-  function resetErrors(): void {
-    clearMessage();
-
-    document.querySelectorAll(".field-error").forEach((element) => {
-      element.textContent = "";
-    });
-
-    document.querySelectorAll(".input-error").forEach((input) => {
-      input.classList.remove("input-error");
-    });
-  }
-
-  function showMessage(text: string, type: string): void {
-    if (alertTimeoutId) {
-      window.clearTimeout(alertTimeoutId);
-    }
-
-    messageBox.textContent = text;
-    messageBox.className = `form-message is-visible ${type}`;
-
-    alertTimeoutId = window.setTimeout(() => {
-      clearMessage();
-    }, 3000);
-  }
-
-  function clearMessage(): void {
-    if (alertTimeoutId) {
-      window.clearTimeout(alertTimeoutId);
-      alertTimeoutId = 0;
-    }
-
+function clearErrors(): void {
+  messageBox?.classList.remove("error", "success", "is-visible");
+  if (messageBox) {
     messageBox.textContent = "";
-    messageBox.className = "form-message";
   }
 
-  function setLoadingState(isLoading: boolean): void {
-    submitButton.disabled = isLoading;
-    submitButton.textContent = isLoading ? i18n("login.submitting") : i18n("login.submit");
+  document.querySelectorAll(".field-error").forEach((element) => {
+    element.textContent = "";
+  });
+
+  document.querySelectorAll(".input-error").forEach((element) => {
+    element.classList.remove("input-error");
+  });
+}
+
+function showMessage(text: string, type: "error" | "success"): void {
+  if (!messageBox) {
+    return;
   }
 
-  async function loginUser(email: string, password: string): Promise<LoginResponse> {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: "same-origin",
-      body: JSON.stringify({ email, password })
-    });
+  messageBox.textContent = text;
+  messageBox.className = `form-message is-visible ${type}`;
+}
 
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      throw new Error(data.message || i18n("login.failedDefault"));
-    }
-
-    return data;
+function setSubmitting(isSubmitting: boolean, label: string): void {
+  if (!submitButton) {
+    return;
   }
-})();
+
+  submitButton.disabled = isSubmitting;
+  submitButton.textContent = label;
+}

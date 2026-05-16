@@ -1,0 +1,56 @@
+<section class="overview-panel" aria-labelledby="dashboard-title">
+  <div class="overview-copy">
+    <span class="brand-tag">SPMP</span>
+    <h1 id="dashboard-title" data-i18n="dashboard.title">Projects Dashboard</h1>
+    <p class="subtitle" data-i18n="dashboard.subtitle">A focused workspace for tracking projects.</p>
+    <p class="topbar-label">
+      <strong id="greeting-banner-title" data-i18n="dashboard.greetingMorningFallback">Good morning</strong>
+      <time id="greeting-banner-date"></time>
+    </p>
+  </div>
+
+  <div class="overview-actions">
+    <div class="overview-note">
+      <span class="overview-note-label" data-i18n="dashboard.currentView">Current View</span>
+      <strong data-i18n="dashboard.currentViewName">Dashboard Overview</strong>
+      <p data-i18n="dashboard.currentViewText">Review active projects and create a new workspace when needed.</p>
+    </div>
+    <button id="new-project-btn" type="button" class="submit-button" data-i18n="dashboard.createProject">Create New Project</button>
+  </div>
+</section>
+
+<section class="projects-section" aria-labelledby="projects-title">
+  <div class="section-header">
+    <div class="section-copy">
+      <span class="section-tag" data-i18n="dashboard.projectsTag">Projects</span>
+      <h2 id="projects-title" data-i18n="dashboard.projectsTitle">My Projects</h2>
+      <p class="section-subtitle" data-i18n="dashboard.projectsSubtitle">Keep project workspaces visible, organized, and easy to scan.</p>
+    </div>
+  </div>
+
+  <section class="projects-toolbar" aria-label="Project search and filters">
+    <label class="search-field" for="project-search-input">
+      <span class="search-label" data-i18n="dashboard.search">Search</span>
+      <input id="project-search-input" class="search-input" type="search" placeholder="Search projects" data-i18n-placeholder="dashboard.searchPlaceholder">
+    </label>
+
+    <div class="status-filters" role="group" aria-label="Filter projects by status">
+      <button type="button" class="filter-button is-active" value="all" data-i18n="dashboard.filter.all">All</button>
+      <button type="button" class="filter-button" value="active" data-i18n="dashboard.filter.active">Active</button>
+      <button type="button" class="filter-button" value="in-review" data-i18n="dashboard.filter.inReview">In Review</button>
+      <button type="button" class="filter-button" value="planning" data-i18n="dashboard.filter.planning">Planning</button>
+    </div>
+
+    <label class="search-field" for="project-sort-select">
+      <span class="search-label" data-i18n="dashboard.sort">Sort</span>
+      <select id="project-sort-select" class="search-input">
+        <option value="newest" data-i18n="dashboard.sortNewest">Newest first</option>
+        <option value="oldest" data-i18n="dashboard.sortOldest">Oldest first</option>
+        <option value="az" data-i18n="dashboard.sortAZ">A-Z</option>
+      </select>
+    </label>
+  </section>
+
+  <p class="form-message" id="projects-message" aria-live="polite"></p>
+  <div id="projects-list" class="projects-grid"></div>
+</section>
