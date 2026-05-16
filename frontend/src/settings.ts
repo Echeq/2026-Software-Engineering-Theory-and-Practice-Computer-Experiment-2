@@ -1,6 +1,6 @@
 import "./i18n";
 import "../css/dashboard.css";
-import { STORAGE_KEYS, t, type SettingState } from "./core/app";
+import { getAppContext, STORAGE_KEYS, t } from "./core/app";
 import { getCurrentUser, isSessionError } from "./core/services";
 import { setupAppShell } from "./components/app-shell";
 import { persistSettingsState, readSettingsState } from "./components/settings-store";
@@ -30,7 +30,7 @@ async function initialize(): Promise<void> {
     renderState();
   } catch (error) {
     if (isSessionError(error)) {
-      window.location.href = "/";
+      window.location.href = getAppContext().routes.login;
       return;
     }
 

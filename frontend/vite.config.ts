@@ -17,7 +17,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         login: path.resolve(__dirname, 'src/login.ts'),
-        signup: path.resolve(__dirname, 'src/signup.ts'),
         dashboard: path.resolve(__dirname, 'src/dashboard.ts'),
         projects: path.resolve(__dirname, 'src/projects.ts'),
         tasks: path.resolve(__dirname, 'src/tasks.ts'),

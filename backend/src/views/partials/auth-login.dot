@@ -15,8 +15,3 @@
 
   <button type="submit" class="submit-button" data-i18n="login.submit">Log In</button>
 </form>
-
-<p class="auth-switch">
-  <span data-i18n="login.noAccount">Don't have an account?</span>
-  <a href="{{=it.routes.signup}}" class="auth-link" data-i18n="login.signUpLink">Sign Up</a>
-</p>

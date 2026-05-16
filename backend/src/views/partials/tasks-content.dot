@@ -21,6 +21,7 @@
       <h2 id="task-detail-title">Task Board</h2>
       <p class="section-subtitle">Create tasks and track them by status for the selected project.</p>
     </div>
+    <a href="{{=it.routes.projects}}" class="secondary-button">Back to Projects</a>
   </div>
 
   <form id="task-form" class="settings-form" novalidate>

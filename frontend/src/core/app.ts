@@ -43,7 +43,6 @@ const DEFAULT_CONTEXT: AppContext = {
   pageId: "login",
   routes: {
     login: "/",
-    signup: "/signup",
     dashboard: "/dashboard",
     projects: "/dashboard/projects",
     tasks: "/dashboard/tasks",

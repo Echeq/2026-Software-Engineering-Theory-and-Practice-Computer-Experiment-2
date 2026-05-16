@@ -25,6 +25,7 @@ async function initialize(): Promise<void> {
     shell.applyUser(user);
 
     if (!projectId) {
+      renderMissingProjectState();
       return;
     }
 
@@ -72,14 +73,17 @@ async function initialize(): Promise<void> {
         due_date: dueDate || undefined,
         project_id: projectId
       });
+
       const tasks = await getProjectTasks(projectId);
       if (board) {
         renderTaskBoard(board, tasks);
       }
+
       if (messageBox) {
         messageBox.textContent = "Task created successfully.";
         messageBox.className = "form-message success";
       }
+
       form.reset();
     } catch (error) {
       if (messageBox) {
@@ -104,7 +108,7 @@ function hydrateProjectCopy(): void {
   if (selectedProjectMeta) {
     selectedProjectMeta.textContent = projectName === t("tasks.noProject")
       ? t("tasks.noProjectMeta")
-      : `${status} • ${creator} • ${createdAt}`;
+      : [status, creator, createdAt].join(" • ");
   }
 
   if (subtitle && projectName !== t("tasks.noProject")) {
@@ -114,4 +118,27 @@ function hydrateProjectCopy(): void {
 
 function readInput(id: string): string {
   return (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)?.value.trim() || "";
+}
+
+function renderMissingProjectState(): void {
+  if (board) {
+    board.innerHTML = `
+      <article class="state-card">
+        <h3>No project selected</h3>
+        <p>Open a project from the projects page to manage its tasks here.</p>
+      </article>
+    `;
+  }
+
+  ["task-title", "task-priority", "task-description", "task-due-date"].forEach((id) => {
+    const element = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+    if (element) {
+      element.disabled = true;
+    }
+  });
+
+  const submitButton = form?.querySelector("button[type='submit']") as HTMLButtonElement | null;
+  if (submitButton) {
+    submitButton.disabled = true;
+  }
 }

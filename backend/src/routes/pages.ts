@@ -6,7 +6,6 @@ const router = Router();
 
 const appRoutes = {
   login: "/",
-  signup: "/signup",
   dashboard: "/dashboard",
   projects: "/dashboard/projects",
   tasks: "/dashboard/tasks",
@@ -24,19 +23,6 @@ router.get(["/", "/index.html"], (_req, res) => {
     pageClass: "login-page",
     cardClass: "login-card",
     pageId: "login"
-  });
-});
-
-router.get(["/signup", "/signup.html"], (_req, res) => {
-  renderAuthPage(res, {
-    title: "SPMP | Sign Up",
-    entry: "src/signup.ts",
-    heroTitle: "signup.title",
-    heroSubtitle: "signup.subtitle",
-    contentTemplate: "partials/auth-signup",
-    pageClass: "signup-page",
-    cardClass: "signup-card",
-    pageId: "signup"
   });
 });
 
@@ -99,7 +85,7 @@ function renderAuthPage(res: Response, options: {
   contentTemplate: string;
   pageClass: string;
   cardClass: string;
-  pageId: "login" | "signup";
+  pageId: "login";
 }): void {
   const assets = resolveEntryAssets(options.entry);
   const content = renderNamedTemplate(options.contentTemplate, {

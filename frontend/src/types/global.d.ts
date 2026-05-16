@@ -8,10 +8,9 @@ export interface TranslationApi {
 }
 
 export interface AppContext {
-  pageId: "login" | "signup" | "dashboard" | "projects" | "tasks" | "settings";
+  pageId: "login" | "dashboard" | "projects" | "tasks" | "settings";
   routes: {
     login: string;
-    signup: string;
     dashboard: string;
     projects: string;
     tasks: string;
