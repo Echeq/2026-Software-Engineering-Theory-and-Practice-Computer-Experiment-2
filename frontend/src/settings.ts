@@ -45,7 +45,25 @@ namespace SettingsPage {
   let appearanceThemeSwitchButton: HTMLButtonElement | null = null;
   let appearanceThemeValueElement: HTMLElement | null = null;
   let changePasswordButton: HTMLButtonElement | null = null;
+  let changePasswordModalElement: HTMLElement | null = null;
+  let changePasswordFormElement: HTMLFormElement | null = null;
+  let changePasswordMessageBox: HTMLElement | null = null;
+  let changePasswordCloseButton: HTMLButtonElement | null = null;
+  let cancelChangePasswordButton: HTMLButtonElement | null = null;
+  let currentPasswordInput: HTMLInputElement | null = null;
+  let newPasswordInput: HTMLInputElement | null = null;
+  let confirmNewPasswordInput: HTMLInputElement | null = null;
+  let passwordToggleButtons: NodeListOf<HTMLButtonElement>;
+  let passwordCloseTimer: number | null = null;
+  let profileSaveButton: HTMLButtonElement | null = null;
+  let profileConfirmModalElement: HTMLElement | null = null;
+  let profileConfirmFormElement: HTMLFormElement | null = null;
+  let profileConfirmPasswordInput: HTMLInputElement | null = null;
+  let profileConfirmMessageBox: HTMLElement | null = null;
+  let profileConfirmCancelButton: HTMLButtonElement | null = null;
+  let profileConfirmSubmitButton: HTMLButtonElement | null = null;
   let settingsMessageBox: HTMLElement | null = null;
+  let settingsFormElement: HTMLFormElement | null = null;
   let nameInput: HTMLInputElement | null = null;
   let emailInput: HTMLInputElement | null = null;
   let emailNotificationsSwitchButton: HTMLButtonElement | null = null;
@@ -88,7 +106,24 @@ namespace SettingsPage {
     appearanceThemeSwitchButton = document.getElementById("appearance-theme-switch") as HTMLButtonElement | null;
     appearanceThemeValueElement = document.getElementById("appearance-theme-value");
     changePasswordButton = document.getElementById("change-password-btn") as HTMLButtonElement | null;
+    changePasswordModalElement = document.getElementById("change-password-modal");
+    changePasswordFormElement = document.getElementById("change-password-form") as HTMLFormElement | null;
+    changePasswordMessageBox = document.getElementById("change-password-modal-message");
+    changePasswordCloseButton = document.getElementById("close-change-password-modal") as HTMLButtonElement | null;
+    cancelChangePasswordButton = document.getElementById("cancel-change-password-btn") as HTMLButtonElement | null;
+    currentPasswordInput = document.getElementById("current-password-input") as HTMLInputElement | null;
+    newPasswordInput = document.getElementById("new-password-input") as HTMLInputElement | null;
+    confirmNewPasswordInput = document.getElementById("confirm-new-password-input") as HTMLInputElement | null;
+    passwordToggleButtons = document.querySelectorAll("[data-password-toggle]");
+    profileSaveButton = document.getElementById("profile-save-btn") as HTMLButtonElement | null;
+    profileConfirmModalElement = document.getElementById("profile-confirm-modal");
+    profileConfirmFormElement = document.getElementById("profile-confirm-form") as HTMLFormElement | null;
+    profileConfirmPasswordInput = document.getElementById("profile-confirm-password") as HTMLInputElement | null;
+    profileConfirmMessageBox = document.getElementById("profile-confirm-message");
+    profileConfirmCancelButton = document.getElementById("profile-confirm-cancel-btn") as HTMLButtonElement | null;
+    profileConfirmSubmitButton = document.getElementById("profile-confirm-submit-btn") as HTMLButtonElement | null;
     settingsMessageBox = document.getElementById("settings-message");
+    settingsFormElement = document.getElementById("settings-form") as HTMLFormElement | null;
     nameInput = document.getElementById("settings-name") as HTMLInputElement | null;
     emailInput = document.getElementById("settings-email") as HTMLInputElement | null;
     emailNotificationsSwitchButton = document.getElementById("email-notifications-switch") as HTMLButtonElement | null;
@@ -107,6 +142,18 @@ namespace SettingsPage {
     themeToggleButton?.addEventListener("click", () => setTheme(getNextTheme()));
     appearanceThemeSwitchButton?.addEventListener("click", () => setTheme(getNextTheme()));
     changePasswordButton?.addEventListener("click", handleChangePasswordClick);
+    changePasswordCloseButton?.addEventListener("click", closeChangePasswordModal);
+    cancelChangePasswordButton?.addEventListener("click", closeChangePasswordModal);
+    changePasswordFormElement?.addEventListener("submit", handleChangePasswordSubmit);
+    changePasswordModalElement?.addEventListener("click", handleChangePasswordModalClick);
+    passwordToggleButtons.forEach((button) => {
+      button.addEventListener("click", () => togglePasswordVisibility(button));
+    });
+    profileSaveButton?.addEventListener("click", handleProfileSaveClick);
+    settingsFormElement?.addEventListener("submit", handleProfileSaveSubmit);
+    profileConfirmCancelButton?.addEventListener("click", closeProfileConfirmModal);
+    profileConfirmFormElement?.addEventListener("submit", handleProfileConfirmSubmit);
+    profileConfirmModalElement?.addEventListener("click", handleProfileConfirmModalClick);
     nameInput?.addEventListener("input", handleNameInput);
     emailInput?.addEventListener("input", handleEmailInput);
     emailNotificationsSwitchButton?.addEventListener("click", () => setEmailNotifications(!settingsState.emailNotifications));
@@ -246,6 +293,75 @@ namespace SettingsPage {
     });
   }
 
+  function handleProfileSaveClick(event: Event): void {
+    event.preventDefault();
+    openProfileConfirmModal();
+  }
+
+  function handleProfileSaveSubmit(event: Event): void {
+    event.preventDefault();
+    openProfileConfirmModal();
+  }
+
+  function openProfileConfirmModal(): void {
+    if (!profileConfirmModalElement) {
+      return;
+    }
+
+    resetProfileConfirmModal();
+    closeSidebar();
+    profileConfirmModalElement.hidden = false;
+    profileConfirmModalElement.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    profileConfirmPasswordInput?.focus();
+  }
+
+  function closeProfileConfirmModal(): void {
+    if (!profileConfirmModalElement) {
+      return;
+    }
+
+    profileConfirmModalElement.hidden = true;
+    profileConfirmModalElement.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    resetProfileConfirmModal();
+  }
+
+  function handleProfileConfirmModalClick(event: Event): void {
+    const target = event.target as HTMLElement | null;
+
+    if (target?.dataset.closeModal === "true") {
+      closeProfileConfirmModal();
+    }
+  }
+
+  function handleProfileConfirmSubmit(event: Event): void {
+    event.preventDefault();
+
+    const password = profileConfirmPasswordInput?.value.trim() || "";
+    if (!password) {
+      showProfileConfirmMessage(i18n("settings.profileConfirmRequired"), "error");
+      return;
+    }
+
+    closeProfileConfirmModal();
+    showSettingsMessage(i18n("settings.profileSaveSuccess"), "success");
+  }
+
+  function showProfileConfirmMessage(text: string, type: "success" | "error" | "" = ""): void {
+    if (!profileConfirmMessageBox) {
+      return;
+    }
+
+    profileConfirmMessageBox.textContent = text;
+    profileConfirmMessageBox.className = type ? `form-message ${type}` : "form-message";
+  }
+
+  function resetProfileConfirmModal(): void {
+    profileConfirmFormElement?.reset();
+    showProfileConfirmMessage("");
+  }
+
   function handleNameInput(event: Event): void {
     const target = event.target as HTMLInputElement | null;
     settingsState.profileName = target?.value ?? "";
@@ -301,7 +417,138 @@ namespace SettingsPage {
   }
 
   function handleChangePasswordClick(): void {
-    showSettingsMessage(i18n("settings.changePasswordHint"), "success");
+    openChangePasswordModal();
+  }
+
+  function openChangePasswordModal(): void {
+    if (!changePasswordModalElement) {
+      return;
+    }
+
+    clearPasswordCloseTimer();
+    resetChangePasswordForm();
+    closeSidebar();
+    changePasswordModalElement.hidden = false;
+    changePasswordModalElement.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    currentPasswordInput?.focus();
+  }
+
+  function closeChangePasswordModal(): void {
+    if (!changePasswordModalElement) {
+      return;
+    }
+
+    clearPasswordCloseTimer();
+    changePasswordModalElement.hidden = true;
+    changePasswordModalElement.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    resetChangePasswordForm();
+  }
+
+  function handleChangePasswordModalClick(event: Event): void {
+    const target = event.target as HTMLElement | null;
+
+    if (target?.dataset.closeModal === "true") {
+      closeChangePasswordModal();
+    }
+  }
+
+  function handleChangePasswordSubmit(event: Event): void {
+    event.preventDefault();
+
+    const validation = validateChangePasswordForm();
+    if (!validation.isValid) {
+      showChangePasswordMessage(validation.message, "error");
+      return;
+    }
+
+    showChangePasswordMessage(i18n("settings.passwordSuccess"), "success");
+    clearPasswordCloseTimer();
+    passwordCloseTimer = window.setTimeout(() => {
+      closeChangePasswordModal();
+    }, 2000);
+  }
+
+  function validateChangePasswordForm(): { isValid: boolean; message: string } {
+    const currentPassword = currentPasswordInput?.value.trim() || "";
+    const newPassword = newPasswordInput?.value || "";
+    const confirmNewPassword = confirmNewPasswordInput?.value || "";
+
+    if (!currentPassword) {
+      return { isValid: false, message: i18n("settings.passwordValidation.currentRequired") };
+    }
+
+    if (newPassword.length < 8) {
+      return { isValid: false, message: i18n("settings.passwordValidation.newTooShort") };
+    }
+
+    if (confirmNewPassword !== newPassword) {
+      return { isValid: false, message: i18n("settings.passwordValidation.confirmMismatch") };
+    }
+
+    return { isValid: true, message: "" };
+  }
+
+  function showChangePasswordMessage(text: string, type: "success" | "error" | "" = ""): void {
+    if (!changePasswordMessageBox) {
+      return;
+    }
+
+    changePasswordMessageBox.textContent = text;
+    changePasswordMessageBox.className = type ? `form-message ${type}` : "form-message";
+  }
+
+  function resetChangePasswordForm(): void {
+    changePasswordFormElement?.reset();
+    showChangePasswordMessage("");
+    if (currentPasswordInput) {
+      currentPasswordInput.type = "password";
+    }
+    if (newPasswordInput) {
+      newPasswordInput.type = "password";
+    }
+    if (confirmNewPasswordInput) {
+      confirmNewPasswordInput.type = "password";
+    }
+    setPasswordVisibility(currentPasswordInput, "Show");
+    setPasswordVisibility(newPasswordInput, "Show");
+    setPasswordVisibility(confirmNewPasswordInput, "Show");
+  }
+
+  function togglePasswordVisibility(button: HTMLButtonElement): void {
+    const inputId = button.dataset.passwordToggle;
+    if (!inputId) {
+      return;
+    }
+
+    const input = document.getElementById(inputId) as HTMLInputElement | null;
+    if (!input) {
+      return;
+    }
+
+    const shouldShow = input.type === "password";
+    input.type = shouldShow ? "text" : "password";
+    setPasswordVisibility(input, shouldShow ? "Hide" : "Show");
+  }
+
+  function setPasswordVisibility(input: HTMLInputElement | null, label: string): void {
+    if (!input) {
+      return;
+    }
+
+    const button = document.querySelector<HTMLButtonElement>(`[data-password-toggle="${input.id}"]`);
+    if (button) {
+      button.textContent = label;
+      button.setAttribute("aria-pressed", String(input.type === "text"));
+    }
+  }
+
+  function clearPasswordCloseTimer(): void {
+    if (passwordCloseTimer !== null) {
+      window.clearTimeout(passwordCloseTimer);
+      passwordCloseTimer = null;
+    }
   }
 
   function renderPreferenceSwitch(
@@ -389,8 +636,23 @@ namespace SettingsPage {
   }
 
   function handleEscapeKey(event: KeyboardEvent): void {
+    if (event.key === "Escape" && profileConfirmModalElement && !profileConfirmModalElement.hidden) {
+      closeProfileConfirmModal();
+      return;
+    }
+
     if (event.key === "Escape" && document.body.classList.contains("sidebar-open")) {
+      if (changePasswordModalElement && !changePasswordModalElement.hidden) {
+        closeChangePasswordModal();
+        return;
+      }
+
       closeSidebar();
+      return;
+    }
+
+    if (event.key === "Escape" && changePasswordModalElement && !changePasswordModalElement.hidden) {
+      closeChangePasswordModal();
     }
   }
 

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SPMP | Projects</title>
   <link rel="stylesheet" href="../css/dashboard.css">
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="../js/i18n.js" defer></script>
 </head>
 <body>
@@ -102,11 +103,30 @@
             <h2 id="projects-board-title" data-i18n="projects.flowTitle">Project Flow</h2>
             <p class="section-subtitle" data-i18n="projects.flowSubtitle">Each column groups projects by their current delivery phase.</p>
           </div>
+
+          <div class="projects-view-toggle" role="group" aria-label="Project view mode">
+            <button
+              id="projects-view-grid-btn"
+              type="button"
+              class="settings-choice-button is-active"
+              data-project-view="grid"
+              aria-pressed="true"
+              data-i18n="settings.viewGrid"
+            >Grid</button>
+            <button
+              id="projects-view-list-btn"
+              type="button"
+              class="settings-choice-button"
+              data-project-view="list"
+              aria-pressed="false"
+              data-i18n="settings.viewList"
+            >List</button>
+          </div>
         </div>
 
         <p class="form-message" id="projects-message" aria-live="polite"></p>
 
-        <div id="projects-board" class="kanban-board">
+        <div id="projects-board" class="projects-grid projects-view-grid">
           <article class="state-card">
             <h3 data-i18n="dashboard.loadingTitle">Loading projects...</h3>
             <p data-i18n="projects.loadingText">Preparing your kanban board.</p>
@@ -169,5 +189,6 @@
       });
     })();
   </script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 </body>
 </html>

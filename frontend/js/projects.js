@@ -4,7 +4,13 @@ var ProjectsPage;
     const API_BASE_URL = `${window.location.origin}/api`;
     const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
     const THEME_STORAGE_KEY = "dashboard-theme";
+    const DEFAULT_PROJECT_VIEW_STORAGE_KEY = "defaultProjectView";
+    const SELECTED_PROJECT_STORAGE_KEY = "selectedProjectContext";
+    const KNOWN_PROJECTS_STORAGE_KEY = "knownProjectsList";
     const MOBILE_SIDEBAR_BREAKPOINT = 960;
+    const DB_NAME = "SPMP_DB";
+    const DB_VERSION = 1;
+    const TASKS_STORE_NAME = "tasks";
     const i18n = (key, values) => window.I18n?.t(key, values) || key;
     const KANBAN_COLUMNS = [
         {
@@ -55,11 +61,14 @@ var ProjectsPage;
     let userAvatarElement = null;
     let projectsMessageBox = null;
     let projectsBoardElement = null;
+    let currentProjectView = "grid";
+    let projectViewButtons;
     let logoutButton = null;
     let themeToggleButton = null;
     let sidebarToggleButton = null;
     let sidebarElement = null;
     let sidebarBackdropElement = null;
+    let projectCompletionLookup = new Map();
     document.addEventListener("DOMContentLoaded", () => {
         void initializeProjectsPage();
     });
@@ -68,9 +77,10 @@ var ProjectsPage;
         initializeTheme();
         syncSidebarState();
         setupEventListeners();
+        applyStoredProjectView();
         const token = getStoredToken();
         if (!token) {
-            loadPreviewProjectsBoard();
+            await loadPreviewProjectsBoard();
             return;
         }
         renderBoardLoading();
@@ -82,6 +92,7 @@ var ProjectsPage;
         userAvatarElement = document.getElementById("user-avatar");
         projectsMessageBox = document.getElementById("projects-message");
         projectsBoardElement = document.getElementById("projects-board");
+        projectViewButtons = document.querySelectorAll("[data-project-view]");
         logoutButton = document.getElementById("logout-btn");
         themeToggleButton = document.getElementById("theme-toggle-btn");
         sidebarToggleButton = document.getElementById("sidebar-toggle-btn");
@@ -95,6 +106,15 @@ var ProjectsPage;
         sidebarBackdropElement?.addEventListener("click", handleSidebarBackdropClick);
         window.addEventListener("resize", syncSidebarState);
         document.addEventListener("keydown", handleEscapeKey);
+        projectsBoardElement?.addEventListener("click", handleProjectCardClick);
+        projectViewButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                const view = button.dataset.projectView;
+                if (view === "grid" || view === "list") {
+                    setProjectView(view);
+                }
+            });
+        });
         document.querySelectorAll(".sidebar-link").forEach((link) => {
             link.addEventListener("click", () => {
                 if (isMobileViewport()) {
@@ -111,6 +131,32 @@ var ProjectsPage;
     function readStoredTheme() {
         const value = localStorage.getItem(THEME_STORAGE_KEY);
         return value === "light" || value === "dark" ? value : "";
+    }
+    function readStoredProjectView() {
+        const value = localStorage.getItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY);
+        return value === "list" ? "list" : "grid";
+    }
+    function applyStoredProjectView() {
+        currentProjectView = readStoredProjectView();
+        renderProjectViewButtons();
+        if (!projectsBoardElement) {
+            return;
+        }
+        projectsBoardElement.className = currentProjectView === "list"
+            ? "projects-grid projects-view-list"
+            : "projects-grid projects-view-grid";
+    }
+    function setProjectView(view) {
+        currentProjectView = view;
+        localStorage.setItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY, view);
+        applyStoredProjectView();
+    }
+    function renderProjectViewButtons() {
+        projectViewButtons.forEach((button) => {
+            const isActive = button.dataset.projectView === currentProjectView;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-pressed", String(isActive));
+        });
     }
     function toggleTheme() {
         const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
@@ -172,7 +218,7 @@ var ProjectsPage;
             closeSidebar();
         }
     }
-    function loadPreviewProjectsBoard() {
+    async function loadPreviewProjectsBoard() {
         isPreviewMode = true;
         currentUser = {
             id: "preview-user",
@@ -184,6 +230,7 @@ var ProjectsPage;
         }
         updateUserAvatar(currentUser.name);
         showProjectsMessage(i18n("projects.preview"), "success");
+        await refreshProjectCompletionLookup(PREVIEW_PROJECTS);
         renderProjectsBoard(PREVIEW_PROJECTS);
     }
     async function loadUserData() {
@@ -211,7 +258,9 @@ var ProjectsPage;
         renderBoardLoading();
         try {
             const data = await requestWithAuth("/projects");
-            renderProjectsBoard(data.projects);
+            const projects = Array.isArray(data.projects) ? data.projects : [];
+            await refreshProjectCompletionLookup(projects);
+            renderProjectsBoard(projects);
         }
         catch (error) {
             console.error("Error loading projects:", error);
@@ -225,6 +274,7 @@ var ProjectsPage;
         if (!projectsBoardElement) {
             return;
         }
+        applyStoredProjectView();
         projectsBoardElement.innerHTML = `
       <article class="state-card">
         <h3>${escapeHtml(i18n("dashboard.loadingTitle"))}</h3>
@@ -236,8 +286,18 @@ var ProjectsPage;
         if (!projectsBoardElement) {
             return;
         }
-        const groupedProjects = groupProjectsByColumn(projects);
-        projectsBoardElement.innerHTML = KANBAN_COLUMNS.map((column) => renderColumn(column, groupedProjects[column.id])).join("");
+        applyStoredProjectView();
+        persistKnownProjects(projects);
+        if (!projects.length) {
+            projectsBoardElement.innerHTML = `
+        <article class="state-card empty-state-card">
+          <h3>${escapeHtml(i18n("dashboard.noProjects"))}</h3>
+          <p>${escapeHtml(i18n("dashboard.noProjectsText"))}</p>
+        </article>
+      `;
+            return;
+        }
+        projectsBoardElement.innerHTML = projects.map((project) => renderProjectCard(project)).join("");
     }
     function groupProjectsByColumn(projects) {
         const grouped = {
@@ -286,6 +346,7 @@ var ProjectsPage;
     }
     function renderProjectCard(project) {
         const creatorName = escapeHtml(currentUser?.name || i18n("common.you"));
+        const progress = getProjectCompletionSummary(project.id);
         const description = project.description?.trim()
             ? `<p class="project-description">${escapeHtml(project.description.trim())}</p>`
             : '<p class="project-description is-empty">No description yet.</p>';
@@ -298,7 +359,7 @@ var ProjectsPage;
             createdAt: project.created_at
         }).toString();
         return `
-      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}">
+      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}" data-project-name="${escapeHtml(project.name)}" data-project-status-label="${escapeHtml(formatStatus(project.status))}" data-project-creator="${escapeHtml(currentUser?.name || "You")}" data-project-created-at="${escapeHtml(project.created_at)}">
         <div class="project-head">
           <div class="project-title-wrap">
             <h3 class="project-name">${escapeHtml(project.name)}</h3>
@@ -313,6 +374,19 @@ var ProjectsPage;
             <span class="project-date">${escapeHtml(formatProjectDate(project.created_at))}</span>
           </div>
         </div>
+        <div class="project-progress-row project-progress-tone-${escapeHtml(progress.tone)}">
+          <div
+            class="project-progress-track"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="${progress.percentage}"
+            aria-label="${escapeHtml(progress.label)}"
+          >
+            <span class="project-progress-fill" style="width: ${progress.percentage}%;"></span>
+          </div>
+          <span class="project-progress-text">${escapeHtml(progress.label)}</span>
+        </div>
       </a>
     `;
     }
@@ -320,6 +394,7 @@ var ProjectsPage;
         if (!projectsBoardElement) {
             return;
         }
+        applyStoredProjectView();
         projectsBoardElement.innerHTML = `
       <article class="state-card">
         <h3>${escapeHtml(i18n("dashboard.projectsUnavailable"))}</h3>
@@ -333,6 +408,157 @@ var ProjectsPage;
         }
         projectsMessageBox.textContent = text;
         projectsMessageBox.className = type ? `form-message ${type}` : "form-message";
+    }
+    function handleProjectCardClick(event) {
+        const target = event.target;
+        const projectCard = target?.closest(".project-card-link");
+        if (!projectCard) {
+            return;
+        }
+        const projectId = projectCard.dataset.projectId || "";
+        const projectName = projectCard.dataset.projectName || "";
+        const status = projectCard.dataset.projectStatusLabel || "";
+        const creator = projectCard.dataset.projectCreator || "";
+        const createdAt = projectCard.dataset.projectCreatedAt || "";
+        localStorage.setItem(SELECTED_PROJECT_STORAGE_KEY, JSON.stringify({
+            projectId,
+            projectName,
+            status,
+            creator,
+            createdAt
+        }));
+    }
+    function persistKnownProjects(projects) {
+        const creator = currentUser?.name || "You";
+        const serializedProjects = projects.map((project) => ({
+            projectId: project.id,
+            projectName: project.name,
+            status: formatStatus(project.status),
+            creator,
+            createdAt: project.created_at
+        }));
+        localStorage.setItem(KNOWN_PROJECTS_STORAGE_KEY, JSON.stringify(serializedProjects.slice(0, 48)));
+    }
+    async function refreshProjectCompletionLookup(projects) {
+        projectCompletionLookup = await readProjectCompletionLookup(projects);
+    }
+    async function readProjectCompletionLookup(projects) {
+        const lookup = new Map();
+        const projectIds = projects
+            .map((project) => getProjectIdKey(project.id))
+            .filter(Boolean);
+        projectIds.forEach((projectId) => {
+            lookup.set(projectId, createProjectCompletionSummary(0, 0));
+        });
+        if (projectIds.length === 0 || !window.indexedDB) {
+            return lookup;
+        }
+        try {
+            const tasks = await readIndexedDbTasks();
+            const totalByProjectId = new Map();
+            const completedByProjectId = new Map();
+            tasks.forEach((task) => {
+                const projectId = getProjectIdKey(task?.projectId);
+                if (!projectId || !lookup.has(projectId)) {
+                    return;
+                }
+                totalByProjectId.set(projectId, (totalByProjectId.get(projectId) || 0) + 1);
+                if (isCompletedTaskStatus(task?.status)) {
+                    completedByProjectId.set(projectId, (completedByProjectId.get(projectId) || 0) + 1);
+                }
+            });
+            projectIds.forEach((projectId) => {
+                lookup.set(projectId, createProjectCompletionSummary(totalByProjectId.get(projectId) || 0, completedByProjectId.get(projectId) || 0));
+            });
+        }
+        catch (error) {
+            console.warn("Error reading project completion from IndexedDB:", error);
+        }
+        return lookup;
+    }
+    async function readIndexedDbTasks() {
+        if (!window.indexedDB) {
+            return [];
+        }
+        return await new Promise((resolve, reject) => {
+            const openRequest = window.indexedDB.open(DB_NAME, DB_VERSION);
+            openRequest.onupgradeneeded = () => {
+                const database = openRequest.result;
+                if (!database.objectStoreNames.contains(TASKS_STORE_NAME)) {
+                    database.createObjectStore(TASKS_STORE_NAME, {
+                        keyPath: "id",
+                        autoIncrement: true
+                    });
+                }
+            };
+            openRequest.onerror = () => {
+                reject(openRequest.error || new Error("Failed to open IndexedDB."));
+            };
+            openRequest.onsuccess = () => {
+                const database = openRequest.result;
+                let settled = false;
+                const finish = (callback) => {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    database.close();
+                    callback();
+                };
+                if (!database.objectStoreNames.contains(TASKS_STORE_NAME)) {
+                    finish(() => resolve([]));
+                    return;
+                }
+                const transaction = database.transaction(TASKS_STORE_NAME, "readonly");
+                const request = transaction.objectStore(TASKS_STORE_NAME).getAll();
+                request.onerror = () => {
+                    finish(() => reject(request.error || new Error("Failed to read IndexedDB tasks.")));
+                };
+                request.onsuccess = () => {
+                    const tasks = Array.isArray(request.result) ? request.result : [];
+                    finish(() => resolve(tasks));
+                };
+                transaction.onabort = () => {
+                    finish(() => reject(transaction.error || new Error("IndexedDB task read was aborted.")));
+                };
+            };
+        });
+    }
+    function getProjectCompletionSummary(projectId) {
+        return projectCompletionLookup.get(getProjectIdKey(projectId)) || createProjectCompletionSummary(0, 0);
+    }
+    function getProjectIdKey(projectId) {
+        if (projectId === null || projectId === undefined) {
+            return "";
+        }
+        return String(projectId).trim();
+    }
+    function createProjectCompletionSummary(totalTasks, completedTasks) {
+        const safeTotalTasks = Math.max(0, totalTasks);
+        const safeCompletedTasks = Math.min(Math.max(0, completedTasks), safeTotalTasks);
+        const percentage = safeTotalTasks > 0
+            ? Math.round((safeCompletedTasks / safeTotalTasks) * 100)
+            : 0;
+        return {
+            percentage,
+            tone: getProjectCompletionTone(percentage),
+            label: formatProjectCompletionLabel(percentage)
+        };
+    }
+    function getProjectCompletionTone(percentage) {
+        if (percentage <= 30) {
+            return "low";
+        }
+        if (percentage <= 60) {
+            return "medium";
+        }
+        return "high";
+    }
+    function formatProjectCompletionLabel(percentage) {
+        return `${percentage}% complete`;
+    }
+    function isCompletedTaskStatus(status) {
+        return typeof status === "string" && status.trim().toLowerCase() === "done";
     }
     function getStoredToken() {
         return localStorage.getItem("token")?.trim() || "";

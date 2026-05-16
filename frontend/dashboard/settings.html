@@ -136,6 +136,10 @@
                 >
               </label>
             </div>
+
+            <div class="settings-actions">
+              <button id="profile-save-btn" type="submit" class="submit-button" data-i18n="settings.profileSave">Save Changes</button>
+            </div>
           </article>
 
           <article class="settings-card">
@@ -258,6 +262,113 @@
       </section>
     </section>
   </main>
+
+  <div id="change-password-modal" class="modal" hidden aria-hidden="true">
+    <div class="modal-scrim" data-close-modal="true"></div>
+
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="change-password-modal-title">
+      <div class="modal-header">
+        <div>
+          <span class="brand-tag">SPMP</span>
+          <h2 id="change-password-modal-title" data-i18n="settings.passwordModalTitle">Change Password</h2>
+          <p class="subtitle" data-i18n="settings.passwordModalSubtitle">This frontend-only flow validates the form locally and does not contact the backend.</p>
+        </div>
+        <button
+          id="close-change-password-modal"
+          type="button"
+          class="close-btn"
+          data-i18n-aria-label="settings.passwordModalClose"
+          aria-label="Close change password dialog"
+        >&times;</button>
+      </div>
+
+      <form id="change-password-form" class="change-password-form" novalidate>
+        <div class="form-group">
+          <label for="current-password-input" data-i18n="settings.currentPassword">Current Password</label>
+          <div class="password-input-row">
+            <input
+              id="current-password-input"
+              name="currentPassword"
+              type="password"
+              autocomplete="current-password"
+              placeholder="Enter your current password"
+              data-i18n-placeholder="settings.currentPasswordPlaceholder"
+            >
+            <button type="button" class="password-toggle-button" data-password-toggle="current-password-input">Show</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="new-password-input" data-i18n="settings.newPassword">New Password</label>
+          <div class="password-input-row">
+            <input
+              id="new-password-input"
+              name="newPassword"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Enter a new password"
+              data-i18n-placeholder="settings.newPasswordPlaceholder"
+            >
+            <button type="button" class="password-toggle-button" data-password-toggle="new-password-input">Show</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirm-new-password-input" data-i18n="settings.confirmNewPassword">Confirm New Password</label>
+          <div class="password-input-row">
+            <input
+              id="confirm-new-password-input"
+              name="confirmNewPassword"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Re-enter the new password"
+              data-i18n-placeholder="settings.confirmNewPasswordPlaceholder"
+            >
+            <button type="button" class="password-toggle-button" data-password-toggle="confirm-new-password-input">Show</button>
+          </div>
+        </div>
+
+        <p class="form-message" id="change-password-modal-message" aria-live="polite"></p>
+
+        <div class="modal-actions">
+          <button id="cancel-change-password-btn" type="button" class="secondary-button" data-i18n="dashboard.cancel">Cancel</button>
+          <button id="change-password-save-btn" type="submit" class="submit-button" data-i18n="settings.passwordSave">Save</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="profile-confirm-modal" class="modal profile-confirm-modal" hidden aria-hidden="true">
+    <div class="modal-scrim" data-close-modal="true"></div>
+
+    <section class="modal-card profile-confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="profile-confirm-modal-title">
+      <div class="modal-header">
+        <div>
+          <h2 id="profile-confirm-modal-title" data-i18n="settings.profileConfirmTitle">Confirm your identity</h2>
+        </div>
+      </div>
+
+      <form id="profile-confirm-form" class="profile-confirm-form" novalidate>
+        <div class="form-group">
+          <label for="profile-confirm-password" data-i18n="settings.profileConfirmPassword">Password</label>
+          <input
+            id="profile-confirm-password"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Enter your password"
+            data-i18n-placeholder="settings.profileConfirmPasswordPlaceholder"
+          >
+        </div>
+
+        <p class="form-message" id="profile-confirm-message" aria-live="polite"></p>
+
+        <div class="modal-actions">
+          <button id="profile-confirm-cancel-btn" type="button" class="secondary-button" data-i18n="settings.profileConfirmCancel">Cancel</button>
+          <button id="profile-confirm-submit-btn" type="submit" class="submit-button" data-i18n="settings.profileConfirmConfirm">Confirm</button>
+        </div>
+      </form>
+    </section>
+  </div>
 
   <script src="../js/settings.js" defer></script>
 </body>

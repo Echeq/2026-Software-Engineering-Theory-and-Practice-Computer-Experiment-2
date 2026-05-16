@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SPMP | Tasks</title>
   <link rel="stylesheet" href="../css/dashboard.css">
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="../js/i18n.js" defer></script>
 </head>
 <body>
@@ -95,24 +96,121 @@
         </div>
       </section>
 
-      <section class="projects-section task-detail-section" aria-labelledby="task-detail-title">
+      <section class="projects-section task-board-section" aria-labelledby="task-board-title">
         <div class="section-header">
           <div class="section-copy">
-            <span class="section-tag" data-i18n="tasks.sectionTag">Tasks</span>
-            <h2 id="task-detail-title" data-i18n="tasks.sectionTitle">Task Board Placeholder</h2>
-            <p class="section-subtitle" data-i18n="tasks.sectionSubtitle">This page is ready as the navigation target for project cards.</p>
+            <span class="section-tag">IndexedDB</span>
+            <h2 id="task-board-title">Local Task Board</h2>
+            <p class="section-subtitle">Tasks are stored in your browser and rendered into Todo, In Progress, and Done columns without reloading the page.</p>
           </div>
+
+          <button id="open-task-modal-btn" type="button" class="submit-button">Add Task</button>
         </div>
 
-        <div class="detail-panel">
-          <p data-i18n="tasks.detailText">
-            The selected project context is loaded from the projects board. This keeps the click-through flow working now and leaves room for a fuller task board later.
-          </p>
+        <p class="form-message" id="tasks-message" aria-live="polite"></p>
+
+        <div id="tasks-board" class="kanban-board">
+          <article class="state-card">
+            <h3>Loading tasks...</h3>
+            <p>Opening the local IndexedDB task store.</p>
+          </article>
         </div>
       </section>
     </section>
   </main>
 
+  <div id="task-modal" class="modal" hidden aria-hidden="true">
+    <div class="modal-scrim" data-close-modal="true"></div>
+
+    <section class="modal-card task-modal-card" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+      <div class="modal-header">
+        <div>
+          <span class="brand-tag">SPMP</span>
+          <h2 id="task-modal-title">Add Task</h2>
+          <p class="subtitle">Create a task and save it locally in IndexedDB on this device.</p>
+        </div>
+
+        <button
+          id="close-task-modal"
+          type="button"
+          class="close-btn"
+          aria-label="Close add task dialog"
+        >&times;</button>
+      </div>
+
+      <form id="task-form" class="project-form task-form" novalidate>
+        <div class="task-form-grid">
+          <label class="form-group task-form-span-full" for="task-title">
+            <span>Title</span>
+            <input
+              id="task-title"
+              name="title"
+              type="text"
+              autocomplete="off"
+              placeholder="Add a clear task title"
+              required
+            >
+          </label>
+
+          <label class="form-group task-form-span-full" for="task-description">
+            <span>Description</span>
+            <textarea
+              id="task-description"
+              name="description"
+              rows="4"
+              placeholder="Optional notes, links, or acceptance criteria"
+            ></textarea>
+          </label>
+
+          <label class="form-group" for="task-status">
+            <span>Status</span>
+            <select id="task-status" name="status" class="sort-select">
+              <option value="Todo">Todo</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Done">Done</option>
+            </select>
+          </label>
+
+          <label class="form-group" for="task-priority">
+            <span>Priority</span>
+            <select id="task-priority" name="priority" class="sort-select">
+              <option value="Low">Low</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="High">High</option>
+            </select>
+          </label>
+
+          <label class="form-group" for="task-due-date">
+            <span>Due Date</span>
+            <input
+              id="task-due-date"
+              name="dueDate"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              placeholder="YYYY-MM-DD"
+              maxlength="10"
+              lang="en-US"
+            >
+          </label>
+
+          <label class="form-group" for="task-project">
+            <span>Project</span>
+            <select id="task-project" name="projectId" class="sort-select"></select>
+          </label>
+        </div>
+
+        <p class="form-message" id="task-form-message" aria-live="polite"></p>
+
+        <div class="modal-actions">
+          <button id="cancel-task-modal" type="button" class="secondary-button">Cancel</button>
+          <button id="save-task-btn" type="submit" class="submit-button">Save Task</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
   <script src="../js/tasks.js" defer></script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 </body>
 </html>

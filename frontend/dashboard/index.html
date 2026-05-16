@@ -6,17 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SPMP | Dashboard</title>
   <link rel="stylesheet" href="../css/dashboard.css">
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="../js/i18n.js" defer></script>
-  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
-  <script>
-    document.addEventListener("htmx:afterSwap", (event) => {
-      if (event.target && event.target.id === "projects-list") {
-        document.getElementById("empty-state-create-project-btn")?.addEventListener("click", () => {
-          document.getElementById("new-project-btn")?.click()
-        }, { once: true })
-      }
-    })
-  </script>
 </head>
 <body>
   <div id="sidebar-backdrop" class="sidebar-backdrop" hidden data-close-sidebar="true"></div>
@@ -132,10 +123,6 @@
               name="search"
               placeholder="Search projects"
               data-i18n-placeholder="dashboard.searchPlaceholder"
-              hx-get="/api/projects/fragment/cards"
-              hx-trigger="input changed delay:250ms, search"
-              hx-target="#projects-list"
-              hx-include="#project-search-input, .filter-button.is-active, #project-sort-select"
             >
           </label>
 
@@ -158,10 +145,7 @@
               class="filter-button is-active"
               name="status"
               value="all"
-              hx-get="/api/projects/fragment/cards"
-              hx-target="#projects-list"
-              hx-include="#project-search-input, .filter-button.is-active, #project-sort-select"
-              hx-on:click="document.querySelectorAll('.filter-button').forEach((button) => button.classList.remove('is-active')); this.classList.add('is-active')"
+              aria-pressed="true"
               data-i18n="dashboard.filter.all"
             >All</button>
             <button
@@ -169,10 +153,7 @@
               class="filter-button"
               name="status"
               value="active"
-              hx-get="/api/projects/fragment/cards"
-              hx-target="#projects-list"
-              hx-include="#project-search-input, .filter-button.is-active, #project-sort-select"
-              hx-on:click="document.querySelectorAll('.filter-button').forEach((button) => button.classList.remove('is-active')); this.classList.add('is-active')"
+              aria-pressed="false"
               data-i18n="dashboard.filter.active"
             >Active</button>
             <button
@@ -180,10 +161,7 @@
               class="filter-button"
               name="status"
               value="in-review"
-              hx-get="/api/projects/fragment/cards"
-              hx-target="#projects-list"
-              hx-include="#project-search-input, .filter-button.is-active, #project-sort-select"
-              hx-on:click="document.querySelectorAll('.filter-button').forEach((button) => button.classList.remove('is-active')); this.classList.add('is-active')"
+              aria-pressed="false"
               data-i18n="dashboard.filter.inReview"
             >In Review</button>
             <button
@@ -191,10 +169,7 @@
               class="filter-button"
               name="status"
               value="planning"
-              hx-get="/api/projects/fragment/cards"
-              hx-target="#projects-list"
-              hx-include="#project-search-input, .filter-button.is-active, #project-sort-select"
-              hx-on:click="document.querySelectorAll('.filter-button').forEach((button) => button.classList.remove('is-active')); this.classList.add('is-active')"
+              aria-pressed="false"
               data-i18n="dashboard.filter.planning"
             >Planning</button>
           </div>
@@ -355,71 +330,6 @@
       window.addEventListener("pageshow", updateGreetingBanner);
     })();
   </script>
-  <script>
-    (() => {
-      const roots = [document.getElementById("projects-list")].filter(Boolean);
-
-      if (!roots.length) {
-        return;
-      }
-
-      const statusMatchers = [
-        { value: "active", labels: ["active", "进行中", "activo"] },
-        { value: "in-review", labels: ["in review", "评审中", "en revisión"] },
-        { value: "planning", labels: ["planning", "规划中", "planificación"] }
-      ];
-
-      function readCardStatus(text) {
-        const normalized = (text || "").trim().toLowerCase();
-
-        for (const matcher of statusMatchers) {
-          if (matcher.labels.some((label) => normalized.includes(label))) {
-            return matcher.value;
-          }
-        }
-
-        return "";
-      }
-
-      function applyProjectCardStatus(root) {
-        root.querySelectorAll(".project-card").forEach((card) => {
-          const statusText = card.querySelector(".project-status")?.textContent || "";
-          const status = readCardStatus(statusText);
-
-          if (status) {
-            card.setAttribute("data-project-status", status);
-            return;
-          }
-
-          card.removeAttribute("data-project-status");
-        });
-      }
-
-      roots.forEach((root) => {
-        applyProjectCardStatus(root);
-
-        const observer = new MutationObserver(() => {
-          applyProjectCardStatus(root);
-        });
-
-        observer.observe(root, {
-          childList: true,
-          subtree: true
-        });
-      });
-
-      document.addEventListener("htmx:afterSwap", (event) => {
-        if (!(event.target instanceof HTMLElement)) {
-          return;
-        }
-
-        roots.forEach((root) => {
-          if (root === event.target || root.contains(event.target)) {
-            applyProjectCardStatus(root);
-          }
-        });
-      });
-    })();
-  </script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 </body>
 </html>

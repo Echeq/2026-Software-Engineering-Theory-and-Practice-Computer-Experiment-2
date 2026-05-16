@@ -179,10 +179,32 @@ const translations = {
         "settings.namePlaceholder": "Anna Ivanova",
         "settings.email": "Email",
         "settings.emailPlaceholder": "student@example.com",
+        "settings.profileSave": "Save Changes",
+        "settings.profileConfirmTitle": "Confirm your identity",
+        "settings.profileConfirmPassword": "Password",
+        "settings.profileConfirmPasswordPlaceholder": "Enter your password",
+        "settings.profileConfirmCancel": "Cancel",
+        "settings.profileConfirmConfirm": "Confirm",
+        "settings.profileConfirmRequired": "Password is required.",
+        "settings.profileSaveSuccess": "Profile changes saved successfully.",
         "settings.accountTitle": "Account",
         "settings.accountText": "Account security actions are available here as frontend-only interactions.",
         "settings.changePassword": "Change Password",
         "settings.changePasswordHint": "Password change is not connected to the backend in this frontend-only view.",
+        "settings.passwordModalTitle": "Change Password",
+        "settings.passwordModalSubtitle": "Validate the form locally and keep the entire flow on the frontend.",
+        "settings.passwordModalClose": "Close change password dialog",
+        "settings.currentPassword": "Current Password",
+        "settings.currentPasswordPlaceholder": "Enter your current password",
+        "settings.newPassword": "New Password",
+        "settings.newPasswordPlaceholder": "Enter a new password",
+        "settings.confirmNewPassword": "Confirm New Password",
+        "settings.confirmNewPasswordPlaceholder": "Re-enter the new password",
+        "settings.passwordSave": "Save",
+        "settings.passwordValidation.currentRequired": "Current Password is required.",
+        "settings.passwordValidation.newTooShort": "New Password must be at least 8 characters.",
+        "settings.passwordValidation.confirmMismatch": "Confirm New Password must match New Password exactly.",
+        "settings.passwordSuccess": "Password updated successfully.",
         "settings.accountHint": "This button is a frontend placeholder and does not send a backend request.",
         "settings.notificationsTitle": "Notification preferences",
         "settings.notificationsText": "Choose which alerts stay enabled on this device.",
@@ -800,10 +822,15 @@ function bindNotificationCenterEvents() {
         return;
     }
     document.addEventListener("click", (event) => {
-        if (!(event.target instanceof Element) || !event.target.closest(".notification-center")) {
+        const openCenters = Array.from(document.querySelectorAll(".notification-center.is-open"));
+        const target = event.target;
+        if (openCenters.length === 0) {
+            return;
+        }
+        if (!(target instanceof Node) || !openCenters.some((center) => center.contains(target))) {
             closeNotificationCenters();
         }
-    });
+    }, true);
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
             closeNotificationCenters();
@@ -820,6 +847,10 @@ function upgradeNotificationCenter(center) {
         const shouldOpen = !center.classList.contains("is-open");
         closeNotificationCenters();
         setNotificationCenterOpen(center, shouldOpen);
+    });
+    center.querySelector(".notification-center-close")?.addEventListener("click", () => {
+        setNotificationCenterOpen(center, false);
+        center.querySelector(".notification-center-trigger")?.focus();
     });
     bindNotificationCenterEvents();
 }
@@ -851,7 +882,14 @@ function injectNotificationCenter() {
     <section class="notification-center-panel" role="dialog" aria-label="${t("notifications.title")}" hidden>
       <div class="notification-center-header">
         <strong>${t("notifications.title")}</strong>
-        <span class="notification-center-count">${NOTIFICATION_COUNT}</span>
+        <div class="notification-center-header-actions">
+          <span class="notification-center-count">${NOTIFICATION_COUNT}</span>
+          <button
+            type="button"
+            class="close-btn notification-center-close"
+            aria-label="Close notifications"
+          >&times;</button>
+        </div>
       </div>
       <div class="notification-center-list">
         <article class="notification-item">
