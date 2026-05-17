@@ -16,15 +16,13 @@
         "start": "cd backend && npm start"
     },
     "devDependencies": {
-        "concurrently": "^9.1.2"
+        "concurrently": "^9.1.2",
+        "ts-node": "^10.9.2"
     },
     "keywords": [
         "project-management",
         "task-management"
     ],
     "author": "",
-    "license": "MIT",
-    "dependencies": {
-        "ts-node": "^10.9.2"
-    }
+    "license": "MIT"
 }
