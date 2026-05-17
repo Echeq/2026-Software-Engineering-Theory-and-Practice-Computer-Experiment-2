@@ -83,7 +83,7 @@
           <span class="brand-tag">SPMP</span>
           <h1 id="projects-page-title" data-i18n="projects.title">Projects Board</h1>
           <p class="subtitle" data-i18n="projects.subtitle">
-            A kanban-style view for deciding what to start next, what is moving now, and what has already shipped.
+            Manage your project pipeline.
           </p>
         </div>
 
@@ -101,7 +101,7 @@
           <div class="section-copy">
             <span class="section-tag" data-i18n="projects.kanbanTag">Kanban</span>
             <h2 id="projects-board-title" data-i18n="projects.flowTitle">Project Flow</h2>
-            <p class="section-subtitle" data-i18n="projects.flowSubtitle">Each column groups projects by their current delivery phase.</p>
+            <p class="section-subtitle" data-i18n="projects.flowSubtitle">Drag projects across stages to update their status.</p>
           </div>
 
           <div class="projects-view-toggle" role="group" aria-label="Project view mode">
@@ -145,6 +145,21 @@
         return;
       }
 
+      function refreshProjectsAos() {
+        if (window.AOS && typeof AOS.refreshHard === "function") {
+          AOS.refreshHard();
+        }
+      }
+
+      function initializeProjectsAos() {
+        if (window.AOS && typeof AOS.init === "function") {
+          AOS.init({ duration: 600, once: true, easing: 'ease-out' });
+          refreshProjectsAos();
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", initializeProjectsAos, { once: true });
+
       const statusMatchers = [
         { value: "active", labels: ["active", "进行中", "activo"] },
         { value: "in-review", labels: ["in review", "评审中", "en revisión"] },
@@ -181,6 +196,7 @@
 
       const observer = new MutationObserver(() => {
         applyProjectCardStatus();
+        refreshProjectsAos();
       });
 
       observer.observe(root, {

@@ -26,13 +26,27 @@ body {
   font-family: Inter, "Segoe UI", Arial, sans-serif;
   font-size: 17px;
   color: var(--text);
-  background: linear-gradient(180deg, var(--bg), #f1f5f9);
+  background: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 16px;
   padding: 16px;
+}
+
+#particles-js {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  background: #EEEEF5;
+}
+
+body[data-theme="dark"] #particles-js {
+  background: #0F0F1A;
 }
 
 .auth-page-controls {
@@ -309,6 +323,8 @@ body[data-theme="dark"] {
 .login-page {
   width: 100%;
   min-height: 0;
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   padding: 0;
@@ -317,6 +333,8 @@ body[data-theme="dark"] {
 .login-card {
   width: min(100%, 420px);
   min-width: 0;
+  position: relative;
+  z-index: 1;
   padding: 24px;
   border: 1px solid var(--surface-border);
   border-radius: 16px;

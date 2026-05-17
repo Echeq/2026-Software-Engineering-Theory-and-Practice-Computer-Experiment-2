@@ -7,6 +7,34 @@
   <link rel="stylesheet" href="../css/dashboard.css">
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="../js/i18n.js" defer></script>
+  <style>
+    .task-board-section .kanban-list {
+      min-height: 128px;
+    }
+
+    .task-board-section .task-card-sortable-chosen,
+    .task-board-section .task-card-sortable-drag {
+      opacity: 0.5 !important;
+    }
+
+    .task-board-section .task-card-sortable-ghost {
+      opacity: 0.34 !important;
+      border: 1px dashed rgba(79, 70, 229, 0.55) !important;
+      background: rgba(79, 70, 229, 0.08) !important;
+      box-shadow: none !important;
+    }
+
+    .task-board-section .task-card-sortable-ghost .task-card-header,
+    .task-board-section .task-card-sortable-ghost .task-card-description,
+    .task-board-section .task-card-sortable-ghost .task-meta-list {
+      visibility: hidden;
+    }
+
+    body[data-theme="dark"] .task-board-section .task-card-sortable-ghost {
+      border-color: rgba(129, 140, 248, 0.62) !important;
+      background: rgba(99, 102, 241, 0.16) !important;
+    }
+  </style>
 </head>
 <body>
   <div id="sidebar-backdrop" class="sidebar-backdrop" hidden data-close-sidebar="true"></div>
@@ -83,7 +111,7 @@
           <span class="brand-tag">SPMP</span>
           <h1 id="tasks-page-title" data-i18n="tasks.title">Tasks Workspace</h1>
           <p id="tasks-page-subtitle" class="subtitle" data-i18n="tasks.subtitleDefault">
-            Open a project from the projects board to continue into its task workflow.
+            Manage tasks across your projects.
           </p>
         </div>
 
@@ -101,7 +129,7 @@
           <div class="section-copy">
             <span class="section-tag">IndexedDB</span>
             <h2 id="task-board-title">Local Task Board</h2>
-            <p class="section-subtitle">Tasks are stored in your browser and rendered into Todo, In Progress, and Done columns without reloading the page.</p>
+            <p class="section-subtitle">Your local task board — powered by IndexedDB.</p>
           </div>
 
           <button id="open-task-modal-btn" type="button" class="submit-button">Add Task</button>
@@ -212,5 +240,7 @@
 
   <script src="../js/tasks.js" defer></script>
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </body>
 </html>

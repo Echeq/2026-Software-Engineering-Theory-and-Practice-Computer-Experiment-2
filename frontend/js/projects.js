@@ -78,6 +78,7 @@ var ProjectsPage;
         syncSidebarState();
         setupEventListeners();
         applyStoredProjectView();
+        initializeAos();
         const token = getStoredToken();
         if (!token) {
             await loadPreviewProjectsBoard();
@@ -86,6 +87,16 @@ var ProjectsPage;
         renderBoardLoading();
         await loadUserData();
         await loadProjects();
+    }
+    function initializeAos() {
+        if (window.AOS && typeof AOS.init === "function") {
+            AOS.init({ duration: 600, once: true, easing: 'ease-out' });
+        }
+    }
+    function refreshAos() {
+        if (window.AOS && typeof AOS.refreshHard === "function") {
+            AOS.refreshHard();
+        }
     }
     function cacheElements() {
         userNameElement = document.getElementById("user-name");
@@ -297,7 +308,8 @@ var ProjectsPage;
       `;
             return;
         }
-        projectsBoardElement.innerHTML = projects.map((project) => renderProjectCard(project)).join("");
+        projectsBoardElement.innerHTML = projects.map((project, index) => renderProjectCard(project, index)).join("");
+        refreshAos();
     }
     function groupProjectsByColumn(projects) {
         const grouped = {
@@ -322,7 +334,7 @@ var ProjectsPage;
     }
     function renderColumn(column, projects) {
         const cardsMarkup = projects.length > 0
-            ? projects.map((project) => renderProjectCard(project)).join("")
+            ? projects.map((project, index) => renderProjectCard(project, index)).join("")
             : `
           <article class="state-card empty-column-card">
             <h3>${escapeHtml(i18n("projects.emptyColumn"))}</h3>
@@ -344,9 +356,10 @@ var ProjectsPage;
       </section>
     `;
     }
-    function renderProjectCard(project) {
+    function renderProjectCard(project, index = 0) {
         const creatorName = escapeHtml(currentUser?.name || i18n("common.you"));
         const progress = getProjectCompletionSummary(project.id);
+        const aosDelay = getProjectCardAosDelay(index);
         const description = project.description?.trim()
             ? `<p class="project-description">${escapeHtml(project.description.trim())}</p>`
             : '<p class="project-description is-empty">No description yet.</p>';
@@ -359,7 +372,7 @@ var ProjectsPage;
             createdAt: project.created_at
         }).toString();
         return `
-      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}" data-project-name="${escapeHtml(project.name)}" data-project-status-label="${escapeHtml(formatStatus(project.status))}" data-project-creator="${escapeHtml(currentUser?.name || "You")}" data-project-created-at="${escapeHtml(project.created_at)}">
+      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}" data-project-name="${escapeHtml(project.name)}" data-project-status-label="${escapeHtml(formatStatus(project.status))}" data-project-creator="${escapeHtml(currentUser?.name || "You")}" data-project-created-at="${escapeHtml(project.created_at)}" data-aos="fade-up" data-aos-delay="${aosDelay}">
         <div class="project-head">
           <div class="project-title-wrap">
             <h3 class="project-name">${escapeHtml(project.name)}</h3>
@@ -438,6 +451,9 @@ var ProjectsPage;
             createdAt: project.created_at
         }));
         localStorage.setItem(KNOWN_PROJECTS_STORAGE_KEY, JSON.stringify(serializedProjects.slice(0, 48)));
+    }
+    function getProjectCardAosDelay(index) {
+        return String(Math.min((index + 1) * 100, 300));
     }
     async function refreshProjectCompletionLookup(projects) {
         projectCompletionLookup = await readProjectCompletionLookup(projects);

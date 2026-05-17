@@ -72,14 +72,14 @@
 
           <div class="topbar-copy">
             <span class="section-tag" data-i18n="dashboard.topbarTag">Workspace</span>
-            <p class="topbar-label" data-i18n="dashboard.topbarLabel">Navigation, projects, and account controls in one place.</p>
+            <p class="topbar-label" data-i18n="dashboard.topbarLabel">Your workspace, all in one place.</p>
           </div>
         </div>
 
         <div class="topbar-actions"></div>
       </header>
 
-      <section class="greeting-banner" aria-label="Daily greeting">
+      <section class="greeting-banner" aria-label="Daily greeting" data-aos="fade-down">
         <p id="local-greeting-title" class="greeting-title" aria-live="polite">Good morning</p>
         <time id="local-greeting-date" class="greeting-date" aria-live="polite"></time>
       </section>
@@ -89,7 +89,7 @@
           <span class="brand-tag">SPMP</span>
           <h1 id="dashboard-title" data-i18n="dashboard.title">Projects Dashboard</h1>
           <p class="subtitle" data-i18n="dashboard.subtitle">
-            A focused workspace for tracking projects, planning new work, and staying organized across your study flow.
+            Track projects, manage tasks, and stay organized.
           </p>
         </div>
 
@@ -103,12 +103,42 @@
         </div>
       </section>
 
+      <section class="projects-section dashboard-stats-section" aria-labelledby="dashboard-stats-title">
+        <div class="section-header">
+          <div class="section-copy">
+            <span class="section-tag">Statistics</span>
+            <h2 id="dashboard-stats-title">Dashboard Statistics</h2>
+            <p class="section-subtitle">A quick visual summary of project and task progress on this device.</p>
+          </div>
+        </div>
+
+        <div class="dashboard-stats-grid">
+          <article class="project-card dashboard-chart-card" data-aos="fade-up">
+            <div class="dashboard-chart-copy">
+              <h3>Project Status</h3>
+            </div>
+            <div class="dashboard-chart-canvas-wrap">
+              <canvas id="project-status-chart" aria-label="Project status chart" role="img"></canvas>
+            </div>
+          </article>
+
+          <article class="project-card dashboard-chart-card" data-aos="fade-up">
+            <div class="dashboard-chart-copy">
+              <h3>Task Overview</h3>
+            </div>
+            <div class="dashboard-chart-canvas-wrap">
+              <canvas id="task-overview-chart" aria-label="Task overview chart" role="img"></canvas>
+            </div>
+          </article>
+        </div>
+      </section>
+
       <section class="projects-section" aria-labelledby="projects-title">
         <div class="section-header">
           <div class="section-copy">
             <span class="section-tag" data-i18n="dashboard.projectsTag">Projects</span>
             <h2 id="projects-title" data-i18n="dashboard.projectsTitle">My Projects</h2>
-            <p class="section-subtitle" data-i18n="dashboard.projectsSubtitle">Keep project workspaces visible, organized, and easy to scan.</p>
+            <p class="section-subtitle" data-i18n="dashboard.projectsSubtitle">All your projects at a glance.</p>
           </div>
         </div>
 
@@ -331,5 +361,6 @@
     })();
   </script>
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>

@@ -7,6 +7,8 @@ const MOBILE_SIDEBAR_BREAKPOINT = 960;
 const DB_NAME = "SPMP_DB";
 const DB_VERSION = 1;
 const TASKS_STORE_NAME = "tasks";
+const PROJECT_STATUS_CHART_COLORS = ["#94A3B8", "#22C55E", "#F59E0B", "#6366F1"];
+const TASK_OVERVIEW_CHART_COLORS = ["#94A3B8", "#F59E0B", "#22C55E"];
 const i18n = (key, values) => window.I18n?.t(key, values) || key;
 let isPreviewMode = false;
 const PREVIEW_PROJECTS = [
@@ -61,6 +63,11 @@ let closeProjectModalButton = null;
 let cancelProjectModalButton = null;
 let allProjects = [];
 let projectCompletionLookup = new Map();
+let projectStatusChartCanvas = null;
+let taskOverviewChartCanvas = null;
+let projectStatusChart = null;
+let taskOverviewChart = null;
+let taskStatusCounts = createTaskStatusCounts();
 document.addEventListener("DOMContentLoaded", () => {
     void initializeDashboard();
 });
@@ -70,6 +77,8 @@ async function initializeDashboard() {
     refreshGreetingBanner();
     syncSidebarState();
     setupEventListeners();
+    initializeAos();
+    await initializeDashboardCharts();
     const token = getStoredToken();
     if (!token) {
         await loadPreviewDashboard();
@@ -78,6 +87,20 @@ async function initializeDashboard() {
     renderProjectsLoading();
     await loadUserData();
     await loadProjects();
+}
+function initializeAos() {
+    if (window.AOS && typeof AOS.init === "function") {
+        AOS.init({ duration: 600, once: true, easing: 'ease-out' });
+    }
+}
+function refreshAos() {
+    if (window.AOS && typeof AOS.refreshHard === "function") {
+        AOS.refreshHard();
+    }
+}
+async function initializeDashboardCharts() {
+    await refreshTaskStatusCounts();
+    renderDashboardCharts();
 }
 function cacheElements() {
     userNameElement = document.getElementById("user-name");
@@ -103,6 +126,8 @@ function cacheElements() {
     projectSubmitButton = document.getElementById("project-submit-btn");
     closeProjectModalButton = document.getElementById("close-project-modal");
     cancelProjectModalButton = document.getElementById("cancel-project-btn");
+    projectStatusChartCanvas = document.getElementById("project-status-chart");
+    taskOverviewChartCanvas = document.getElementById("task-overview-chart");
 }
 function setupEventListeners() {
     logoutButton?.addEventListener("click", logout);
@@ -151,12 +176,14 @@ function toggleTheme() {
 function applyTheme(theme) {
     document.body.dataset.theme = theme;
     if (!themeToggleButton) {
+        renderDashboardCharts();
         return;
     }
     const isDarkTheme = theme === "dark";
     themeToggleButton.textContent = isDarkTheme ? i18n("theme.light") : i18n("theme.dark");
     themeToggleButton.setAttribute("aria-pressed", String(isDarkTheme));
     themeToggleButton.setAttribute("aria-label", isDarkTheme ? i18n("theme.toLight") : i18n("theme.toDark"));
+    renderDashboardCharts();
 }
 function isMobileViewport() {
     return window.innerWidth <= MOBILE_SIDEBAR_BREAKPOINT;
@@ -271,6 +298,7 @@ function renderProjectsLoading() {
       </article>
     `).join("")}
   `;
+    renderProjectStatusChart();
 }
 function renderProjects(projects) {
     if (!projectsListElement) {
@@ -296,14 +324,16 @@ function renderProjects(projects) {
       </article>
     `;
         document.getElementById("empty-state-create-project-btn")?.addEventListener("click", openProjectModal, { once: true });
+        renderProjectStatusChart();
         return;
     }
-    projectsListElement.innerHTML = projects.map((project) => {
+    projectsListElement.innerHTML = projects.map((project, index) => {
         const creatorName = escapeHtml(currentUser?.name || "You");
         const taskCount = typeof project.taskCount === "number" ? project.taskCount : 0;
         const normalizedStatus = getNormalizedProjectStatus(project.status);
         const statusIndicator = getStatusIconMarkup(normalizedStatus);
         const progress = getProjectCompletionSummary(project.id);
+        const aosDelay = getProjectCardAosDelay(index);
         const description = project.description?.trim()
             ? `<p class="project-description">${escapeHtml(project.description.trim())}</p>`
             : '<p class="project-description is-empty">No description yet.</p>';
@@ -315,7 +345,7 @@ function renderProjects(projects) {
             createdAt: project.created_at
         }).toString();
         return `
-      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}" data-project-status="${escapeHtml(normalizedStatus)}">
+      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}" data-project-status="${escapeHtml(normalizedStatus)}" data-aos="fade-up" data-aos-delay="${aosDelay}">
         <div class="project-head">
           <div class="project-title-wrap">
             <h3 class="project-name">${escapeHtml(project.name)}</h3>
@@ -344,6 +374,8 @@ function renderProjects(projects) {
       </a>
     `;
     }).join("");
+    refreshAos();
+    renderProjectStatusChart();
 }
 function renderProjectsError(text) {
     if (!projectsListElement) {
@@ -355,6 +387,7 @@ function renderProjectsError(text) {
       <p>${escapeHtml(text)}</p>
     </article>
   `;
+    renderProjectStatusChart();
 }
 async function handleProjectSubmit(event) {
     event.preventDefault();
@@ -642,6 +675,201 @@ function matchesProjectStatus(project, filter) {
         return true;
     }
     return getNormalizedProjectStatus(project.status) === filter;
+}
+function renderDashboardCharts() {
+    renderProjectStatusChart();
+    renderTaskOverviewChart();
+}
+function renderProjectStatusChart() {
+    if (!projectStatusChartCanvas || typeof Chart !== "function") {
+        return;
+    }
+    const counts = readProjectStatusCountsFromCards();
+    const themeColors = getDashboardChartThemeColors();
+    const data = [counts.planning, counts.active, counts.inReview, counts.done];
+    if (projectStatusChart) {
+        projectStatusChart.data.datasets[0].data = data;
+        projectStatusChart.data.datasets[0].backgroundColor = PROJECT_STATUS_CHART_COLORS;
+        projectStatusChart.data.datasets[0].borderColor = themeColors.surface;
+        projectStatusChart.options.plugins.legend.labels.color = themeColors.text;
+        projectStatusChart.update();
+        return;
+    }
+    projectStatusChart = new Chart(projectStatusChartCanvas, {
+        type: "doughnut",
+        data: {
+            labels: ["Planning", "Active", "In Review", "Done"],
+            datasets: [
+                {
+                    data,
+                    backgroundColor: PROJECT_STATUS_CHART_COLORS,
+                    borderColor: themeColors.surface,
+                    borderWidth: 2,
+                    hoverOffset: 6
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "62%",
+            plugins: {
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        color: themeColors.text,
+                        boxWidth: 12,
+                        padding: 16,
+                        usePointStyle: true,
+                        pointStyle: "circle"
+                    }
+                }
+            }
+        }
+    });
+}
+function renderTaskOverviewChart() {
+    if (!taskOverviewChartCanvas || typeof Chart !== "function") {
+        return;
+    }
+    const themeColors = getDashboardChartThemeColors();
+    const data = [taskStatusCounts.todo, taskStatusCounts.inProgress, taskStatusCounts.done];
+    if (taskOverviewChart) {
+        taskOverviewChart.data.datasets[0].data = data;
+        taskOverviewChart.data.datasets[0].backgroundColor = TASK_OVERVIEW_CHART_COLORS;
+        taskOverviewChart.options.plugins.legend.labels.color = themeColors.text;
+        taskOverviewChart.options.scales.x.ticks.color = themeColors.text;
+        taskOverviewChart.options.scales.y.ticks.color = themeColors.text;
+        taskOverviewChart.options.scales.x.grid.color = themeColors.grid;
+        taskOverviewChart.options.scales.y.grid.color = themeColors.grid;
+        taskOverviewChart.update();
+        return;
+    }
+    taskOverviewChart = new Chart(taskOverviewChartCanvas, {
+        type: "bar",
+        data: {
+            labels: ["Todo", "In Progress", "Done"],
+            datasets: [
+                {
+                    data,
+                    backgroundColor: TASK_OVERVIEW_CHART_COLORS,
+                    borderRadius: 10,
+                    maxBarThickness: 56
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false,
+                    labels: {
+                        color: themeColors.text
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: themeColors.text
+                    },
+                    grid: {
+                        color: themeColors.grid,
+                        drawBorder: false
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: themeColors.text,
+                        precision: 0,
+                        stepSize: 1
+                    },
+                    grid: {
+                        color: themeColors.grid,
+                        drawBorder: false
+                    }
+                }
+            }
+        }
+    });
+}
+function readProjectStatusCountsFromCards() {
+    const counts = {
+        planning: 0,
+        active: 0,
+        inReview: 0,
+        done: 0
+    };
+    projectsListElement?.querySelectorAll(".project-card-link").forEach((card) => {
+        const status = card.getAttribute("data-project-status")?.trim().toLowerCase() || "";
+        if (status === "planning") {
+            counts.planning += 1;
+            return;
+        }
+        if (status === "active") {
+            counts.active += 1;
+            return;
+        }
+        if (status === "in-review") {
+            counts.inReview += 1;
+            return;
+        }
+        if (status === "done") {
+            counts.done += 1;
+        }
+    });
+    return counts;
+}
+function createTaskStatusCounts() {
+    return {
+        todo: 0,
+        inProgress: 0,
+        done: 0
+    };
+}
+async function refreshTaskStatusCounts() {
+    taskStatusCounts = createTaskStatusCounts();
+    try {
+        const tasks = await readIndexedDbTasks();
+        tasks.forEach((task) => {
+            const normalizedStatus = typeof task?.status === "string" ? task.status.trim().toLowerCase() : "";
+            if (normalizedStatus === "todo") {
+                taskStatusCounts.todo += 1;
+                return;
+            }
+            if (normalizedStatus === "in progress" || normalizedStatus === "in-progress") {
+                taskStatusCounts.inProgress += 1;
+                return;
+            }
+            if (normalizedStatus === "done") {
+                taskStatusCounts.done += 1;
+            }
+        });
+    }
+    catch (error) {
+        console.warn("Error reading task overview from IndexedDB:", error);
+    }
+    renderTaskOverviewChart();
+}
+function getDashboardChartThemeColors() {
+    const styles = getComputedStyle(document.body);
+    if (document.body.dataset.theme !== "dark") {
+        return {
+            text: "#1E293B",
+            surface: "#FFFFFF",
+            grid: "rgba(148, 163, 184, 0.18)"
+        };
+    }
+    return {
+        text: styles.getPropertyValue("--text").trim() || "#1A202C",
+        surface: styles.getPropertyValue("--surface").trim() || "#FFFFFF",
+        grid: "rgba(226, 232, 240, 0.12)"
+    };
+}
+function getProjectCardAosDelay(index) {
+    return String(Math.min((index + 1) * 100, 300));
 }
 async function refreshProjectCompletionLookup(projects) {
     projectCompletionLookup = await readProjectCompletionLookup(projects);

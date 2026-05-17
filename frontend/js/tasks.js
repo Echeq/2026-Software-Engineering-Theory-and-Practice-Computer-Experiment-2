@@ -11,6 +11,8 @@ var TasksPage;
     const SELECTED_PROJECT_STORAGE_KEY = "selectedProjectContext";
     const KNOWN_PROJECTS_STORAGE_KEY = "knownProjectsList";
     const EMPTY_PROJECT_ID = "__no-project__";
+    const EMPTY_COLUMN_LOTTIE_PATH = "https://assets2.lottiefiles.com/packages/lf20_ysrn2iwp.json";
+    const TASK_SORTABLE_GROUP_NAME = "tasks";
     const i18n = (key, values) => window.I18n?.t(key, values) || key;
     const TASK_COLUMNS = [
         { id: "Todo", title: "Todo", caption: "Planned work that still needs to start.", className: "task-column-todo" },
@@ -45,6 +47,8 @@ var TasksPage;
     let taskProjectSelect = null;
     let selectedProjectContext = null;
     let knownProjects = [];
+    const emptyColumnAnimations = new Map();
+    const taskColumnSortables = [];
     document.addEventListener("DOMContentLoaded", () => {
         void initializeTasksPage();
     });
@@ -53,6 +57,7 @@ var TasksPage;
         initializeTheme();
         syncSidebarState();
         setupEventListeners();
+        initializeAos();
         hydrateProjectContext();
         renderSelectedProjectContext();
         renderProjectOptions();
@@ -71,6 +76,16 @@ var TasksPage;
             return;
         }
         await loadUserData();
+    }
+    function initializeAos() {
+        if (window.AOS && typeof AOS.init === "function") {
+            AOS.init({ duration: 600, once: true, easing: 'ease-out' });
+        }
+    }
+    function refreshAos() {
+        if (window.AOS && typeof AOS.refreshHard === "function") {
+            AOS.refreshHard();
+        }
     }
     function cacheElements() {
         userNameElement = document.getElementById("user-name");
@@ -332,6 +347,8 @@ var TasksPage;
         if (!tasksBoardElement) {
             return;
         }
+        destroyTaskBoardSorting();
+        destroyEmptyColumnAnimations();
         tasksBoardElement.innerHTML = `
       <article class="state-card">
         <h3>Loading tasks...</h3>
@@ -343,6 +360,8 @@ var TasksPage;
         if (!tasksBoardElement) {
             return;
         }
+        destroyTaskBoardSorting();
+        destroyEmptyColumnAnimations();
         tasksBoardElement.innerHTML = `
       <article class="state-card">
         <h3>Tasks unavailable</h3>
@@ -552,6 +571,36 @@ var TasksPage;
             };
         });
     }
+    async function updateTaskStatus(taskId, status) {
+        const database = ensureDatabase();
+        const normalizedStatus = normalizeStatus(status);
+        return await new Promise((resolve, reject) => {
+            const transaction = database.transaction(TASKS_STORE_NAME, "readwrite");
+            const store = transaction.objectStore(TASKS_STORE_NAME);
+            const getRequest = store.get(taskId);
+            getRequest.onerror = () => {
+                reject(getRequest.error || new Error("Failed to read task for status update."));
+            };
+            getRequest.onsuccess = () => {
+                const existingTask = getRequest.result;
+                if (!existingTask || typeof existingTask !== "object") {
+                    reject(new Error("Task not found for status update."));
+                    return;
+                }
+                const nextTask = {
+                    ...existingTask,
+                    status: normalizedStatus
+                };
+                const putRequest = store.put(nextTask);
+                putRequest.onerror = () => {
+                    reject(putRequest.error || new Error("Failed to update task status."));
+                };
+                putRequest.onsuccess = () => {
+                    resolve();
+                };
+            };
+        });
+    }
     function ensureDatabase() {
         if (!db) {
             throw new Error("Database is not initialized.");
@@ -561,11 +610,14 @@ var TasksPage;
     async function loadAndRenderTasks() {
         const tasks = await getAllTasks();
         renderTasksBoard(tasks);
+        refreshVisibleProjectCompletionCards(tasks);
     }
     function renderTasksBoard(tasks) {
         if (!tasksBoardElement) {
             return;
         }
+        destroyTaskBoardSorting();
+        destroyEmptyColumnAnimations();
         const groupedTasks = {
             Todo: [],
             "In Progress": [],
@@ -581,18 +633,17 @@ var TasksPage;
             groupedTasks[normalizeStatus(task.status)].push(task);
         });
         tasksBoardElement.innerHTML = TASK_COLUMNS.map((column) => renderTaskColumn(column, groupedTasks[column.id])).join("");
+        initializeEmptyColumnAnimations();
+        initializeTaskBoardSorting();
+        updateTaskCountBadges();
+        refreshAos();
     }
     function renderTaskColumn(column, tasks) {
         const cardsMarkup = tasks.length > 0
             ? tasks.map((task) => renderTaskCard(task)).join("")
-            : `
-          <article class="state-card task-empty-state">
-            <h3>No tasks yet</h3>
-            <p>Add a task to start filling this ${escapeHtml(column.title.toLowerCase())} column.</p>
-          </article>
-        `;
+            : renderEmptyTaskState(column);
         return `
-      <section class="kanban-column ${escapeHtml(column.className)}" aria-labelledby="task-column-${escapeHtml(getColumnDomId(column.id))}">
+      <section class="kanban-column ${escapeHtml(column.className)}" aria-labelledby="task-column-${escapeHtml(getColumnDomId(column.id))}" data-column-status="${escapeHtml(column.id)}" data-aos="fade-up">
         <header class="kanban-column-header">
           <div class="kanban-column-copy">
             <h3 id="task-column-${escapeHtml(getColumnDomId(column.id))}" class="kanban-column-title">${escapeHtml(column.title)}</h3>
@@ -600,11 +651,130 @@ var TasksPage;
           </div>
           <span class="kanban-count" aria-label="${tasks.length} tasks">${tasks.length}</span>
         </header>
-        <div class="kanban-list">
+        <div class="kanban-list" data-column-status="${escapeHtml(column.id)}">
           ${cardsMarkup}
         </div>
       </section>
     `;
+    }
+    function renderEmptyTaskState(column) {
+        const lottieId = getEmptyColumnLottieId(column.id);
+        return `
+          <article class="state-card task-empty-state">
+            <div class="task-empty-lottie-shell" aria-hidden="true">
+              <div id="${escapeHtml(lottieId)}" class="task-empty-lottie"></div>
+            </div>
+            <p>Add a task to start filling this ${escapeHtml(column.title.toLowerCase())} column.</p>
+          </article>
+        `;
+    }
+    function initializeEmptyColumnAnimations() {
+        const lottieApi = window.lottie;
+        if (!lottieApi || typeof lottieApi.loadAnimation !== "function") {
+            return;
+        }
+        TASK_COLUMNS.forEach((column) => {
+            const container = document.getElementById(getEmptyColumnLottieId(column.id));
+            if (!container) {
+                return;
+            }
+            const animation = lottieApi.loadAnimation({
+                container,
+                renderer: "svg",
+                loop: true,
+                autoplay: true,
+                path: EMPTY_COLUMN_LOTTIE_PATH
+            });
+            emptyColumnAnimations.set(column.id, animation);
+        });
+    }
+    function destroyEmptyColumnAnimations() {
+        emptyColumnAnimations.forEach((animation) => {
+            if (animation && typeof animation.destroy === "function") {
+                animation.destroy();
+            }
+        });
+        emptyColumnAnimations.clear();
+    }
+    function initializeTaskBoardSorting() {
+        if (!tasksBoardElement || !window.Sortable || typeof window.Sortable.create !== "function") {
+            return;
+        }
+        tasksBoardElement.querySelectorAll(".kanban-list").forEach((listElement) => {
+            const sortable = window.Sortable.create(listElement, {
+                group: TASK_SORTABLE_GROUP_NAME,
+                draggable: ".task-card",
+                filter: ".task-delete-button, [data-delete-task-id]",
+                preventOnFilter: false,
+                animation: 180,
+                sort: false,
+                emptyInsertThreshold: 28,
+                dragClass: "task-card-sortable-drag",
+                chosenClass: "task-card-sortable-chosen",
+                ghostClass: "task-card-sortable-ghost",
+                onStart: handleTaskDragStart,
+                onEnd: (event) => {
+                    void handleTaskDragEnd(event);
+                }
+            });
+            taskColumnSortables.push(sortable);
+        });
+    }
+    function destroyTaskBoardSorting() {
+        while (taskColumnSortables.length > 0) {
+            const sortable = taskColumnSortables.pop();
+            if (sortable && typeof sortable.destroy === "function") {
+                sortable.destroy();
+            }
+        }
+    }
+    function handleTaskDragStart() {
+        toggleEmptyTaskStates(true);
+    }
+    async function handleTaskDragEnd(event) {
+        updateTaskCountBadges();
+        const item = event?.item;
+        const taskId = Number(item?.getAttribute("data-task-id"));
+        const previousStatus = readColumnStatusFromList(event?.from);
+        const nextStatus = readColumnStatusFromList(event?.to);
+        if (!Number.isFinite(taskId) || !previousStatus || !nextStatus) {
+            toggleEmptyTaskStates(false);
+            return;
+        }
+        if (previousStatus === nextStatus) {
+            toggleEmptyTaskStates(false);
+            updateTaskCountBadges();
+            return;
+        }
+        try {
+            await updateTaskStatus(taskId, nextStatus);
+            await loadAndRenderTasks();
+        }
+        catch (error) {
+            console.error("Error updating task status:", error);
+            showTasksMessage("Failed to update task status locally. Please try again.", "error");
+            await loadAndRenderTasks();
+        }
+    }
+    function toggleEmptyTaskStates(isHidden) {
+        tasksBoardElement?.querySelectorAll(".task-empty-state").forEach((card) => {
+            card.hidden = isHidden;
+        });
+    }
+    function readColumnStatusFromList(listElement) {
+        const status = listElement?.dataset.columnStatus?.trim() || "";
+        return status ? normalizeStatus(status) : "";
+    }
+    function updateTaskCountBadges() {
+        tasksBoardElement?.querySelectorAll(".kanban-column").forEach((columnElement) => {
+            const count = columnElement.querySelectorAll(".task-card").length;
+            const countBadge = columnElement.querySelector(".kanban-count");
+            if (!countBadge) {
+                return;
+            }
+            countBadge.textContent = String(count);
+            countBadge.setAttribute("aria-label", `${count} tasks`);
+        });
     }
     function renderTaskCard(task) {
         const projectName = getProjectNameById(task.projectId);
@@ -646,6 +816,12 @@ var TasksPage;
     }
     function getColumnDomId(columnId) {
         return columnId.toLowerCase().replace(/\s+/g, "-");
+    }
+    function getEmptyColumnLottieId(columnId) {
+        if (columnId === "In Progress") {
+            return "lottie-inprogress";
+        }
+        return `lottie-${columnId.toLowerCase()}`;
     }
     function normalizeStatus(status) {
         const normalized = status.trim().toLowerCase();
@@ -692,6 +868,83 @@ var TasksPage;
             day: "numeric",
             year: "numeric"
         });
+    }
+    function refreshVisibleProjectCompletionCards(tasks) {
+        const projectCards = Array.from(document.querySelectorAll(".project-card-link[data-project-id]"));
+        if (projectCards.length === 0) {
+            return;
+        }
+        const totalByProjectId = new Map();
+        const completedByProjectId = new Map();
+        tasks.forEach((task) => {
+            const projectId = getProjectIdKey(task?.projectId);
+            if (!projectId) {
+                return;
+            }
+            totalByProjectId.set(projectId, (totalByProjectId.get(projectId) || 0) + 1);
+            if (isCompletedTaskStatus(task?.status)) {
+                completedByProjectId.set(projectId, (completedByProjectId.get(projectId) || 0) + 1);
+            }
+        });
+        projectCards.forEach((card) => {
+            const projectId = getProjectIdKey(card.getAttribute("data-project-id") || "");
+            if (!projectId) {
+                return;
+            }
+            applyProjectCompletionSummaryToCard(card, createProjectCompletionSummary(totalByProjectId.get(projectId) || 0, completedByProjectId.get(projectId) || 0));
+        });
+    }
+    function applyProjectCompletionSummaryToCard(card, summary) {
+        const progressRow = card.querySelector(".project-progress-row");
+        const progressTrack = card.querySelector(".project-progress-track");
+        const progressFill = card.querySelector(".project-progress-fill");
+        const progressText = card.querySelector(".project-progress-text");
+        if (progressRow) {
+            progressRow.className = `project-progress-row project-progress-tone-${summary.tone}`;
+        }
+        if (progressTrack) {
+            progressTrack.setAttribute("aria-valuenow", String(summary.percentage));
+            progressTrack.setAttribute("aria-label", summary.label);
+        }
+        if (progressFill) {
+            progressFill.style.width = `${summary.percentage}%`;
+        }
+        if (progressText) {
+            progressText.textContent = summary.label;
+        }
+    }
+    function createProjectCompletionSummary(totalTasks, completedTasks) {
+        const safeTotalTasks = Math.max(0, totalTasks);
+        const safeCompletedTasks = Math.min(Math.max(0, completedTasks), safeTotalTasks);
+        const percentage = safeTotalTasks > 0
+            ? Math.round((safeCompletedTasks / safeTotalTasks) * 100)
+            : 0;
+        return {
+            percentage,
+            tone: getProjectCompletionTone(percentage),
+            label: formatProjectCompletionLabel(percentage)
+        };
+    }
+    function getProjectCompletionTone(percentage) {
+        if (percentage <= 30) {
+            return "low";
+        }
+        if (percentage <= 60) {
+            return "medium";
+        }
+        return "high";
+    }
+    function formatProjectCompletionLabel(percentage) {
+        return `${percentage}% complete`;
+    }
+    function isCompletedTaskStatus(status) {
+        return typeof status === "string" && status.trim().toLowerCase() === "done";
+    }
+    function getProjectIdKey(projectId) {
+        if (projectId === null || projectId === undefined) {
+            return "";
+        }
+        return String(projectId).trim();
     }
     function loadPreviewUser() {
         currentUser = {

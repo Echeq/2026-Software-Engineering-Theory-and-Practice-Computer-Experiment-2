@@ -64,12 +64,18 @@ var SettingsPage;
         setupEventListeners();
         hydrateState();
         renderSettingsState();
+        initializeAos();
         const token = getStoredToken();
         if (!token) {
             loadPreviewUser();
             return;
         }
         await loadUserData();
+    }
+    function initializeAos() {
+        if (window.AOS && typeof AOS.init === "function") {
+            AOS.init({ duration: 600, once: true, easing: 'ease-out' });
+        }
     }
     function cacheElements() {
         userNameElement = document.getElementById("user-name");

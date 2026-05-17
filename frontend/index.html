@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SPMP | Login</title>
   <link rel="stylesheet" href="./css/login.css">
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="./js/i18n.js" defer></script>
 </head>
 <body>
+  <div id="particles-js" aria-hidden="true"></div>
   <div class="auth-page-controls">
     <button
       id="theme-toggle-btn"
@@ -31,7 +33,7 @@
     </button>
   </div>
   <main class="login-page">
-    <section class="login-card" aria-labelledby="login-title">
+    <section class="login-card" aria-labelledby="login-title" data-aos="fade-up">
       <span class="brand-tag">SPMP</span>
       <h1 id="login-title" data-i18n="login.title">Log In</h1>
       <p class="subtitle" data-i18n="login.subtitle">
@@ -78,5 +80,7 @@
   </main>
 
   <script src="./js/login.js" defer></script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
 </body>
 </html>
