@@ -77,6 +77,53 @@ router.post("/login", async (req, res: Response) => {
     }
 });
 
+router.post("/register", async (req, res: Response) => {
+    try {
+        const { name, email, password } = req.body;
+
+        if (!name || !email || !password) {
+            res.status(400).json({ message: "Name, email, and password are required" });
+            return;
+        }
+
+        if (typeof password !== "string" || password.length < 6) {
+            res.status(400).json({ message: "Password must be at least 6 characters" });
+            return;
+        }
+
+        if (UserModel.findByEmail(email)) {
+            res.status(409).json({ message: "Email is already registered" });
+            return;
+        }
+
+        await UserModel.create({
+            name,
+            email,
+            password,
+        });
+
+        res.status(201).json({ message: "Account created successfully" });
+    } catch (error) {
+        console.error("Register error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+router.get("/me", authenticateToken, (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+
+    res.json({
+        user: {
+            id: req.user.id,
+            name: req.user.name,
+            email: req.user.email,
+        },
+    });
+});
+
 router.post("/logout", (req, res: Response) => {
     const sessionId = readSessionId(req.headers.cookie);
 

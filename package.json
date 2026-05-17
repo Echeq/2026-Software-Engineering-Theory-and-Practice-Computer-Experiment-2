@@ -1,23 +1,26 @@
 {
-  "name": "spmp-platform",
-  "version": "1.0.0",
-  "description": "SPMP - Project and Task Management Platform",
-  "scripts": {
-    "install:all": "npm run install:backend && npm run install:frontend",
-    "install:backend": "cd backend && npm install",
-    "install:frontend": "cd frontend && npm install",
-    "build:frontend": "cd frontend && npm run build",
-    "build:backend": "cd backend && npm run build",
-    "build": "npm run build:frontend && npm run build:backend",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "start": "cd backend && npm start"
-  },
-  "devDependencies": {
-    "concurrently": "^9.1.2"
-  },
-  "keywords": ["project-management", "task-management"],
-  "author": "",
-  "license": "MIT"
+    "name": "spmp-platform",
+    "version": "1.0.0",
+    "description": "SPMP - Project and Task Management Platform",
+    "scripts": {
+        "install:all": "npm install && npm run install:backend && npm run install:frontend",
+        "install:backend": "cd backend && npm install",
+        "install:frontend": "cd frontend && npm install",
+        "build:frontend": "cd frontend && npm run build",
+        "build:backend": "cd backend && npm run build",
+        "build": "npm run build:frontend && npm run build:backend",
+        "dev:backend": "cd backend && npm run dev",
+        "dev:frontend": "cd frontend && npm run dev",
+        "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "start": "cd backend && npm start"
+    },
+    "devDependencies": {
+        "concurrently": "^9.1.2"
+    },
+    "keywords": [
+        "project-management",
+        "task-management"
+    ],
+    "author": "",
+    "license": "MIT"
 }
