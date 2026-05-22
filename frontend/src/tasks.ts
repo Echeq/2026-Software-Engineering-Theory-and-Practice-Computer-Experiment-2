@@ -1,6 +1,8 @@
+import "../css/dashboard.css";
+import "./i18n";
+import { getCurrentUser, isSessionError, logout } from "./core/services";
+
 namespace TasksPage {
-  const API_BASE_URL = `${window.location.origin}/api`;
-  const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
   const THEME_STORAGE_KEY = "dashboard-theme";
   const MOBILE_SIDEBAR_BREAKPOINT = 960;
   const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
@@ -9,10 +11,6 @@ namespace TasksPage {
     id: string;
     name: string;
     email: string;
-  }
-
-  interface UserResponse {
-    user: User;
   }
 
   type TasksTheme = "light" | "dark";
@@ -40,13 +38,6 @@ namespace TasksPage {
     setupEventListeners();
     hydrateSelectedProject();
 
-    const token = getStoredToken();
-
-    if (!token) {
-      loadPreviewUser();
-      return;
-    }
-
     await loadUserData();
   }
 
@@ -64,7 +55,7 @@ namespace TasksPage {
   }
 
   function setupEventListeners(): void {
-    logoutButton?.addEventListener("click", logout);
+    logoutButton?.addEventListener("click", handleLogout);
     themeToggleButton?.addEventListener("click", toggleTheme);
     sidebarToggleButton?.addEventListener("click", toggleSidebar);
     sidebarBackdropElement?.addEventListener("click", handleSidebarBackdropClick);
@@ -191,32 +182,17 @@ namespace TasksPage {
     }
   }
 
-  function loadPreviewUser(): void {
-    currentUser = {
-      id: "preview-user",
-      name: "Anna Ivanova",
-      email: "anna.ivanova@example.com"
-    };
-
-    if (userNameElement) {
-      userNameElement.textContent = currentUser.name;
-    }
-    updateUserAvatar(currentUser.name);
-  }
-
   async function loadUserData(): Promise<void> {
     try {
-      const data = await requestWithAuth<UserResponse>("/auth/me");
-      currentUser = data.user;
+      currentUser = await getCurrentUser();
 
       if (userNameElement) {
         userNameElement.textContent = currentUser.name;
       }
       updateUserAvatar(currentUser.name);
     } catch (error) {
-      console.error("Error loading user data:", error);
-
-      if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
+      if (isSessionError(error)) {
+        redirectToLogin();
         return;
       }
 
@@ -227,21 +203,13 @@ namespace TasksPage {
     }
   }
 
-  function getStoredToken(): string {
-    return localStorage.getItem("token")?.trim() || "";
-  }
-
   function redirectToLogin(): void {
-    window.location.href = "../index.html";
+    window.location.href = "/";
   }
 
-  function logout(): void {
+  async function handleLogout(): Promise<void> {
     closeSidebar();
-    localStorage.removeItem("token");
-    void fetch(`${API_BASE_URL}/auth/logout`, {
-      method: "POST",
-      credentials: "same-origin"
-    });
+    await logout();
     redirectToLogin();
   }
 
@@ -268,54 +236,6 @@ namespace TasksPage {
     }
 
     return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-  }
-
-  async function requestWithAuth<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const token = getStoredToken();
-    const headers = new Headers(init.headers);
-
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      ...init,
-      headers,
-      credentials: "same-origin"
-    });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (response.status === 401 || response.status === 403) {
-      logout();
-      throw new Error(SESSION_EXPIRED_MESSAGE);
-    }
-
-    if (!response.ok) {
-      throw new Error(readMessage(data, "Request failed."));
-    }
-
-    return data as T;
-  }
-
-  function readMessage(data: unknown, fallback: string): string {
-    if (typeof data === "object" && data !== null && "message" in data) {
-      const message = (data as { message?: unknown }).message;
-
-      if (typeof message === "string" && message.trim()) {
-        return message;
-      }
-    }
-
-    return fallback;
-  }
-
-  function getErrorText(error: unknown, fallback: string): string {
-    if (error instanceof Error && error.message.trim()) {
-      return error.message;
-    }
-
-    return fallback;
   }
 
   function formatProjectDate(dateString: string): string {

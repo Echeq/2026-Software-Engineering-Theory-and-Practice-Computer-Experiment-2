@@ -24,5 +24,13 @@
   </div>
 
   <p class="form-message" id="projects-message" aria-live="polite"></p>
-  <div id="projects-board" class="kanban-board"></div>
+  <input id="projects-language-input" type="hidden" name="lang" value="en">
+  <div
+    id="projects-board"
+    class="kanban-board"
+    hx-get="/api/projects/fragment/board"
+    hx-trigger="load, projects:refresh from:body"
+    hx-include="#projects-language-input"
+    hx-swap="innerHTML"
+  ></div>
 </section>

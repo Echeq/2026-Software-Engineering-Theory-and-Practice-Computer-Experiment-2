@@ -22,6 +22,9 @@ export interface AppContext {
 declare global {
   interface Window {
     I18n?: TranslationApi;
+    htmx?: {
+      trigger(element: Element, eventName: string): void;
+    };
     __APP_CONTEXT__?: AppContext;
   }
 }

@@ -52,5 +52,14 @@
   </section>
 
   <p class="form-message" id="projects-message" aria-live="polite"></p>
-  <div id="projects-list" class="projects-grid"></div>
+  <input id="project-status-input" type="hidden" name="status" value="all">
+  <input id="project-language-input" type="hidden" name="lang" value="en">
+  <div
+    id="projects-list"
+    class="projects-grid"
+    hx-get="/api/projects/fragment/cards"
+    hx-trigger="load, input delay:250ms from:#project-search-input, projects:refresh from:body"
+    hx-include="#project-search-input, #project-status-input, #project-language-input"
+    hx-swap="innerHTML"
+  ></div>
 </section>

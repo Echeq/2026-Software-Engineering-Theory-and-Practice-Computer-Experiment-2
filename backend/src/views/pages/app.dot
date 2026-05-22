@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{=it.title}}</title>
   {{~it.styles :href}}<link rel="stylesheet" href="{{=href}}">{{~}}
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
 </head>
 <body>
   <script>window.__APP_CONTEXT__ = {{=it.appContextJson}};</script>
