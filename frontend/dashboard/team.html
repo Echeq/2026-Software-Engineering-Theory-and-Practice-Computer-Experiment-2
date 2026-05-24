@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SPMP | Projects</title>
+  <title>SPMP | Team</title>
   <link rel="stylesheet" href="../css/dashboard.css">
   <script src="../js/i18n.js" defer></script>
 </head>
@@ -28,7 +28,7 @@
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="3" width="6" height="6" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="11.5" y="3" width="6" height="4" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="11.5" y="10" width="6" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="2.5" y="12" width="6" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
             <span data-i18n="sidebar.dashboard">Dashboard</span>
           </a>
-          <a href="./projects.html" class="sidebar-link is-active">
+          <a href="./projects.html" class="sidebar-link">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5.5a2 2 0 0 1 2-2h3.2l1.5 1.8H15a2 2 0 0 1 2 2v6.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 7.3h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             <span data-i18n="sidebar.projects">Projects</span>
           </a>
@@ -36,7 +36,7 @@
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4.5a2 2 0 0 1-2-2V8.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3.2 5.9 5.3 8l4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 8h5M9.5 12h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             <span data-i18n="sidebar.tasks">Tasks</span>
           </a>
-          <a href="./team.html" class="sidebar-link">
+          <a href="./team.html" class="sidebar-link is-active">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="6.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2 17c0-3.04 2.46-5.5 5.5-5.5S13 13.96 13 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14.5" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M18 17c0-2.49-1.79-4.56-4.17-4.97" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             <span>Team</span>
           </a>
@@ -56,7 +56,7 @@
       </div>
     </aside>
 
-    <section class="dashboard-main" aria-labelledby="projects-page-title">
+    <section class="dashboard-main" aria-labelledby="team-page-title">
       <header class="main-topbar">
         <div class="topbar-left">
           <button
@@ -71,107 +71,87 @@
             <span></span>
             <span></span>
           </button>
-
           <div class="topbar-copy">
-            <span class="section-tag" data-i18n="projects.pageTag">Projects</span>
-            <p class="topbar-label" data-i18n="projects.topbarLabel">Track your project pipeline across start-next, active, and completed work.</p>
+            <span class="section-tag">Team</span>
+            <p class="topbar-label">View team members and manage invitations.</p>
           </div>
         </div>
-
-        <div class="topbar-actions"></div>
+        <button id="theme-toggle-btn" type="button" class="theme-toggle" aria-pressed="false">Dark Mode</button>
       </header>
 
-      <section class="overview-panel" aria-labelledby="projects-page-title">
+      <section class="overview-panel" aria-labelledby="team-page-title">
         <div class="overview-copy">
           <span class="brand-tag">SPMP</span>
-          <h1 id="projects-page-title" data-i18n="projects.title">Projects Board</h1>
-          <p class="subtitle" data-i18n="projects.subtitle">
-            A kanban-style view for deciding what to start next, what is moving now, and what has already shipped.
-          </p>
+          <h1 id="team-page-title">Team</h1>
+          <p class="subtitle">All members of this workspace.</p>
         </div>
-
         <div class="overview-actions">
           <div class="overview-note">
-            <span class="overview-note-label" data-i18n="projects.boardMode">Board Mode</span>
-            <strong data-i18n="projects.boardModeName">Projects Pipeline</strong>
-            <p data-i18n="projects.boardModeText">Open any project card to continue into the tasks view.</p>
+            <span class="overview-note-label">Current View</span>
+            <strong>Team Members</strong>
+            <p>Managers can invite and remove members.</p>
           </div>
+          <button id="invite-member-btn" type="button" class="submit-button" hidden>Invite Member</button>
         </div>
       </section>
 
-      <section class="projects-section projects-board-section" aria-labelledby="projects-board-title">
+      <section class="projects-section" aria-labelledby="members-title">
         <div class="section-header">
           <div class="section-copy">
-            <span class="section-tag" data-i18n="projects.kanbanTag">Kanban</span>
-            <h2 id="projects-board-title" data-i18n="projects.flowTitle">Project Flow</h2>
-            <p class="section-subtitle" data-i18n="projects.flowSubtitle">Each column groups projects by their current delivery phase.</p>
+            <span class="section-tag">Members</span>
+            <h2 id="members-title">Team Members</h2>
+            <p class="section-subtitle">Everyone with access to this workspace.</p>
           </div>
         </div>
 
-        <p class="form-message" id="projects-message" aria-live="polite"></p>
+        <p class="form-message" id="team-message" aria-live="polite"></p>
 
-        <div id="projects-board" class="kanban-board">
+        <div id="members-list" class="projects-grid">
           <article class="state-card">
-            <h3 data-i18n="dashboard.loadingTitle">Loading projects...</h3>
-            <p data-i18n="projects.loadingText">Preparing your kanban board.</p>
+            <h3>Loading team...</h3>
+            <p>Fetching workspace members.</p>
           </article>
         </div>
       </section>
     </section>
   </main>
 
-  <script src="../js/projects.js" defer></script>
-  <script>
-    (() => {
-      const root = document.getElementById("projects-board");
+  <div id="invite-modal" class="modal" hidden aria-hidden="true">
+    <div class="modal-scrim" data-close-modal="true"></div>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="invite-modal-title">
+      <div class="modal-header">
+        <div>
+          <span class="brand-tag">SPMP</span>
+          <h2 id="invite-modal-title">Invite Member</h2>
+          <p class="subtitle">Create an account for a new team member.</p>
+        </div>
+        <button id="close-invite-modal" type="button" class="close-btn" aria-label="Close invite dialog">&times;</button>
+      </div>
+      <form id="invite-form" class="project-form" novalidate>
+        <div class="form-group">
+          <label for="invite-name">Full Name</label>
+          <input id="invite-name" name="name" type="text" placeholder="Jane Smith" maxlength="120">
+          <small class="field-error" data-error-for="invite-name"></small>
+        </div>
+        <div class="form-group">
+          <label for="invite-email">Email</label>
+          <input id="invite-email" name="email" type="email" placeholder="jane@example.com" maxlength="200">
+          <small class="field-error" data-error-for="invite-email"></small>
+        </div>
+        <div class="form-group">
+          <label for="invite-password">Temporary Password</label>
+          <input id="invite-password" name="password" type="password" placeholder="Set a password" maxlength="200">
+          <small class="field-error" data-error-for="invite-password"></small>
+        </div>
+        <p class="form-message" id="invite-form-message" aria-live="polite"></p>
+        <div class="modal-actions">
+          <button id="cancel-invite-btn" type="button" class="secondary-button">Cancel</button>
+          <button id="invite-submit-btn" type="submit" class="submit-button">Send Invite</button>
+        </div>
+      </form>
+    </section>
+  </div>
 
-      if (!root) {
-        return;
-      }
-
-      const statusMatchers = [
-        { value: "active", labels: ["active", "进行中", "activo"] },
-        { value: "in-review", labels: ["in review", "评审中", "en revisión"] },
-        { value: "planning", labels: ["planning", "规划中", "planificación"] }
-      ];
-
-      function readCardStatus(text) {
-        const normalized = (text || "").trim().toLowerCase();
-
-        for (const matcher of statusMatchers) {
-          if (matcher.labels.some((label) => normalized.includes(label))) {
-            return matcher.value;
-          }
-        }
-
-        return "";
-      }
-
-      function applyProjectCardStatus() {
-        root.querySelectorAll(".project-card").forEach((card) => {
-          const statusText = card.querySelector(".project-status")?.textContent || "";
-          const status = readCardStatus(statusText);
-
-          if (status) {
-            card.setAttribute("data-project-status", status);
-            return;
-          }
-
-          card.removeAttribute("data-project-status");
-        });
-      }
-
-      applyProjectCardStatus();
-
-      const observer = new MutationObserver(() => {
-        applyProjectCardStatus();
-      });
-
-      observer.observe(root, {
-        childList: true,
-        subtree: true
-      });
-    })();
-  </script>
+  <script type="module" src="/src/team.ts"></script>
 </body>
 </html>

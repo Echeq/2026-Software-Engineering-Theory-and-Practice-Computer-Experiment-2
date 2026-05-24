@@ -4,6 +4,7 @@ import { UserModel } from "../models/User";
 import { authenticateToken, AuthRequest } from "../middleware/readSession";
 import { SessionModel } from "../models/Session";
 
+
 const router = Router();
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -67,6 +68,7 @@ router.post("/login", async (req, res: Response) => {
         res.json({
             message: "Login successful",
             redirectTo: "/dashboard",
+            token: csrfToken,
             csrfToken,
         });
         return;
@@ -75,6 +77,58 @@ router.post("/login", async (req, res: Response) => {
         res.status(500).json({ message: "Internal server error" });
         return;
     }
+});
+
+router.get("/me", authenticateToken, (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+    res.json({
+        user: {
+            id: req.user.id,
+            name: req.user.name,
+            email: req.user.email,
+            role: req.user.role,
+        }
+    });
+});
+
+router.put("/password", authenticateToken, async (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+        res.status(400).json({ message: "currentPassword and newPassword are required" });
+        return;
+    }
+    if (newPassword.length < 6) {
+        res.status(400).json({ message: "New password must be at least 6 characters" });
+        return;
+    }
+    const user = UserModel.findById(req.user.id);
+    if (!user || !(await UserModel.verifyPassword(currentPassword, user.password_hash))) {
+        res.status(401).json({ message: "Current password is incorrect" });
+        return;
+    }
+    await UserModel.updatePassword(req.user.id, newPassword);
+    res.json({ message: "Password updated successfully" });
+});
+
+router.put("/profile", authenticateToken, (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+    const { name } = req.body;
+    if (!name?.trim()) {
+        res.status(400).json({ message: "Name is required" });
+        return;
+    }
+    const updated = UserModel.updateName(req.user.id, name.trim());
+    res.json({ user: { id: updated!.id, name: updated!.name, email: updated!.email, role: updated!.role } });
 });
 
 router.post("/logout", (req, res: Response) => {

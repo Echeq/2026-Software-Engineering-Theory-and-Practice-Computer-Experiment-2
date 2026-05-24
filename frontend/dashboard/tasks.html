@@ -36,6 +36,10 @@
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4.5a2 2 0 0 1-2-2V8.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3.2 5.9 5.3 8l4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 8h5M9.5 12h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             <span data-i18n="sidebar.tasks">Tasks</span>
           </a>
+          <a href="./team.html" class="sidebar-link">
+            <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="6.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2 17c0-3.04 2.46-5.5 5.5-5.5S13 13.96 13 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14.5" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M18 17c0-2.49-1.79-4.56-4.17-4.97" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span>Team</span>
+          </a>
           <a href="./settings.html" class="sidebar-link">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 10h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 14.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="13.5" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
             <span data-i18n="sidebar.settings">Settings</span>
@@ -67,52 +71,99 @@
             <span></span>
             <span></span>
           </button>
-
           <div class="topbar-copy">
-            <span class="section-tag" data-i18n="tasks.pageTag">Tasks</span>
-            <p class="topbar-label" data-i18n="tasks.topbarLabel">Task-level view for the selected project.</p>
+            <span class="section-tag">Tasks</span>
+            <p class="topbar-label">Manage tasks for the selected project.</p>
           </div>
         </div>
-
-        <div class="topbar-actions"></div>
+        <button id="theme-toggle-btn" type="button" class="theme-toggle" aria-pressed="false">Dark Mode</button>
       </header>
 
       <section class="overview-panel" aria-labelledby="tasks-page-title">
         <div class="overview-copy">
           <span class="brand-tag">SPMP</span>
-          <h1 id="tasks-page-title" data-i18n="tasks.title">Tasks Workspace</h1>
-          <p id="tasks-page-subtitle" class="subtitle" data-i18n="tasks.subtitleDefault">
-            Open a project from the projects board to continue into its task workflow.
-          </p>
+          <h1 id="tasks-page-title">Tasks Workspace</h1>
+          <p id="tasks-page-subtitle" class="subtitle">Open a project from the projects board to view its tasks.</p>
         </div>
-
         <div class="overview-actions">
           <div class="overview-note">
-            <span class="overview-note-label" data-i18n="tasks.selectedProject">Selected Project</span>
-            <strong id="selected-project-name" data-i18n="tasks.noProject">No project selected</strong>
-            <p id="selected-project-meta" data-i18n="tasks.noProjectMeta">Choose a project card from the projects board to view task context.</p>
+            <span class="overview-note-label">Selected Project</span>
+            <strong id="selected-project-name">No project selected</strong>
+            <p id="selected-project-meta">Choose a project from the board.</p>
           </div>
+          <button id="new-task-btn" type="button" class="submit-button" hidden>Add Task</button>
         </div>
       </section>
 
-      <section class="projects-section task-detail-section" aria-labelledby="task-detail-title">
+      <section class="projects-section" aria-labelledby="tasks-section-title">
         <div class="section-header">
           <div class="section-copy">
-            <span class="section-tag" data-i18n="tasks.sectionTag">Tasks</span>
-            <h2 id="task-detail-title" data-i18n="tasks.sectionTitle">Task Board Placeholder</h2>
-            <p class="section-subtitle" data-i18n="tasks.sectionSubtitle">This page is ready as the navigation target for project cards.</p>
+            <span class="section-tag">Tasks</span>
+            <h2 id="tasks-section-title">Project Tasks</h2>
+            <p class="section-subtitle">All tasks for this project.</p>
           </div>
         </div>
 
-        <div class="detail-panel">
-          <p data-i18n="tasks.detailText">
-            The selected project context is loaded from the projects board. This keeps the click-through flow working now and leaves room for a fuller task board later.
-          </p>
+        <p class="form-message" id="tasks-message" aria-live="polite"></p>
+
+        <div id="tasks-list" class="projects-grid">
+          <article class="state-card">
+            <h3>Select a project</h3>
+            <p>Open a project from the projects board to manage its tasks.</p>
+          </article>
         </div>
       </section>
     </section>
   </main>
 
-  <script src="../js/tasks.js" defer></script>
+  <div id="task-modal" class="modal" hidden aria-hidden="true">
+    <div class="modal-scrim" data-close-modal="true"></div>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+      <div class="modal-header">
+        <div>
+          <span class="brand-tag">SPMP</span>
+          <h2 id="task-modal-title">Create Task</h2>
+          <p class="subtitle">Add a new task to this project.</p>
+        </div>
+        <button id="close-task-modal" type="button" class="close-btn" aria-label="Close">&times;</button>
+      </div>
+      <form id="task-form" class="project-form" novalidate>
+        <div class="form-group">
+          <label for="task-title">Title</label>
+          <input id="task-title" name="title" type="text" placeholder="Task title" maxlength="200">
+          <small class="field-error" data-error-for="task-title"></small>
+        </div>
+        <div class="form-group">
+          <label for="task-description">Description</label>
+          <textarea id="task-description" name="description" rows="3" placeholder="Optional description" maxlength="1000"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="task-assignee">Assign to</label>
+          <select id="task-assignee" name="assigned_to">
+            <option value="">Unassigned</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="task-priority">Priority</label>
+          <select id="task-priority" name="priority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="task-due-date">Due Date</label>
+          <input id="task-due-date" name="due_date" type="date">
+        </div>
+        <p class="form-message" id="task-form-message" aria-live="polite"></p>
+        <div class="modal-actions">
+          <button id="cancel-task-btn" type="button" class="secondary-button">Cancel</button>
+          <button id="task-submit-btn" type="submit" class="submit-button">Create Task</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script type="module" src="/src/tasks.ts"></script>
 </body>
 </html>

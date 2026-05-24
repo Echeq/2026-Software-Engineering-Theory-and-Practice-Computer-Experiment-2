@@ -6,7 +6,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       },
     },
@@ -18,6 +18,10 @@ export default defineConfig({
         main: path.resolve(__dirname, 'index.html'),
         signup: path.resolve(__dirname, 'signup.html'),
         dashboard: path.resolve(__dirname, 'dashboard/index.html'),
+        projects: path.resolve(__dirname, 'dashboard/projects.html'),
+        tasks: path.resolve(__dirname, 'dashboard/tasks.html'),
+        team: path.resolve(__dirname, 'dashboard/team.html'),
+        settings: path.resolve(__dirname, 'dashboard/settings.html'),
       },
     },
   },

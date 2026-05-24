@@ -764,7 +764,7 @@ async function requestWithAuth<T>(path: string, init: RequestInit = {}): Promise
   const headers = new Headers(init.headers);
 
   if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
+    headers.set("X-CSRF-Token", token);
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {

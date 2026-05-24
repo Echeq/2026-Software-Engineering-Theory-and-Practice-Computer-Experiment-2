@@ -107,6 +107,13 @@ namespace SettingsPage {
     themeToggleButton?.addEventListener("click", () => setTheme(getNextTheme()));
     appearanceThemeSwitchButton?.addEventListener("click", () => setTheme(getNextTheme()));
     changePasswordButton?.addEventListener("click", handleChangePasswordClick);
+    document.getElementById("close-password-modal")?.addEventListener("click", closePasswordModal);
+    document.getElementById("cancel-password-btn")?.addEventListener("click", closePasswordModal);
+    document.getElementById("password-change-form")?.addEventListener("submit", (e) => void handlePasswordChangeSubmit(e));
+    document.getElementById("change-password-modal")?.addEventListener("click", (e) => {
+      if ((e.target as HTMLElement).dataset.closeModal === "true") closePasswordModal();
+    });
+    document.getElementById("save-profile-btn")?.addEventListener("click", () => void saveProfile());
     nameInput?.addEventListener("input", handleNameInput);
     emailInput?.addEventListener("input", handleEmailInput);
     emailNotificationsSwitchButton?.addEventListener("click", () => setEmailNotifications(!settingsState.emailNotifications));
@@ -301,7 +308,90 @@ namespace SettingsPage {
   }
 
   function handleChangePasswordClick(): void {
-    showSettingsMessage(i18n("settings.changePasswordHint"), "success");
+    const modal = document.getElementById("change-password-modal");
+    if (!modal) return;
+    modal.hidden = false;
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    (document.getElementById("current-password") as HTMLInputElement | null)?.focus();
+  }
+
+  function closePasswordModal(): void {
+    const modal = document.getElementById("change-password-modal");
+    if (!modal) return;
+    modal.hidden = true;
+    modal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    (document.getElementById("password-change-form") as HTMLFormElement | null)?.reset();
+    const msgEl = document.getElementById("password-change-message");
+    if (msgEl) msgEl.textContent = "";
+    const submitBtn = document.getElementById("password-change-submit") as HTMLButtonElement | null;
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "Update Password"; }
+  }
+
+  async function handlePasswordChangeSubmit(event: Event): Promise<void> {
+    event.preventDefault();
+    const currentPw = (document.getElementById("current-password") as HTMLInputElement).value;
+    const newPw = (document.getElementById("new-password") as HTMLInputElement).value;
+    const confirmPw = (document.getElementById("confirm-password") as HTMLInputElement).value;
+    const msgEl = document.getElementById("password-change-message")!;
+
+    if (!currentPw || !newPw) {
+      msgEl.textContent = "All fields are required.";
+      msgEl.className = "form-message is-error";
+      return;
+    }
+    if (newPw.length < 6) {
+      msgEl.textContent = "New password must be at least 6 characters.";
+      msgEl.className = "form-message is-error";
+      return;
+    }
+    if (newPw !== confirmPw) {
+      msgEl.textContent = "Passwords do not match.";
+      msgEl.className = "form-message is-error";
+      return;
+    }
+
+    const submitBtn = document.getElementById("password-change-submit") as HTMLButtonElement | null;
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "Updating..."; }
+
+    try {
+      await requestWithAuth("/auth/password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
+      });
+      closePasswordModal();
+      showSettingsMessage("Password updated successfully.", "success");
+    } catch (error) {
+      msgEl.textContent = getErrorText(error, "Failed to update password.");
+      msgEl.className = "form-message is-error";
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "Update Password"; }
+    }
+  }
+
+  async function saveProfile(): Promise<void> {
+    const name = nameInput?.value.trim();
+    if (!name) {
+      showSettingsMessage("Name cannot be empty.", "error");
+      return;
+    }
+    try {
+      const data = await requestWithAuth<{ user: User }>("/auth/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      currentUser = data.user;
+      if (userNameElement) userNameElement.textContent = data.user.name;
+      updateUserAvatar(data.user.name);
+      settingsState.profileName = data.user.name;
+      settingsState.profileEmail = data.user.email;
+      persistSettingsState();
+      showSettingsMessage("Profile saved.", "success");
+    } catch (error) {
+      showSettingsMessage(getErrorText(error, "Failed to save profile."), "error");
+    }
   }
 
   function renderPreferenceSwitch(
@@ -389,8 +479,10 @@ namespace SettingsPage {
   }
 
   function handleEscapeKey(event: KeyboardEvent): void {
-    if (event.key === "Escape" && document.body.classList.contains("sidebar-open")) {
-      closeSidebar();
+    if (event.key === "Escape") {
+      const pwModal = document.getElementById("change-password-modal");
+      if (pwModal && !pwModal.hidden) { closePasswordModal(); return; }
+      if (document.body.classList.contains("sidebar-open")) closeSidebar();
     }
   }
 
@@ -500,7 +592,7 @@ namespace SettingsPage {
     const headers = new Headers(init.headers);
 
     if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
+      headers.set("X-CSRF-Token", token);
     }
 
     const response = await fetch(`${API_BASE_URL}${path}`, {

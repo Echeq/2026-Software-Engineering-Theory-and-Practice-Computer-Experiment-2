@@ -59,4 +59,20 @@ export class UserModel {
 
     return this.findById(id);
   }
+
+  static async updatePassword(id: string, newPassword: string): Promise<void> {
+    const hash = await bcrypt.hash(newPassword, this.SALT_ROUNDS);
+    run('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [hash, id]);
+  }
+
+  static updateName(id: string, name: string): User | null {
+    run('UPDATE users SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [name, id]);
+    return this.findById(id);
+  }
+
+  static delete(id: string): void {
+    run('UPDATE tasks SET assigned_to = NULL WHERE assigned_to = ?', [id]);
+    run('DELETE FROM sessions WHERE user_id = ?', [id]);
+    run('DELETE FROM users WHERE id = ?', [id]);
+  }
 }
