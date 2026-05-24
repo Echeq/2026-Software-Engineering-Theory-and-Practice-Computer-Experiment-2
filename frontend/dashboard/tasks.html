@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SPMP | Tasks</title>
+  <title data-i18n-document-title="app.title.tasks">SPMP | Tasks</title>
   <link rel="stylesheet" href="../css/dashboard.css">
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="../js/i18n.js" defer></script>
@@ -40,19 +40,19 @@
   <div id="sidebar-backdrop" class="sidebar-backdrop" hidden data-close-sidebar="true"></div>
 
   <main class="dashboard-app">
-    <aside id="dashboard-sidebar" class="dashboard-sidebar" aria-label="Primary navigation">
+    <aside id="dashboard-sidebar" class="dashboard-sidebar" data-i18n-aria-label="app.aria.primaryNavigation" aria-label="Primary navigation">
       <div class="sidebar-top">
         <div class="sidebar-brand-wrap">
-          <a href="./index.html" class="sidebar-brand" aria-label="SPMP dashboard home">
+          <a href="./index.html" class="sidebar-brand" data-i18n-aria-label="app.aria.dashboardHome" aria-label="SPMP dashboard home">
             <span class="sidebar-logo">SP</span>
             <span class="sidebar-brand-copy">
               <strong>SPMP</strong>
-              <span>Project workspace</span>
+              <span data-i18n="app.brand.workspace">Project workspace</span>
             </span>
           </a>
         </div>
 
-        <nav class="sidebar-nav" aria-label="Workspace navigation">
+        <nav class="sidebar-nav" data-i18n-aria-label="app.aria.workspaceNavigation" aria-label="Workspace navigation">
           <a href="./index.html" class="sidebar-link">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="3" width="6" height="6" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="11.5" y="3" width="6" height="4" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="11.5" y="10" width="6" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="2.5" y="12" width="6" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
             <span data-i18n="sidebar.dashboard">Dashboard</span>
@@ -75,7 +75,7 @@
       <div class="sidebar-footer">
         <div class="user-panel" aria-live="polite">
           <span id="user-avatar" class="user-avatar" aria-hidden="true">U</span>
-          <strong id="user-name" class="user-display">Loading...</strong>
+          <strong id="user-name" class="user-display" data-i18n="common.loading">Loading...</strong>
         </div>
         <button id="logout-btn" type="button" class="secondary-button sidebar-logout"><svg class="button-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5H5.5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2H8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 6.5 15 10l-4 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 10H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span data-i18n="sidebar.logout">Log Out</span></button>
       </div>
@@ -90,6 +90,7 @@
             class="menu-toggle"
             aria-expanded="false"
             aria-controls="dashboard-sidebar"
+            data-i18n-aria-label="app.aria.openNavigationMenu"
             aria-label="Open navigation menu"
           >
             <span></span>
@@ -127,20 +128,20 @@
       <section class="projects-section task-board-section" aria-labelledby="task-board-title">
         <div class="section-header">
           <div class="section-copy">
-            <span class="section-tag">IndexedDB</span>
-            <h2 id="task-board-title">Local Task Board</h2>
+            <span class="section-tag" data-i18n="tasks.localStorageTag">IndexedDB</span>
+            <h2 id="task-board-title" data-i18n="tasks.localBoardTitle">Local Task Board</h2>
             <p class="section-subtitle">Your local task board — powered by IndexedDB.</p>
           </div>
 
-          <button id="open-task-modal-btn" type="button" class="submit-button">Add Task</button>
+          <button id="open-task-modal-btn" type="button" class="submit-button" data-i18n="tasks.addTask">Add Task</button>
         </div>
 
         <p class="form-message" id="tasks-message" aria-live="polite"></p>
 
         <div id="tasks-board" class="kanban-board">
           <article class="state-card">
-            <h3>Loading tasks...</h3>
-            <p>Opening the local IndexedDB task store.</p>
+            <h3 data-i18n="tasks.loadingTitle">Loading tasks...</h3>
+            <p data-i18n="tasks.loadingText">Opening the local IndexedDB task store.</p>
           </article>
         </div>
       </section>
@@ -154,14 +155,15 @@
       <div class="modal-header">
         <div>
           <span class="brand-tag">SPMP</span>
-          <h2 id="task-modal-title">Add Task</h2>
-          <p class="subtitle">Create a task and save it locally in IndexedDB on this device.</p>
+          <h2 id="task-modal-title" data-i18n="tasks.addTask">Add Task</h2>
+          <p class="subtitle" data-i18n="tasks.modalSubtitle">Create a task and save it locally in IndexedDB on this device.</p>
         </div>
 
         <button
           id="close-task-modal"
           type="button"
           class="close-btn"
+          data-i18n-aria-label="tasks.closeTaskDialog"
           aria-label="Close add task dialog"
         >&times;</button>
       </div>
@@ -169,47 +171,49 @@
       <form id="task-form" class="project-form task-form" novalidate>
         <div class="task-form-grid">
           <label class="form-group task-form-span-full" for="task-title">
-            <span>Title</span>
+            <span data-i18n="tasks.form.title">Title</span>
             <input
               id="task-title"
               name="title"
               type="text"
               autocomplete="off"
               placeholder="Add a clear task title"
+              data-i18n-placeholder="tasks.form.titlePlaceholder"
               required
             >
           </label>
 
           <label class="form-group task-form-span-full" for="task-description">
-            <span>Description</span>
+            <span data-i18n="tasks.form.description">Description</span>
             <textarea
               id="task-description"
               name="description"
               rows="4"
               placeholder="Optional notes, links, or acceptance criteria"
+              data-i18n-placeholder="tasks.form.descriptionPlaceholder"
             ></textarea>
           </label>
 
           <label class="form-group" for="task-status">
-            <span>Status</span>
+            <span data-i18n="tasks.form.status">Status</span>
             <select id="task-status" name="status" class="sort-select">
-              <option value="Todo">Todo</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Done">Done</option>
+              <option value="Todo" data-i18n="tasks.status.todo">To-Do</option>
+              <option value="In Progress" data-i18n="tasks.status.inProgress">In Progress</option>
+              <option value="Done" data-i18n="tasks.status.done">Done</option>
             </select>
           </label>
 
           <label class="form-group" for="task-priority">
-            <span>Priority</span>
+            <span data-i18n="tasks.form.priority">Priority</span>
             <select id="task-priority" name="priority" class="sort-select">
-              <option value="Low">Low</option>
-              <option value="Medium" selected>Medium</option>
-              <option value="High">High</option>
+              <option value="Low" data-i18n="tasks.priority.low">Low</option>
+              <option value="Medium" selected data-i18n="tasks.priority.medium">Medium</option>
+              <option value="High" data-i18n="tasks.priority.high">High</option>
             </select>
           </label>
 
           <label class="form-group" for="task-due-date">
-            <span>Due Date</span>
+            <span data-i18n="tasks.form.dueDate">Due Date</span>
             <input
               id="task-due-date"
               name="dueDate"
@@ -217,13 +221,14 @@
               inputmode="numeric"
               autocomplete="off"
               placeholder="YYYY-MM-DD"
+              data-i18n-placeholder="tasks.form.dueDatePlaceholder"
               maxlength="10"
               lang="en-US"
             >
           </label>
 
           <label class="form-group" for="task-project">
-            <span>Project</span>
+            <span data-i18n="tasks.form.project">Project</span>
             <select id="task-project" name="projectId" class="sort-select"></select>
           </label>
         </div>
@@ -231,8 +236,8 @@
         <p class="form-message" id="task-form-message" aria-live="polite"></p>
 
         <div class="modal-actions">
-          <button id="cancel-task-modal" type="button" class="secondary-button">Cancel</button>
-          <button id="save-task-btn" type="submit" class="submit-button">Save Task</button>
+          <button id="cancel-task-modal" type="button" class="secondary-button" data-i18n="dashboard.cancel">Cancel</button>
+          <button id="save-task-btn" type="submit" class="submit-button" data-i18n="tasks.saveTask">Save Task</button>
         </div>
       </form>
     </section>

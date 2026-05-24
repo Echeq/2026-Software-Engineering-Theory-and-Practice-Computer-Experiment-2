@@ -88,12 +88,22 @@ const translations = {
         "dashboard.topbarLabel": "Navigation, projects, and account controls in one place.",
         "dashboard.greetingMorning": "Good morning, {name}",
         "dashboard.greetingMorningFallback": "Good morning",
+        "dashboard.greetingAfternoonFallback": "Good afternoon",
+        "dashboard.greetingEveningFallback": "Good evening",
+        "dashboard.greetingNightFallback": "Good night",
         "dashboard.title": "Projects Dashboard",
         "dashboard.subtitle": "A focused workspace for tracking projects, planning new work, and staying organized across your study flow.",
         "dashboard.currentView": "Current View",
         "dashboard.currentViewName": "Dashboard Overview",
         "dashboard.currentViewText": "Review active projects and create a new workspace when needed.",
         "dashboard.createProject": "Create New Project",
+        "dashboard.statisticsTag": "Statistics",
+        "dashboard.statisticsTitle": "Dashboard Statistics",
+        "dashboard.statisticsSubtitle": "A quick visual summary of project and task progress on this device.",
+        "dashboard.projectStatusTitle": "Project Status",
+        "dashboard.taskOverviewTitle": "Task Overview",
+        "dashboard.projectStatusChartAriaLabel": "Project status chart",
+        "dashboard.taskOverviewChartAriaLabel": "Task overview chart",
         "dashboard.projectsTag": "Projects",
         "dashboard.projectsTitle": "My Projects",
         "dashboard.projectsSubtitle": "Keep project workspaces visible, organized, and easy to scan.",
@@ -163,6 +173,53 @@ const translations = {
         "tasks.sectionSubtitle": "This page is ready as the navigation target for project cards.",
         "tasks.detailText": "The selected project context is loaded from the projects board. This keeps the click-through flow working now and leaves room for a fuller task board later.",
         "tasks.subtitleProject": "Continue planning and delivery for {projectName}.",
+        "tasks.subtitleLocalProject": "Local task workflow for {projectName}.",
+        "tasks.subtitleLocalDefault": "Create tasks locally and optionally attach them to a selected project.",
+        "tasks.noProjectStatus": "No status",
+        "tasks.noProjectContextSaved": "No project context saved yet. Open a project card from Projects or choose one in the form.",
+        "tasks.localStorageTag": "IndexedDB",
+        "tasks.localBoardTitle": "Local Task Board",
+        "tasks.localBoardSubtitle": "Your local task board powered by IndexedDB.",
+        "tasks.addTask": "Add Task",
+        "tasks.saveTask": "Save Task",
+        "tasks.loadingTitle": "Loading tasks...",
+        "tasks.loadingText": "Opening the local IndexedDB task store.",
+        "tasks.unavailableTitle": "Tasks unavailable",
+        "tasks.modalSubtitle": "Create a task and save it locally in IndexedDB on this device.",
+        "tasks.closeTaskDialog": "Close add task dialog",
+        "tasks.form.title": "Title",
+        "tasks.form.titlePlaceholder": "Add a clear task title",
+        "tasks.form.description": "Description",
+        "tasks.form.descriptionPlaceholder": "Optional notes, links, or acceptance criteria",
+        "tasks.form.status": "Status",
+        "tasks.form.priority": "Priority",
+        "tasks.form.dueDate": "Due Date",
+        "tasks.form.dueDatePlaceholder": "YYYY-MM-DD",
+        "tasks.form.project": "Project",
+        "tasks.status.todo": "To-Do",
+        "tasks.status.inProgress": "In Progress",
+        "tasks.status.done": "Done",
+        "tasks.column.todoCaption": "Planned work that still needs to start.",
+        "tasks.column.inProgressCaption": "Tasks actively being worked on right now.",
+        "tasks.column.doneCaption": "Completed tasks ready for review or reference.",
+        "tasks.emptyColumnText": "Add a task to start filling this {column} column.",
+        "tasks.form.noProjectOption": "No project",
+        "tasks.validation.titleRequired": "Title is required.",
+        "tasks.validation.invalidDueDate": "Use the due date format YYYY-MM-DD.",
+        "tasks.message.saved": "Task saved locally.",
+        "tasks.message.saveFailed": "Failed to save task locally. Please try again.",
+        "tasks.message.deleted": "Task deleted locally.",
+        "tasks.message.deleteFailed": "Failed to delete task locally. Please try again.",
+        "tasks.message.statusUpdateFailed": "Failed to update task status locally. Please try again.",
+        "tasks.card.noDescription": "No description provided.",
+        "tasks.card.noDueDate": "No due date",
+        "tasks.card.invalidDate": "Invalid date",
+        "tasks.card.delete": "Delete",
+        "tasks.card.projectLabel": "Project:",
+        "tasks.card.dueLabel": "Due:",
+        "tasks.priority.low": "Low",
+        "tasks.priority.medium": "Medium",
+        "tasks.priority.high": "High",
         "settings.pageTag": "Settings",
         "settings.topbarLabel": "Manage your profile details, account actions, and appearance preferences.",
         "settings.title": "Workspace Settings",
@@ -228,11 +285,14 @@ const translations = {
         "status.active": "Active",
         "status.inReview": "In Review",
         "status.done": "Done",
+        "status.todo": "To-Do",
         "common.you": "You",
+        "common.loading": "Loading...",
         "common.unavailable": "Unavailable",
         "common.tasksCount": "{count} tasks",
         "common.createdRecently": "Created recently",
         "common.createdDate": "Created {date}",
+        "common.percentComplete": "{percent}% complete",
         "auth.sessionExpired": "Your session has expired. Please log in again."
     },
     zh: {
@@ -612,6 +672,328 @@ const translations = {
         "auth.sessionExpired": "Tu sesión ha expirado. Inicia sesión de nuevo."
     }
 };
+Object.assign(translations.en, {
+    "app.title.login": "SPMP | Login",
+    "app.title.signup": "SPMP | Sign Up",
+    "app.title.dashboard": "SPMP | Dashboard",
+    "app.title.projects": "SPMP | Projects",
+    "app.title.tasks": "SPMP | Tasks",
+    "app.title.settings": "SPMP | Settings",
+    "app.aria.primaryNavigation": "Primary navigation",
+    "app.aria.workspaceNavigation": "Workspace navigation",
+    "app.aria.dashboardHome": "SPMP dashboard home",
+    "app.aria.openNavigationMenu": "Open navigation menu",
+    "app.aria.closeNavigationMenu": "Close navigation menu",
+    "app.aria.projectViewMode": "Project view mode",
+    "app.aria.projectSearchFilters": "Project search and filters",
+    "app.aria.projectStatusFilters": "Filter projects by status",
+    "app.aria.dailyGreeting": "Daily greeting",
+    "app.brand.workspace": "Project workspace",
+    "app.password.show": "Show",
+    "app.password.hide": "Hide",
+    "dashboard.closeProjectDialog": "Close create project dialog",
+    "dashboard.projectFallbackDescription": "No description yet.",
+    "dashboard.projectsLoadFailed": "Failed to load projects. Please refresh the page.",
+    "dashboard.greetingAfternoonFallback": "Good afternoon",
+    "dashboard.greetingEveningFallback": "Good evening",
+    "dashboard.greetingNightFallback": "Good night",
+    "dashboard.statisticsTag": "Statistics",
+    "dashboard.statisticsTitle": "Dashboard Statistics",
+    "dashboard.statisticsSubtitle": "A quick visual summary of project and task progress on this device.",
+    "dashboard.projectStatusTitle": "Project Status",
+    "dashboard.taskOverviewTitle": "Task Overview",
+    "dashboard.projectStatusChartAriaLabel": "Project status chart",
+    "dashboard.taskOverviewChartAriaLabel": "Task overview chart",
+    "tasks.subtitleLocalProject": "Local task workflow for {projectName}.",
+    "tasks.subtitleLocalDefault": "Create tasks locally and optionally attach them to a selected project.",
+    "tasks.noProjectStatus": "No status",
+    "tasks.noProjectContextSaved": "No project context saved yet. Open a project card from Projects or choose one in the form.",
+    "tasks.localStorageTag": "IndexedDB",
+    "tasks.localBoardTitle": "Local Task Board",
+    "tasks.localBoardSubtitle": "Your local task board powered by IndexedDB.",
+    "tasks.storageOpenFailed": "Failed to open local task storage. Please refresh the page.",
+    "tasks.addTask": "Add Task",
+    "tasks.saveTask": "Save Task",
+    "tasks.loadingTitle": "Loading tasks...",
+    "tasks.loadingText": "Opening the local IndexedDB task store.",
+    "tasks.unavailableTitle": "Tasks unavailable",
+    "tasks.modalSubtitle": "Create a task and save it locally in IndexedDB on this device.",
+    "tasks.closeTaskDialog": "Close add task dialog",
+    "tasks.form.title": "Title",
+    "tasks.form.titlePlaceholder": "Add a clear task title",
+    "tasks.form.description": "Description",
+    "tasks.form.descriptionPlaceholder": "Optional notes, links, or acceptance criteria",
+    "tasks.form.status": "Status",
+    "tasks.form.priority": "Priority",
+    "tasks.form.dueDate": "Due Date",
+    "tasks.form.dueDatePlaceholder": "YYYY-MM-DD",
+    "tasks.form.project": "Project",
+    "tasks.status.todo": "To-Do",
+    "tasks.status.inProgress": "In Progress",
+    "tasks.status.done": "Done",
+    "tasks.column.todoCaption": "Planned work that still needs to start.",
+    "tasks.column.inProgressCaption": "Tasks actively being worked on right now.",
+    "tasks.column.doneCaption": "Completed tasks ready for review or reference.",
+    "tasks.emptyColumnText": "Add a task to start filling this {column} column.",
+    "tasks.form.noProjectOption": "No project",
+    "tasks.validation.titleRequired": "Title is required.",
+    "tasks.validation.invalidDueDate": "Use the due date format YYYY-MM-DD.",
+    "tasks.message.saved": "Task saved locally.",
+    "tasks.message.saveFailed": "Failed to save task locally. Please try again.",
+    "tasks.message.deleted": "Task deleted locally.",
+    "tasks.message.deleteFailed": "Failed to delete task locally. Please try again.",
+    "tasks.message.statusUpdateFailed": "Failed to update task status locally. Please try again.",
+    "tasks.card.noDescription": "No description provided.",
+    "tasks.card.noDueDate": "No due date",
+    "tasks.card.invalidDate": "Invalid date",
+    "tasks.card.delete": "Delete",
+    "tasks.card.projectLabel": "Project:",
+    "tasks.card.dueLabel": "Due:",
+    "tasks.priority.low": "Low",
+    "tasks.priority.medium": "Medium",
+    "tasks.priority.high": "High",
+    "projects.viewGridAria": "Grid view",
+    "projects.viewListAria": "List view",
+    "status.todo": "To-Do",
+    "common.loading": "Loading...",
+    "common.percentComplete": "{percent}% complete"
+});
+Object.assign(translations.zh, {
+    "app.title.login": "SPMP | 登录",
+    "app.title.signup": "SPMP | 注册",
+    "app.title.dashboard": "SPMP | 仪表盘",
+    "app.title.projects": "SPMP | 项目",
+    "app.title.tasks": "SPMP | 任务",
+    "app.title.settings": "SPMP | 设置",
+    "app.aria.primaryNavigation": "主导航",
+    "app.aria.workspaceNavigation": "工作区导航",
+    "app.aria.dashboardHome": "SPMP 仪表盘首页",
+    "app.aria.openNavigationMenu": "打开导航菜单",
+    "app.aria.closeNavigationMenu": "关闭导航菜单",
+    "app.aria.projectViewMode": "项目视图模式",
+    "app.aria.projectSearchFilters": "项目搜索和筛选",
+    "app.aria.projectStatusFilters": "按状态筛选项目",
+    "app.aria.dailyGreeting": "每日问候",
+    "app.brand.workspace": "项目工作区",
+    "app.password.show": "显示",
+    "app.password.hide": "隐藏",
+    "dashboard.closeProjectDialog": "关闭创建项目对话框",
+    "dashboard.projectFallbackDescription": "尚无描述。",
+    "dashboard.projectsLoadFailed": "加载项目失败，请刷新页面。",
+    "dashboard.greetingAfternoonFallback": "下午好",
+    "dashboard.greetingEveningFallback": "晚上好",
+    "dashboard.greetingNightFallback": "夜深了",
+    "dashboard.statisticsTag": "统计",
+    "dashboard.statisticsTitle": "仪表盘统计",
+    "dashboard.statisticsSubtitle": "快速查看此设备上的项目与任务进度概览。",
+    "dashboard.projectStatusTitle": "项目状态",
+    "dashboard.taskOverviewTitle": "任务概览",
+    "dashboard.projectStatusChartAriaLabel": "项目状态图表",
+    "dashboard.taskOverviewChartAriaLabel": "任务概览图表",
+    "tasks.subtitleLocalProject": "{projectName} 的本地任务流程。",
+    "tasks.subtitleLocalDefault": "在本地创建任务，并可选择关联到当前项目。",
+    "tasks.noProjectStatus": "无状态",
+    "tasks.noProjectContextSaved": "尚未保存项目上下文。请从项目页打开一个项目卡片，或在表单中选择项目。",
+    "tasks.localStorageTag": "IndexedDB",
+    "tasks.localBoardTitle": "本地任务看板",
+    "tasks.localBoardSubtitle": "你的本地任务看板由 IndexedDB 提供支持。",
+    "tasks.storageOpenFailed": "打开本地任务存储失败，请刷新页面。",
+    "tasks.addTask": "添加任务",
+    "tasks.saveTask": "保存任务",
+    "tasks.loadingTitle": "正在加载任务...",
+    "tasks.loadingText": "正在打开本地 IndexedDB 任务存储。",
+    "tasks.unavailableTitle": "任务不可用",
+    "tasks.modalSubtitle": "创建任务并将其保存在此设备的 IndexedDB 中。",
+    "tasks.closeTaskDialog": "关闭添加任务对话框",
+    "tasks.form.title": "标题",
+    "tasks.form.titlePlaceholder": "输入清晰的任务标题",
+    "tasks.form.description": "描述",
+    "tasks.form.descriptionPlaceholder": "可选备注、链接或验收标准",
+    "tasks.form.status": "状态",
+    "tasks.form.priority": "优先级",
+    "tasks.form.dueDate": "截止日期",
+    "tasks.form.dueDatePlaceholder": "YYYY-MM-DD",
+    "tasks.form.project": "项目",
+    "tasks.status.todo": "待办",
+    "tasks.status.inProgress": "进行中",
+    "tasks.status.done": "已完成",
+    "tasks.column.todoCaption": "尚未开始的计划工作。",
+    "tasks.column.inProgressCaption": "当前正在推进的任务。",
+    "tasks.column.doneCaption": "已完成、可供查看或复用的任务。",
+    "tasks.emptyColumnText": "添加一个任务以开始填充“{column}”列。",
+    "tasks.form.noProjectOption": "无项目",
+    "tasks.validation.titleRequired": "标题为必填项。",
+    "tasks.validation.invalidDueDate": "截止日期请使用 YYYY-MM-DD 格式。",
+    "tasks.message.saved": "任务已保存在本地。",
+    "tasks.message.saveFailed": "本地保存任务失败，请重试。",
+    "tasks.message.deleted": "任务已从本地删除。",
+    "tasks.message.deleteFailed": "本地删除任务失败，请重试。",
+    "tasks.message.statusUpdateFailed": "本地更新任务状态失败，请重试。",
+    "tasks.card.noDescription": "未提供描述。",
+    "tasks.card.noDueDate": "无截止日期",
+    "tasks.card.invalidDate": "日期无效",
+    "tasks.card.delete": "删除",
+    "tasks.card.projectLabel": "项目：",
+    "tasks.card.dueLabel": "截止：",
+    "tasks.priority.low": "低",
+    "tasks.priority.medium": "中",
+    "tasks.priority.high": "高",
+    "projects.viewGridAria": "网格视图",
+    "projects.viewListAria": "列表视图",
+    "status.todo": "待办",
+    "common.loading": "加载中...",
+    "common.percentComplete": "已完成 {percent}%"
+});
+Object.assign(translations.es, {
+    "app.title.login": "SPMP | Iniciar sesión",
+    "app.title.signup": "SPMP | Registrarse",
+    "app.title.dashboard": "SPMP | Panel",
+    "app.title.projects": "SPMP | Proyectos",
+    "app.title.tasks": "SPMP | Tareas",
+    "app.title.settings": "SPMP | Configuración",
+    "app.aria.primaryNavigation": "Navegación principal",
+    "app.aria.workspaceNavigation": "Navegación del espacio de trabajo",
+    "app.aria.dashboardHome": "Inicio del panel de SPMP",
+    "app.aria.openNavigationMenu": "Abrir menú de navegación",
+    "app.aria.closeNavigationMenu": "Cerrar menú de navegación",
+    "app.aria.projectViewMode": "Modo de vista de proyectos",
+    "app.aria.projectSearchFilters": "Búsqueda y filtros de proyectos",
+    "app.aria.projectStatusFilters": "Filtrar proyectos por estado",
+    "app.aria.dailyGreeting": "Saludo diario",
+    "app.brand.workspace": "Espacio de proyectos",
+    "app.password.show": "Mostrar",
+    "app.password.hide": "Ocultar",
+    "dashboard.closeProjectDialog": "Cerrar diálogo de crear proyecto",
+    "dashboard.projectFallbackDescription": "Todavía no hay descripción.",
+    "dashboard.projectsLoadFailed": "No se pudieron cargar los proyectos. Actualiza la página.",
+    "dashboard.greetingAfternoonFallback": "Buenas tardes",
+    "dashboard.greetingEveningFallback": "Buenas noches",
+    "dashboard.greetingNightFallback": "Buenas noches",
+    "dashboard.statisticsTag": "Estadísticas",
+    "dashboard.statisticsTitle": "Estadísticas del panel",
+    "dashboard.statisticsSubtitle": "Un resumen visual rápido del progreso de proyectos y tareas en este dispositivo.",
+    "dashboard.projectStatusTitle": "Estado del proyecto",
+    "dashboard.taskOverviewTitle": "Resumen de tareas",
+    "dashboard.projectStatusChartAriaLabel": "Gráfico del estado del proyecto",
+    "dashboard.taskOverviewChartAriaLabel": "Gráfico de resumen de tareas",
+    "tasks.subtitleLocalProject": "Flujo local de tareas para {projectName}.",
+    "tasks.subtitleLocalDefault": "Crea tareas localmente y, si quieres, asígnalas al proyecto seleccionado.",
+    "tasks.noProjectStatus": "Sin estado",
+    "tasks.noProjectContextSaved": "Todavía no hay contexto de proyecto guardado. Abre una tarjeta desde Proyectos o elige uno en el formulario.",
+    "tasks.localStorageTag": "IndexedDB",
+    "tasks.localBoardTitle": "Tablero local de tareas",
+    "tasks.localBoardSubtitle": "Tu tablero local de tareas funciona con IndexedDB.",
+    "tasks.storageOpenFailed": "No se pudo abrir el almacenamiento local de tareas. Actualiza la página.",
+    "tasks.addTask": "Añadir tarea",
+    "tasks.saveTask": "Guardar tarea",
+    "tasks.loadingTitle": "Cargando tareas...",
+    "tasks.loadingText": "Abriendo el almacén local de tareas en IndexedDB.",
+    "tasks.unavailableTitle": "Tareas no disponibles",
+    "tasks.modalSubtitle": "Crea una tarea y guárdala localmente en IndexedDB en este dispositivo.",
+    "tasks.closeTaskDialog": "Cerrar diálogo de añadir tarea",
+    "tasks.form.title": "Título",
+    "tasks.form.titlePlaceholder": "Añade un título claro para la tarea",
+    "tasks.form.description": "Descripción",
+    "tasks.form.descriptionPlaceholder": "Notas opcionales, enlaces o criterios de aceptación",
+    "tasks.form.status": "Estado",
+    "tasks.form.priority": "Prioridad",
+    "tasks.form.dueDate": "Fecha límite",
+    "tasks.form.dueDatePlaceholder": "YYYY-MM-DD",
+    "tasks.form.project": "Proyecto",
+    "tasks.status.todo": "Por hacer",
+    "tasks.status.inProgress": "En progreso",
+    "tasks.status.done": "Hecho",
+    "tasks.column.todoCaption": "Trabajo planificado que todavía no ha comenzado.",
+    "tasks.column.inProgressCaption": "Tareas en las que se está trabajando ahora mismo.",
+    "tasks.column.doneCaption": "Tareas completadas listas para consulta o revisión.",
+    "tasks.emptyColumnText": "Añade una tarea para empezar a llenar la columna {column}.",
+    "tasks.form.noProjectOption": "Sin proyecto",
+    "tasks.validation.titleRequired": "El título es obligatorio.",
+    "tasks.validation.invalidDueDate": "Usa el formato de fecha YYYY-MM-DD.",
+    "tasks.message.saved": "Tarea guardada localmente.",
+    "tasks.message.saveFailed": "No se pudo guardar la tarea localmente. Inténtalo de nuevo.",
+    "tasks.message.deleted": "Tarea eliminada localmente.",
+    "tasks.message.deleteFailed": "No se pudo eliminar la tarea localmente. Inténtalo de nuevo.",
+    "tasks.message.statusUpdateFailed": "No se pudo actualizar el estado de la tarea localmente. Inténtalo de nuevo.",
+    "tasks.card.noDescription": "No se proporcionó descripción.",
+    "tasks.card.noDueDate": "Sin fecha límite",
+    "tasks.card.invalidDate": "Fecha no válida",
+    "tasks.card.delete": "Eliminar",
+    "tasks.card.projectLabel": "Proyecto:",
+    "tasks.card.dueLabel": "Vence:",
+    "tasks.priority.low": "Baja",
+    "tasks.priority.medium": "Media",
+    "tasks.priority.high": "Alta",
+    "projects.viewGridAria": "Vista de cuadrícula",
+    "projects.viewListAria": "Vista de lista",
+    "status.todo": "Por hacer",
+    "common.loading": "Cargando...",
+    "common.percentComplete": "{percent}% completado"
+});
+Object.assign(translations.en, {
+    "settings.profileSave": "Save Changes",
+    "settings.passwordModalTitle": "Change Password",
+    "settings.currentPassword": "Current Password",
+    "settings.currentPasswordPlaceholder": "Enter your current password",
+    "settings.newPassword": "New Password",
+    "settings.newPasswordPlaceholder": "Enter a new password",
+    "settings.confirmNewPassword": "Confirm New Password",
+    "settings.confirmNewPasswordPlaceholder": "Re-enter the new password",
+    "settings.passwordSave": "Save",
+    "settings.profileConfirmTitle": "Confirm your identity",
+    "settings.profileConfirmPassword": "Password",
+    "settings.profileConfirmPasswordPlaceholder": "Enter your password",
+    "settings.profileConfirmCancel": "Cancel",
+    "settings.profileConfirmConfirm": "Confirm"
+});
+Object.assign(translations.zh, {
+    "dashboard.greetingMorningFallback": "早上好",
+    "settings.profileSave": "保存更改",
+    "settings.passwordModalTitle": "修改密码",
+    "settings.currentPassword": "当前密码",
+    "settings.currentPasswordPlaceholder": "输入当前密码",
+    "settings.newPassword": "新密码",
+    "settings.newPasswordPlaceholder": "输入新密码",
+    "settings.confirmNewPassword": "确认新密码",
+    "settings.confirmNewPasswordPlaceholder": "再次输入新密码",
+    "settings.passwordSave": "保存",
+    "settings.profileConfirmTitle": "确认你的身份",
+    "settings.profileConfirmPassword": "密码",
+    "settings.profileConfirmPasswordPlaceholder": "输入你的密码",
+    "settings.profileConfirmCancel": "取消",
+    "settings.profileConfirmConfirm": "确认"
+});
+Object.assign(translations.es, {
+    "dashboard.greetingMorningFallback": "Buenos días",
+    "settings.profileSave": "Guardar cambios",
+    "settings.passwordModalTitle": "Cambiar contraseña",
+    "settings.currentPassword": "Contraseña actual",
+    "settings.currentPasswordPlaceholder": "Introduce tu contraseña actual",
+    "settings.newPassword": "Nueva contraseña",
+    "settings.newPasswordPlaceholder": "Introduce una nueva contraseña",
+    "settings.confirmNewPassword": "Confirmar nueva contraseña",
+    "settings.confirmNewPasswordPlaceholder": "Vuelve a introducir la nueva contraseña",
+    "settings.passwordSave": "Guardar",
+    "settings.profileConfirmTitle": "Confirma tu identidad",
+    "settings.profileConfirmPassword": "Contraseña",
+    "settings.profileConfirmPasswordPlaceholder": "Introduce tu contraseña",
+    "settings.profileConfirmCancel": "Cancelar",
+    "settings.profileConfirmConfirm": "Confirmar"
+});
+Object.assign(translations.zh, {
+    "notifications.buttonLabel": "通知",
+    "notifications.title": "通知",
+    "notifications.item1": "明天上午已安排设计评审。",
+    "notifications.item2": "Frontend Showcase 项目新增了一条评论。",
+    "notifications.item3": "你的工作区偏好已保存在此设备上。"
+});
+Object.assign(translations.es, {
+    "notifications.buttonLabel": "Notificaciones",
+    "notifications.title": "Notificaciones",
+    "notifications.item1": "Se ha programado una revisión de diseño para mañana por la mañana.",
+    "notifications.item2": "Se añadió un comentario nuevo al proyecto Frontend Showcase.",
+    "notifications.item3": "Tus preferencias del espacio de trabajo se guardaron en este dispositivo."
+});
 function interpolate(template, values = {}) {
     return template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ""));
 }
@@ -643,6 +1025,14 @@ function getLanguageOption(language) {
     return LANGUAGE_OPTIONS[language];
 }
 function applyTranslations(root = document) {
+    if (root === document) {
+        document.querySelectorAll("[data-i18n-document-title]").forEach((element) => {
+            const key = element.dataset.i18nDocumentTitle;
+            if (key) {
+                element.textContent = t(key);
+            }
+        });
+    }
     root.querySelectorAll("[data-i18n]").forEach((element) => {
         element.textContent = t(element.dataset.i18n || "");
     });
@@ -656,6 +1046,12 @@ function applyTranslations(root = document) {
         const key = element.dataset.i18nAriaLabel;
         if (key) {
             element.setAttribute("aria-label", t(key));
+        }
+    });
+    root.querySelectorAll("[data-i18n-title]").forEach((element) => {
+        const key = element.dataset.i18nTitle;
+        if (key) {
+            element.setAttribute("title", t(key));
         }
     });
     root.querySelectorAll(".language-input").forEach((input) => {
@@ -711,9 +1107,40 @@ function refreshHtmxProjectsList() {
         window.htmx.trigger(searchInput, "search");
     }
 }
+function refreshNotificationCenterTranslations() {
+    document.querySelectorAll(".notification-center").forEach((center) => {
+        const trigger = center.querySelector(".notification-center-trigger");
+        const triggerLabel = center.querySelector(".notification-center-label");
+        const panel = center.querySelector(".notification-center-panel");
+        const titleElement = center.querySelector(".notification-center-header strong");
+        const items = center.querySelectorAll(".notification-item p");
+        if (trigger) {
+            trigger.setAttribute("aria-label", t("notifications.buttonLabel"));
+        }
+        if (triggerLabel) {
+            triggerLabel.textContent = t("notifications.buttonLabel");
+        }
+        if (panel) {
+            panel.setAttribute("aria-label", t("notifications.title"));
+        }
+        if (titleElement) {
+            titleElement.textContent = t("notifications.title");
+        }
+        if (items[0]) {
+            items[0].textContent = t("notifications.item1");
+        }
+        if (items[1]) {
+            items[1].textContent = t("notifications.item2");
+        }
+        if (items[2]) {
+            items[2].textContent = t("notifications.item3");
+        }
+    });
+}
 function setLanguage(language) {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
     applyTranslations();
+    refreshNotificationCenterTranslations();
     updateSwitcherSelection();
     refreshHtmxProjectsList();
     document.dispatchEvent(new CustomEvent("app-language-change", { detail: { language } }));
@@ -812,6 +1239,24 @@ function setNotificationCenterOpen(center, isOpen) {
     trigger.setAttribute("aria-expanded", String(isOpen));
     panel.hidden = !isOpen;
 }
+function setNotificationUnreadState(center, hasUnread) {
+    if (!center) {
+        return;
+    }
+    center.dataset.hasUnread = hasUnread ? "true" : "false";
+    const badge = center.querySelector(".notification-badge");
+    if (badge) {
+        if (!hasUnread) {
+            badge.textContent = "0";
+        }
+        else if (!badge.textContent?.trim() || badge.textContent.trim() === "0") {
+            badge.textContent = String(NOTIFICATION_COUNT);
+        }
+        badge.hidden = !hasUnread;
+        badge.style.display = hasUnread ? "" : "none";
+        badge.classList.toggle("hidden", !hasUnread);
+    }
+}
 function closeNotificationCenters() {
     document.querySelectorAll(".notification-center.is-open").forEach((center) => {
         setNotificationCenterOpen(center, false);
@@ -847,6 +1292,9 @@ function upgradeNotificationCenter(center) {
         const shouldOpen = !center.classList.contains("is-open");
         closeNotificationCenters();
         setNotificationCenterOpen(center, shouldOpen);
+        if (shouldOpen) {
+            setNotificationUnreadState(center, false);
+        }
     });
     center.querySelector(".notification-center-close")?.addEventListener("click", () => {
         setNotificationCenterOpen(center, false);
@@ -905,6 +1353,7 @@ function injectNotificationCenter() {
     </section>
   `;
     dashboardTopbarActions.insertAdjacentElement("afterbegin", wrapper);
+    setNotificationUnreadState(wrapper, true);
     upgradeNotificationCenter(wrapper);
 }
 function upgradeDashboardLanguageSwitcher() {

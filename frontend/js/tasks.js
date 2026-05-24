@@ -15,9 +15,9 @@ var TasksPage;
     const TASK_SORTABLE_GROUP_NAME = "tasks";
     const i18n = (key, values) => window.I18n?.t(key, values) || key;
     const TASK_COLUMNS = [
-        { id: "Todo", title: "Todo", caption: "Planned work that still needs to start.", className: "task-column-todo" },
-        { id: "In Progress", title: "In Progress", caption: "Tasks actively being worked on right now.", className: "task-column-progress" },
-        { id: "Done", title: "Done", caption: "Completed tasks ready for review or reference.", className: "task-column-done" }
+        { id: "Todo", titleKey: "tasks.status.todo", captionKey: "tasks.column.todoCaption", className: "task-column-todo" },
+        { id: "In Progress", titleKey: "tasks.status.inProgress", captionKey: "tasks.column.inProgressCaption", className: "task-column-progress" },
+        { id: "Done", titleKey: "tasks.status.done", captionKey: "tasks.column.doneCaption", className: "task-column-done" }
     ];
     let db = null;
     let currentUser = null;
@@ -68,7 +68,7 @@ var TasksPage;
         }
         catch (error) {
             console.error("Error opening IndexedDB:", error);
-            renderBoardError("Failed to open local task storage. Please refresh the page.");
+            renderBoardError(i18n("tasks.storageOpenFailed"));
         }
         const token = getStoredToken();
         if (!token) {
@@ -126,6 +126,7 @@ var TasksPage;
         tasksBoardElement?.addEventListener("click", handleBoardClick);
         window.addEventListener("resize", syncSidebarState);
         document.addEventListener("keydown", handleEscapeKey);
+        document.addEventListener("app-language-change", handleLanguageChange);
         document.querySelectorAll(".sidebar-link").forEach((link) => {
             link.addEventListener("click", () => {
                 if (isMobileViewport()) {
@@ -171,7 +172,7 @@ var TasksPage;
         const isSidebarOpen = !isMobileViewport() || document.body.classList.contains("sidebar-open");
         sidebarElement.setAttribute("aria-hidden", String(!isSidebarOpen));
         sidebarToggleButton.setAttribute("aria-expanded", String(isMobileViewport() && document.body.classList.contains("sidebar-open")));
-        sidebarToggleButton.setAttribute("aria-label", document.body.classList.contains("sidebar-open") ? "Close navigation menu" : "Open navigation menu");
+        sidebarToggleButton.setAttribute("aria-label", document.body.classList.contains("sidebar-open") ? i18n("app.aria.closeNavigationMenu") : i18n("app.aria.openNavigationMenu"));
         sidebarBackdropElement.hidden = !(isMobileViewport() && document.body.classList.contains("sidebar-open"));
     }
     function openSidebar() {
@@ -206,6 +207,16 @@ var TasksPage;
         if (event.key === "Escape" && document.body.classList.contains("sidebar-open")) {
             closeSidebar();
         }
+    }
+    function handleLanguageChange() {
+        renderSelectedProjectContext();
+        renderProjectOptions();
+        renderVisibleTaskSelectLabels();
+        if (db) {
+            void loadAndRenderTasks();
+            return;
+        }
+        renderBoardLoading();
     }
     function hydrateProjectContext() {
         const searchParams = new URLSearchParams(window.location.search);
@@ -307,7 +318,7 @@ var TasksPage;
     }
     function renderSelectedProjectContext() {
         const projectName = selectedProjectContext?.projectName?.trim() || i18n("tasks.noProject");
-        const status = selectedProjectContext?.status?.trim() || "No status";
+        const status = formatTaskContextStatus(selectedProjectContext?.status?.trim() || "") || i18n("tasks.noProjectStatus");
         const creator = selectedProjectContext?.creator?.trim() || i18n("common.unavailable");
         const createdAt = formatProjectDate(selectedProjectContext?.createdAt?.trim() || "");
         if (selectedProjectNameElement) {
@@ -318,13 +329,13 @@ var TasksPage;
                 selectedProjectMetaElement.textContent = `${status} • ${creator} • ${createdAt}`;
             }
             else {
-                selectedProjectMetaElement.textContent = "No project context saved yet. Open a project card from Projects or choose one in the form.";
+                selectedProjectMetaElement.textContent = i18n("tasks.noProjectContextSaved");
             }
         }
         if (tasksPageSubtitleElement) {
             tasksPageSubtitleElement.textContent = selectedProjectContext
-                ? `Local task workflow for ${projectName}.`
-                : "Create tasks locally and optionally attach them to a selected project.";
+                ? i18n("tasks.subtitleLocalProject", { projectName })
+                : i18n("tasks.subtitleLocalDefault");
         }
     }
     function renderProjectOptions() {
@@ -333,7 +344,7 @@ var TasksPage;
         }
         const selectedProjectId = selectedProjectContext?.projectId || "";
         const options = [];
-        options.push(`<option value="${EMPTY_PROJECT_ID}">No project</option>`);
+        options.push(`<option value="${EMPTY_PROJECT_ID}">${escapeHtml(i18n("tasks.form.noProjectOption"))}</option>`);
         knownProjects.forEach((project) => {
             const isSelected = project.projectId === selectedProjectId;
             options.push(`<option value="${escapeHtml(project.projectId)}"${isSelected ? " selected" : ""}>${escapeHtml(project.projectName)}</option>`);
@@ -351,8 +362,8 @@ var TasksPage;
         destroyEmptyColumnAnimations();
         tasksBoardElement.innerHTML = `
       <article class="state-card">
-        <h3>Loading tasks...</h3>
-        <p>Opening the local IndexedDB task store.</p>
+        <h3>${escapeHtml(i18n("tasks.loadingTitle"))}</h3>
+        <p>${escapeHtml(i18n("tasks.loadingText"))}</p>
       </article>
     `;
     }
@@ -364,7 +375,7 @@ var TasksPage;
         destroyEmptyColumnAnimations();
         tasksBoardElement.innerHTML = `
       <article class="state-card">
-        <h3>Tasks unavailable</h3>
+        <h3>${escapeHtml(i18n("tasks.unavailableTitle"))}</h3>
         <p>${escapeHtml(text)}</p>
       </article>
     `;
@@ -374,13 +385,13 @@ var TasksPage;
         clearTaskFormMessage();
         const title = taskTitleInput?.value.trim() || "";
         if (!title) {
-            showTaskFormMessage("Title is required.", "error");
+            showTaskFormMessage(i18n("tasks.validation.titleRequired"), "error");
             taskTitleInput?.focus();
             return;
         }
         const dueDate = taskDueDateInput?.value.trim() || "";
         if (dueDate && !isIsoDateValue(dueDate)) {
-            showTaskFormMessage("Use the due date format YYYY-MM-DD.", "error");
+            showTaskFormMessage(i18n("tasks.validation.invalidDueDate"), "error");
             taskDueDateInput?.focus();
             return;
         }
@@ -398,12 +409,12 @@ var TasksPage;
         try {
             await addTask(task);
             closeTaskModal();
-            showTasksMessage("Task saved locally.", "success");
+            showTasksMessage(i18n("tasks.message.saved"), "success");
             await loadAndRenderTasks();
         }
         catch (error) {
             console.error("Error saving task:", error);
-            showTaskFormMessage("Failed to save task locally. Please try again.", "error");
+            showTaskFormMessage(i18n("tasks.message.saveFailed"), "error");
         }
     }
     function handleBoardClick(event) {
@@ -421,12 +432,12 @@ var TasksPage;
     async function deleteTaskAndRefresh(taskId) {
         try {
             await deleteTask(taskId);
-            showTasksMessage("Task deleted locally.", "success");
+            showTasksMessage(i18n("tasks.message.deleted"), "success");
             await loadAndRenderTasks();
         }
         catch (error) {
             console.error("Error deleting task:", error);
-            showTasksMessage("Failed to delete task locally. Please try again.", "error");
+            showTasksMessage(i18n("tasks.message.deleteFailed"), "error");
         }
     }
     function openTaskModal() {
@@ -646,10 +657,10 @@ var TasksPage;
       <section class="kanban-column ${escapeHtml(column.className)}" aria-labelledby="task-column-${escapeHtml(getColumnDomId(column.id))}" data-column-status="${escapeHtml(column.id)}" data-aos="fade-up">
         <header class="kanban-column-header">
           <div class="kanban-column-copy">
-            <h3 id="task-column-${escapeHtml(getColumnDomId(column.id))}" class="kanban-column-title">${escapeHtml(column.title)}</h3>
-            <p class="kanban-column-caption">${escapeHtml(column.caption)}</p>
+            <h3 id="task-column-${escapeHtml(getColumnDomId(column.id))}" class="kanban-column-title">${escapeHtml(i18n(column.titleKey))}</h3>
+            <p class="kanban-column-caption">${escapeHtml(i18n(column.captionKey))}</p>
           </div>
-          <span class="kanban-count" aria-label="${tasks.length} tasks">${tasks.length}</span>
+          <span class="kanban-count" aria-label="${escapeHtml(i18n("common.tasksCount", { count: tasks.length }))}">${tasks.length}</span>
         </header>
         <div class="kanban-list" data-column-status="${escapeHtml(column.id)}">
           ${cardsMarkup}
@@ -664,7 +675,7 @@ var TasksPage;
             <div class="task-empty-lottie-shell" aria-hidden="true">
               <div id="${escapeHtml(lottieId)}" class="task-empty-lottie"></div>
             </div>
-            <p>Add a task to start filling this ${escapeHtml(column.title.toLowerCase())} column.</p>
+            <p>${escapeHtml(i18n("tasks.emptyColumnText", { column: i18n(column.titleKey).toLowerCase() }))}</p>
           </article>
         `;
     }
@@ -752,7 +763,7 @@ var TasksPage;
         }
         catch (error) {
             console.error("Error updating task status:", error);
-            showTasksMessage("Failed to update task status locally. Please try again.", "error");
+            showTasksMessage(i18n("tasks.message.statusUpdateFailed"), "error");
             await loadAndRenderTasks();
         }
     }
@@ -773,7 +784,7 @@ var TasksPage;
                 return;
             }
             countBadge.textContent = String(count);
-            countBadge.setAttribute("aria-label", `${count} tasks`);
+            countBadge.setAttribute("aria-label", i18n("common.tasksCount", { count }));
         });
     }
     function renderTaskCard(task) {
@@ -781,22 +792,22 @@ var TasksPage;
         const priorityClass = `priority-${task.priority.toLowerCase().replace(/\s+/g, "-")}`;
         const descriptionMarkup = task.description
             ? `<p class="task-card-description">${escapeHtml(task.description)}</p>`
-            : '<p class="task-card-description is-empty">No description provided.</p>';
-        const dueDateLabel = task.dueDate ? formatDueDate(task.dueDate) : "No due date";
-        const projectLabel = projectName || "No project";
+            : `<p class="task-card-description is-empty">${escapeHtml(i18n("tasks.card.noDescription"))}</p>`;
+        const dueDateLabel = task.dueDate ? formatDueDate(task.dueDate) : i18n("tasks.card.noDueDate");
+        const projectLabel = projectName || i18n("tasks.form.noProjectOption");
         return `
       <article class="project-card task-card" data-task-id="${task.id}">
         <div class="task-card-header">
           <div class="task-card-title-wrap">
             <h3 class="task-card-title">${escapeHtml(task.title)}</h3>
-            <span class="task-priority-badge ${escapeHtml(priorityClass)}">${escapeHtml(task.priority)}</span>
+            <span class="task-priority-badge ${escapeHtml(priorityClass)}">${escapeHtml(formatPriorityLabel(task.priority))}</span>
           </div>
-          <button type="button" class="danger-button task-delete-button" data-delete-task-id="${task.id}">Delete</button>
+          <button type="button" class="danger-button task-delete-button" data-delete-task-id="${task.id}">${escapeHtml(i18n("tasks.card.delete"))}</button>
         </div>
         ${descriptionMarkup}
         <div class="task-meta-list">
-          <span class="task-meta-item"><strong>Project:</strong> ${escapeHtml(projectLabel)}</span>
-          <span class="task-meta-item"><strong>Due:</strong> ${escapeHtml(dueDateLabel)}</span>
+          <span class="task-meta-item"><strong>${escapeHtml(i18n("tasks.card.projectLabel"))}</strong> ${escapeHtml(projectLabel)}</span>
+          <span class="task-meta-item"><strong>${escapeHtml(i18n("tasks.card.dueLabel"))}</strong> ${escapeHtml(dueDateLabel)}</span>
         </div>
       </article>
     `;
@@ -843,6 +854,59 @@ var TasksPage;
         }
         return "Medium";
     }
+    function formatTaskContextStatus(status) {
+        const normalizedStatus = normalizeStatus(status || "");
+        if (normalizedStatus === "Done") {
+            return i18n("tasks.status.done");
+        }
+        if (normalizedStatus === "In Progress") {
+            return i18n("tasks.status.inProgress");
+        }
+        if (normalizedStatus === "Todo") {
+            return i18n("tasks.status.todo");
+        }
+        return status || "";
+    }
+    function formatPriorityLabel(priority) {
+        const normalizedPriority = normalizePriority(priority || "");
+        if (normalizedPriority === "High") {
+            return i18n("tasks.priority.high");
+        }
+        if (normalizedPriority === "Low") {
+            return i18n("tasks.priority.low");
+        }
+        return i18n("tasks.priority.medium");
+    }
+    function getCurrentLocale() {
+        const language = window.I18n?.getLanguage();
+        if (language === "zh") {
+            return "zh-CN";
+        }
+        if (language === "es") {
+            return "es-ES";
+        }
+        return "en-US";
+    }
+    function renderVisibleTaskSelectLabels() {
+        if (taskStatusSelect) {
+            Array.from(taskStatusSelect.options).forEach((option) => {
+                option.textContent = option.value === "Done"
+                    ? i18n("tasks.status.done")
+                    : option.value === "In Progress"
+                        ? i18n("tasks.status.inProgress")
+                        : i18n("tasks.status.todo");
+            });
+        }
+        if (taskPrioritySelect) {
+            Array.from(taskPrioritySelect.options).forEach((option) => {
+                option.textContent = option.value === "High"
+                    ? i18n("tasks.priority.high")
+                    : option.value === "Low"
+                        ? i18n("tasks.priority.low")
+                        : i18n("tasks.priority.medium");
+            });
+        }
+    }
     function isIsoDateValue(value) {
         const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
         if (!match) {
@@ -859,11 +923,11 @@ var TasksPage;
     }
     function formatDueDate(dateString) {
         if (!isIsoDateValue(dateString)) {
-            return "Invalid date";
+            return i18n("tasks.card.invalidDate");
         }
         const [year, month, day] = dateString.split("-").map(Number);
         const date = new Date(year, month - 1, day);
-        return date.toLocaleDateString("en-US", {
+        return date.toLocaleDateString(getCurrentLocale(), {
             month: "short",
             day: "numeric",
             year: "numeric"

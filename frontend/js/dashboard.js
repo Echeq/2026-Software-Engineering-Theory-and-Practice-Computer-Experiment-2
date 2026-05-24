@@ -3,6 +3,7 @@
 const API_BASE_URL = `${window.location.origin}/api`;
 const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
 const THEME_STORAGE_KEY = "dashboard-theme";
+const DEFAULT_PROJECT_VIEW_STORAGE_KEY = "defaultProjectView";
 const MOBILE_SIDEBAR_BREAKPOINT = 960;
 const DB_NAME = "SPMP_DB";
 const DB_VERSION = 1;
@@ -68,11 +69,13 @@ let taskOverviewChartCanvas = null;
 let projectStatusChart = null;
 let taskOverviewChart = null;
 let taskStatusCounts = createTaskStatusCounts();
+let currentProjectView = "grid";
 document.addEventListener("DOMContentLoaded", () => {
     void initializeDashboard();
 });
 async function initializeDashboard() {
     cacheElements();
+    applyStoredProjectView();
     initializeTheme();
     refreshGreetingBanner();
     syncSidebarState();
@@ -128,6 +131,19 @@ function cacheElements() {
     cancelProjectModalButton = document.getElementById("cancel-project-btn");
     projectStatusChartCanvas = document.getElementById("project-status-chart");
     taskOverviewChartCanvas = document.getElementById("task-overview-chart");
+}
+function readStoredProjectView() {
+    const value = localStorage.getItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY);
+    return value === "list" ? "list" : "grid";
+}
+function applyStoredProjectView() {
+    currentProjectView = readStoredProjectView();
+    if (!projectsListElement) {
+        return;
+    }
+    projectsListElement.className = currentProjectView === "list"
+        ? "projects-grid projects-view-list"
+        : "projects-grid projects-view-grid";
 }
 function setupEventListeners() {
     logoutButton?.addEventListener("click", logout);
@@ -198,7 +214,7 @@ function syncSidebarState() {
     const isSidebarOpen = !isMobileViewport() || document.body.classList.contains("sidebar-open");
     sidebarElement.setAttribute("aria-hidden", String(!isSidebarOpen));
     sidebarToggleButton.setAttribute("aria-expanded", String(isMobileViewport() && document.body.classList.contains("sidebar-open")));
-    sidebarToggleButton.setAttribute("aria-label", document.body.classList.contains("sidebar-open") ? "Close navigation menu" : "Open navigation menu");
+    sidebarToggleButton.setAttribute("aria-label", document.body.classList.contains("sidebar-open") ? i18n("app.aria.closeNavigationMenu") : i18n("app.aria.openNavigationMenu"));
     sidebarBackdropElement.hidden = !(isMobileViewport() && document.body.classList.contains("sidebar-open"));
 }
 function openSidebar() {
@@ -280,13 +296,14 @@ async function loadProjects(options = {}) {
         if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
             return;
         }
-        renderProjectsError(getErrorText(error, "Failed to load projects. Please refresh the page."));
+        renderProjectsError(getErrorText(error, i18n("dashboard.projectsLoadFailed")));
     }
 }
 function renderProjectsLoading() {
     if (!projectsListElement) {
         return;
     }
+    applyStoredProjectView();
     projectsListElement.innerHTML = `
     ${Array.from({ length: 3 }, () => `
       <article class="project-card skeleton-card" aria-hidden="true">
@@ -304,6 +321,7 @@ function renderProjects(projects) {
     if (!projectsListElement) {
         return;
     }
+    applyStoredProjectView();
     if (projects.length === 0) {
         projectsListElement.innerHTML = `
       <article class="state-card empty-state-card">
@@ -328,7 +346,7 @@ function renderProjects(projects) {
         return;
     }
     projectsListElement.innerHTML = projects.map((project, index) => {
-        const creatorName = escapeHtml(currentUser?.name || "You");
+        const creatorName = escapeHtml(currentUser?.name || i18n("common.you"));
         const taskCount = typeof project.taskCount === "number" ? project.taskCount : 0;
         const normalizedStatus = getNormalizedProjectStatus(project.status);
         const statusIndicator = getStatusIconMarkup(normalizedStatus);
@@ -336,12 +354,12 @@ function renderProjects(projects) {
         const aosDelay = getProjectCardAosDelay(index);
         const description = project.description?.trim()
             ? `<p class="project-description">${escapeHtml(project.description.trim())}</p>`
-            : '<p class="project-description is-empty">No description yet.</p>';
+            : `<p class="project-description is-empty">${escapeHtml(i18n("dashboard.projectFallbackDescription"))}</p>`;
         const query = new URLSearchParams({
             projectId: project.id,
             projectName: project.name,
             status: formatStatus(project.status),
-            creator: currentUser?.name || "You",
+            creator: currentUser?.name || i18n("common.you"),
             createdAt: project.created_at
         }).toString();
         return `
@@ -381,6 +399,7 @@ function renderProjectsError(text) {
     if (!projectsListElement) {
         return;
     }
+    applyStoredProjectView();
     projectsListElement.innerHTML = `
     <article class="state-card">
       <h3>${escapeHtml(i18n("dashboard.projectsUnavailable"))}</h3>
@@ -680,6 +699,21 @@ function renderDashboardCharts() {
     renderProjectStatusChart();
     renderTaskOverviewChart();
 }
+function getProjectStatusChartLabels() {
+    return [
+        i18n("status.planning"),
+        i18n("status.active"),
+        i18n("status.inReview"),
+        i18n("status.done")
+    ];
+}
+function getTaskOverviewChartLabels() {
+    return [
+        i18n("tasks.status.todo"),
+        i18n("tasks.status.inProgress"),
+        i18n("tasks.status.done")
+    ];
+}
 function renderProjectStatusChart() {
     if (!projectStatusChartCanvas || typeof Chart !== "function") {
         return;
@@ -689,6 +723,7 @@ function renderProjectStatusChart() {
     const data = [counts.planning, counts.active, counts.inReview, counts.done];
     if (projectStatusChart) {
         projectStatusChart.data.datasets[0].data = data;
+        projectStatusChart.data.labels = getProjectStatusChartLabels();
         projectStatusChart.data.datasets[0].backgroundColor = PROJECT_STATUS_CHART_COLORS;
         projectStatusChart.data.datasets[0].borderColor = themeColors.surface;
         projectStatusChart.options.plugins.legend.labels.color = themeColors.text;
@@ -698,7 +733,7 @@ function renderProjectStatusChart() {
     projectStatusChart = new Chart(projectStatusChartCanvas, {
         type: "doughnut",
         data: {
-            labels: ["Planning", "Active", "In Review", "Done"],
+            labels: getProjectStatusChartLabels(),
             datasets: [
                 {
                     data,
@@ -736,6 +771,7 @@ function renderTaskOverviewChart() {
     const data = [taskStatusCounts.todo, taskStatusCounts.inProgress, taskStatusCounts.done];
     if (taskOverviewChart) {
         taskOverviewChart.data.datasets[0].data = data;
+        taskOverviewChart.data.labels = getTaskOverviewChartLabels();
         taskOverviewChart.data.datasets[0].backgroundColor = TASK_OVERVIEW_CHART_COLORS;
         taskOverviewChart.options.plugins.legend.labels.color = themeColors.text;
         taskOverviewChart.options.scales.x.ticks.color = themeColors.text;
@@ -748,7 +784,7 @@ function renderTaskOverviewChart() {
     taskOverviewChart = new Chart(taskOverviewChartCanvas, {
         type: "bar",
         data: {
-            labels: ["Todo", "In Progress", "Done"],
+            labels: getTaskOverviewChartLabels(),
             datasets: [
                 {
                     data,
@@ -986,9 +1022,6 @@ function getProjectCompletionTone(percentage) {
     }
     return "high";
 }
-function formatProjectCompletionLabel(percentage) {
-    return `${percentage}% complete`;
-}
 function isCompletedTaskStatus(status) {
     return typeof status === "string" && status.trim().toLowerCase() === "done";
 }
@@ -1044,6 +1077,19 @@ function getErrorText(error, fallback) {
     return fallback;
 }
 function formatStatus(status) {
+    const normalizedStatus = getNormalizedProjectStatus(status);
+    if (normalizedStatus === "planning") {
+        return i18n("status.planning");
+    }
+    if (normalizedStatus === "active") {
+        return i18n("status.active");
+    }
+    if (normalizedStatus === "in-review") {
+        return i18n("status.inReview");
+    }
+    if (normalizedStatus === "done") {
+        return i18n("status.done");
+    }
     return status
         .split("-")
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -1077,6 +1123,9 @@ function getCurrentLocale() {
         return "es-ES";
     }
     return "en-US";
+}
+function formatProjectCompletionLabel(percentage) {
+    return i18n("common.percentComplete", { percent: percentage });
 }
 function escapeHtml(text) {
     const div = document.createElement("div");

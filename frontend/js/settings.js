@@ -434,9 +434,9 @@ var SettingsPage;
         if (confirmNewPasswordInput) {
             confirmNewPasswordInput.type = "password";
         }
-        setPasswordVisibility(currentPasswordInput, "Show");
-        setPasswordVisibility(newPasswordInput, "Show");
-        setPasswordVisibility(confirmNewPasswordInput, "Show");
+        setPasswordVisibility(currentPasswordInput, i18n("app.password.show"));
+        setPasswordVisibility(newPasswordInput, i18n("app.password.show"));
+        setPasswordVisibility(confirmNewPasswordInput, i18n("app.password.show"));
     }
     function togglePasswordVisibility(button) {
         const inputId = button.dataset.passwordToggle;
@@ -449,7 +449,7 @@ var SettingsPage;
         }
         const shouldShow = input.type === "password";
         input.type = shouldShow ? "text" : "password";
-        setPasswordVisibility(input, shouldShow ? "Hide" : "Show");
+        setPasswordVisibility(input, shouldShow ? i18n("app.password.hide") : i18n("app.password.show"));
     }
     function setPasswordVisibility(input, label) {
         if (!input) {
@@ -500,7 +500,7 @@ var SettingsPage;
         const isSidebarOpen = !isMobileViewport() || document.body.classList.contains("sidebar-open");
         sidebarElement.setAttribute("aria-hidden", String(!isSidebarOpen));
         sidebarToggleButton.setAttribute("aria-expanded", String(isMobileViewport() && document.body.classList.contains("sidebar-open")));
-        sidebarToggleButton.setAttribute("aria-label", document.body.classList.contains("sidebar-open") ? "Close navigation menu" : "Open navigation menu");
+        sidebarToggleButton.setAttribute("aria-label", document.body.classList.contains("sidebar-open") ? i18n("app.aria.closeNavigationMenu") : i18n("app.aria.openNavigationMenu"));
         sidebarBackdropElement.hidden = !(isMobileViewport() && document.body.classList.contains("sidebar-open"));
     }
     function openSidebar() {

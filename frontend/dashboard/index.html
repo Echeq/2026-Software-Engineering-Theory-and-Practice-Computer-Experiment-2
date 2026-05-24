@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SPMP | Dashboard</title>
+  <title data-i18n-document-title="app.title.dashboard">SPMP | Dashboard</title>
   <link rel="stylesheet" href="../css/dashboard.css">
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="../js/i18n.js" defer></script>
@@ -13,19 +13,19 @@
   <div id="sidebar-backdrop" class="sidebar-backdrop" hidden data-close-sidebar="true"></div>
 
   <main class="dashboard-app">
-    <aside id="dashboard-sidebar" class="dashboard-sidebar" aria-label="Primary navigation">
+    <aside id="dashboard-sidebar" class="dashboard-sidebar" data-i18n-aria-label="app.aria.primaryNavigation" aria-label="Primary navigation">
       <div class="sidebar-top">
         <div class="sidebar-brand-wrap">
-          <a href="./index.html" class="sidebar-brand" aria-label="SPMP dashboard home">
+          <a href="./index.html" class="sidebar-brand" data-i18n-aria-label="app.aria.dashboardHome" aria-label="SPMP dashboard home">
             <span class="sidebar-logo">SP</span>
             <span class="sidebar-brand-copy">
               <strong>SPMP</strong>
-              <span>Project workspace</span>
+              <span data-i18n="app.brand.workspace">Project workspace</span>
             </span>
           </a>
         </div>
 
-        <nav class="sidebar-nav" aria-label="Workspace navigation">
+        <nav class="sidebar-nav" data-i18n-aria-label="app.aria.workspaceNavigation" aria-label="Workspace navigation">
           <a href="./index.html" class="sidebar-link is-active">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="3" width="6" height="6" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="11.5" y="3" width="6" height="4" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="11.5" y="10" width="6" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="2.5" y="12" width="6" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
             <span data-i18n="sidebar.dashboard">Dashboard</span>
@@ -48,7 +48,7 @@
       <div class="sidebar-footer">
         <div class="user-panel" aria-live="polite">
           <span id="user-avatar" class="user-avatar" aria-hidden="true">U</span>
-          <strong id="user-name" class="user-display">Loading...</strong>
+          <strong id="user-name" class="user-display" data-i18n="common.loading">Loading...</strong>
         </div>
         <button id="logout-btn" type="button" class="secondary-button sidebar-logout"><svg class="button-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5H5.5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2H8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 6.5 15 10l-4 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 10H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span data-i18n="sidebar.logout">Log Out</span></button>
       </div>
@@ -63,6 +63,7 @@
             class="menu-toggle"
             aria-expanded="false"
             aria-controls="dashboard-sidebar"
+            data-i18n-aria-label="app.aria.openNavigationMenu"
             aria-label="Open navigation menu"
           >
             <span></span>
@@ -79,7 +80,7 @@
         <div class="topbar-actions"></div>
       </header>
 
-      <section class="greeting-banner" aria-label="Daily greeting" data-aos="fade-down">
+      <section class="greeting-banner" data-i18n-aria-label="app.aria.dailyGreeting" aria-label="Daily greeting" data-aos="fade-down">
         <p id="local-greeting-title" class="greeting-title" aria-live="polite">Good morning</p>
         <time id="local-greeting-date" class="greeting-date" aria-live="polite"></time>
       </section>
@@ -106,28 +107,28 @@
       <section class="projects-section dashboard-stats-section" aria-labelledby="dashboard-stats-title">
         <div class="section-header">
           <div class="section-copy">
-            <span class="section-tag">Statistics</span>
-            <h2 id="dashboard-stats-title">Dashboard Statistics</h2>
-            <p class="section-subtitle">A quick visual summary of project and task progress on this device.</p>
+            <span class="section-tag" data-i18n="dashboard.statisticsTag">Statistics</span>
+            <h2 id="dashboard-stats-title" data-i18n="dashboard.statisticsTitle">Dashboard Statistics</h2>
+            <p class="section-subtitle" data-i18n="dashboard.statisticsSubtitle">A quick visual summary of project and task progress on this device.</p>
           </div>
         </div>
 
         <div class="dashboard-stats-grid">
           <article class="project-card dashboard-chart-card" data-aos="fade-up">
             <div class="dashboard-chart-copy">
-              <h3>Project Status</h3>
+              <h3 data-i18n="dashboard.projectStatusTitle">Project Status</h3>
             </div>
             <div class="dashboard-chart-canvas-wrap">
-              <canvas id="project-status-chart" aria-label="Project status chart" role="img"></canvas>
+              <canvas id="project-status-chart" data-i18n-aria-label="dashboard.projectStatusChartAriaLabel" aria-label="Project status chart" role="img"></canvas>
             </div>
           </article>
 
           <article class="project-card dashboard-chart-card" data-aos="fade-up">
             <div class="dashboard-chart-copy">
-              <h3>Task Overview</h3>
+              <h3 data-i18n="dashboard.taskOverviewTitle">Task Overview</h3>
             </div>
             <div class="dashboard-chart-canvas-wrap">
-              <canvas id="task-overview-chart" aria-label="Task overview chart" role="img"></canvas>
+              <canvas id="task-overview-chart" data-i18n-aria-label="dashboard.taskOverviewChartAriaLabel" aria-label="Task overview chart" role="img"></canvas>
             </div>
           </article>
         </div>
@@ -142,7 +143,7 @@
           </div>
         </div>
 
-        <section class="projects-toolbar" aria-label="Project search and filters">
+        <section class="projects-toolbar" data-i18n-aria-label="app.aria.projectSearchFilters" aria-label="Project search and filters">
           <input type="hidden" class="language-input" name="lang" value="en">
           <label class="search-field" for="project-search-input">
             <span class="search-label" data-i18n="dashboard.search">Search</span>
@@ -169,7 +170,7 @@
             </select>
           </label>
 
-          <div class="status-filters" role="group" aria-label="Filter projects by status">
+          <div class="status-filters" role="group" data-i18n-aria-label="app.aria.projectStatusFilters" aria-label="Filter projects by status">
             <button
               type="button"
               class="filter-button is-active"
@@ -227,7 +228,7 @@
           <h2 id="project-modal-title" data-i18n="dashboard.projectModalTitle">Create New Project</h2>
           <p class="subtitle" data-i18n="dashboard.projectModalSubtitle">Add a new project to your dashboard.</p>
         </div>
-        <button id="close-project-modal" type="button" class="close-btn" aria-label="Close create project dialog">&times;</button>
+        <button id="close-project-modal" type="button" class="close-btn" data-i18n-aria-label="dashboard.closeProjectDialog" aria-label="Close create project dialog">&times;</button>
       </div>
 
       <form id="project-form" class="project-form" novalidate>
@@ -358,6 +359,72 @@
       });
       window.addEventListener("focus", updateGreetingBanner);
       window.addEventListener("pageshow", updateGreetingBanner);
+    })();
+  </script>
+  <script>
+    (() => {
+      const greetingTitleElement = document.getElementById("local-greeting-title");
+      const greetingDateElement = document.getElementById("local-greeting-date");
+      const userNameElement = document.getElementById("user-name");
+
+      if (!greetingTitleElement || !greetingDateElement) {
+        return;
+      }
+
+      function getLocalizedGreeting(hour) {
+        if (hour >= 5 && hour < 12) {
+          return window.I18n?.t("dashboard.greetingMorningFallback") || "Good morning";
+        }
+        if (hour >= 12 && hour < 18) {
+          return window.I18n?.t("dashboard.greetingAfternoonFallback") || "Good afternoon";
+        }
+        if (hour >= 18 && hour < 22) {
+          return window.I18n?.t("dashboard.greetingEveningFallback") || "Good evening";
+        }
+        return window.I18n?.t("dashboard.greetingNightFallback") || "Good night";
+      }
+
+      function getDisplayName() {
+        const name = userNameElement?.textContent?.trim() || "";
+        const hiddenValues = new Set([
+          "",
+          window.I18n?.t("common.loading") || "Loading...",
+          window.I18n?.t("common.unavailable") || "Unavailable"
+        ]);
+        return hiddenValues.has(name) ? "" : name;
+      }
+
+      function updateLocalizedGreeting() {
+        const now = new Date();
+        const greeting = getLocalizedGreeting(now.getHours());
+        const displayName = getDisplayName();
+        const locale = document.documentElement.lang || navigator.language || undefined;
+
+        greetingTitleElement.textContent = displayName ? `${greeting}, ${displayName}` : greeting;
+        greetingDateElement.textContent = new Intl.DateTimeFormat(locale, {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric"
+        }).format(now);
+      }
+
+      function scheduleLocalizedGreetingUpdate() {
+        updateLocalizedGreeting();
+        window.requestAnimationFrame(updateLocalizedGreeting);
+      }
+
+      document.addEventListener("app-language-change", scheduleLocalizedGreetingUpdate, true);
+      if (userNameElement) {
+        new MutationObserver(scheduleLocalizedGreetingUpdate).observe(userNameElement, {
+          childList: true,
+          characterData: true,
+          subtree: true
+        });
+      }
+      window.addEventListener("focus", updateLocalizedGreeting);
+      window.addEventListener("pageshow", updateLocalizedGreeting);
+      updateLocalizedGreeting();
     })();
   </script>
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>

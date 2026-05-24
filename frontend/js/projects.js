@@ -12,23 +12,6 @@ var ProjectsPage;
     const DB_VERSION = 1;
     const TASKS_STORE_NAME = "tasks";
     const i18n = (key, values) => window.I18n?.t(key, values) || key;
-    const KANBAN_COLUMNS = [
-        {
-            id: "start-next",
-            title: "Start Next",
-            caption: "Queued, planning, and next-up work."
-        },
-        {
-            id: "in-progress",
-            title: "In Progress",
-            caption: "Active delivery and review right now."
-        },
-        {
-            id: "done",
-            title: "Done",
-            caption: "Completed work ready for reference."
-        }
-    ];
     const PREVIEW_PROJECTS = [
         {
             id: "preview-start-next",
@@ -126,6 +109,7 @@ var ProjectsPage;
                 }
             });
         });
+        document.addEventListener("app-language-change", handleLanguageChange);
         document.querySelectorAll(".sidebar-link").forEach((link) => {
             link.addEventListener("click", () => {
                 if (isMobileViewport()) {
@@ -167,7 +151,19 @@ var ProjectsPage;
             const isActive = button.dataset.projectView === currentProjectView;
             button.classList.toggle("is-active", isActive);
             button.setAttribute("aria-pressed", String(isActive));
+            button.setAttribute("aria-label", button.dataset.projectView === "list" ? i18n("projects.viewListAria") : i18n("projects.viewGridAria"));
         });
+    }
+    function handleLanguageChange() {
+        renderProjectViewButtons();
+        if (isPreviewMode) {
+            void refreshProjectCompletionLookup(PREVIEW_PROJECTS).then(() => {
+                renderProjectsBoard(PREVIEW_PROJECTS);
+            });
+            return;
+        }
+        renderBoardLoading();
+        void loadProjects();
     }
     function toggleTheme() {
         const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
@@ -197,7 +193,7 @@ var ProjectsPage;
         const isSidebarOpen = !isMobileViewport() || document.body.classList.contains("sidebar-open");
         sidebarElement.setAttribute("aria-hidden", String(!isSidebarOpen));
         sidebarToggleButton.setAttribute("aria-expanded", String(isMobileViewport() && document.body.classList.contains("sidebar-open")));
-        sidebarToggleButton.setAttribute("aria-label", document.body.classList.contains("sidebar-open") ? "Close navigation menu" : "Open navigation menu");
+        sidebarToggleButton.setAttribute("aria-label", document.body.classList.contains("sidebar-open") ? i18n("app.aria.closeNavigationMenu") : i18n("app.aria.openNavigationMenu"));
         sidebarBackdropElement.hidden = !(isMobileViewport() && document.body.classList.contains("sidebar-open"));
     }
     function openSidebar() {
@@ -278,7 +274,7 @@ var ProjectsPage;
             if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
                 return;
             }
-            renderBoardError(getErrorText(error, "Failed to load projects. Please refresh the page."));
+            renderBoardError(getErrorText(error, i18n("dashboard.projectsUnavailable")));
         }
     }
     function renderBoardLoading() {
@@ -348,7 +344,7 @@ var ProjectsPage;
             <h3 id="column-${column.id}" class="kanban-column-title">${escapeHtml(getColumnTitle(column.id))}</h3>
             <p class="kanban-column-caption">${escapeHtml(getColumnCaption(column.id))}</p>
           </div>
-          <span class="kanban-count" aria-label="${projects.length} projects">${projects.length}</span>
+          <span class="kanban-count" aria-label="${escapeHtml(i18n("common.tasksCount", { count: projects.length }))}">${projects.length}</span>
         </header>
         <div class="kanban-list">
           ${cardsMarkup}
@@ -362,17 +358,17 @@ var ProjectsPage;
         const aosDelay = getProjectCardAosDelay(index);
         const description = project.description?.trim()
             ? `<p class="project-description">${escapeHtml(project.description.trim())}</p>`
-            : '<p class="project-description is-empty">No description yet.</p>';
+            : `<p class="project-description is-empty">${escapeHtml(i18n("dashboard.projectDescriptionPlaceholder"))}</p>`;
         const normalizedStatus = project.status.trim().toLowerCase();
         const query = new URLSearchParams({
             projectId: project.id,
             projectName: project.name,
             status: formatStatus(project.status),
-            creator: currentUser?.name || "You",
+            creator: currentUser?.name || i18n("common.you"),
             createdAt: project.created_at
         }).toString();
         return `
-      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}" data-project-name="${escapeHtml(project.name)}" data-project-status-label="${escapeHtml(formatStatus(project.status))}" data-project-creator="${escapeHtml(currentUser?.name || "You")}" data-project-created-at="${escapeHtml(project.created_at)}" data-aos="fade-up" data-aos-delay="${aosDelay}">
+      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}" data-project-name="${escapeHtml(project.name)}" data-project-status-label="${escapeHtml(formatStatus(project.status))}" data-project-creator="${escapeHtml(currentUser?.name || i18n("common.you"))}" data-project-created-at="${escapeHtml(project.created_at)}" data-aos="fade-up" data-aos-delay="${aosDelay}">
         <div class="project-head">
           <div class="project-title-wrap">
             <h3 class="project-name">${escapeHtml(project.name)}</h3>
@@ -442,7 +438,7 @@ var ProjectsPage;
         }));
     }
     function persistKnownProjects(projects) {
-        const creator = currentUser?.name || "You";
+        const creator = currentUser?.name || i18n("common.you");
         const serializedProjects = projects.map((project) => ({
             projectId: project.id,
             projectName: project.name,
@@ -571,7 +567,7 @@ var ProjectsPage;
         return "high";
     }
     function formatProjectCompletionLabel(percentage) {
-        return `${percentage}% complete`;
+        return i18n("common.percentComplete", { percent: percentage });
     }
     function isCompletedTaskStatus(status) {
         return typeof status === "string" && status.trim().toLowerCase() === "done";
@@ -659,10 +655,14 @@ var ProjectsPage;
         return fallback;
     }
     function formatStatus(status) {
-        return status
-            .split("-")
-            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-            .join(" ");
+        const normalizedStatus = getColumnId(status);
+        if (normalizedStatus === "start-next") {
+            return i18n("projects.startNext");
+        }
+        if (normalizedStatus === "in-progress") {
+            return i18n("projects.inProgress");
+        }
+        return i18n("projects.done");
     }
     function formatProjectDate(dateString) {
         const date = new Date(dateString);
