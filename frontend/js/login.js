@@ -58,8 +58,8 @@
       setLoadingState(true);
       try {
         const data = await loginUser(email, password);
-        if (data.token) {
-          localStorage.setItem("token", data.token);
+        if (data.csrfToken) {
+          localStorage.setItem("spmp-csrf-token", data.csrfToken);
         }
         showMessage(i18n("login.success"), "success");
         form.reset();

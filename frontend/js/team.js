@@ -13,31 +13,26 @@
     initTheme();
     syncSidebarState();
     setupEventListeners();
-    const token = getStoredToken();
-    if (!token) {
-      redirectToLogin();
-      return;
-    }
     await loadCurrentUser();
     await loadMembers();
   }
-  function getStoredToken() {
-    return localStorage.getItem("token")?.trim() || "";
+  function getCsrfToken() {
+    return localStorage.getItem("spmp-csrf-token")?.trim() || "";
   }
   function redirectToLogin() {
     window.location.href = "/";
   }
   function logout() {
     closeSidebar();
-    localStorage.removeItem("token");
+    localStorage.removeItem("spmp-csrf-token");
     void fetch(`${API_BASE_URL}/auth/logout`, { method: "POST", credentials: "same-origin" });
     redirectToLogin();
   }
   async function requestWithAuth(path, init = {}) {
-    const token = getStoredToken();
     const headers = new Headers(init.headers);
-    if (token) {
-      headers.set("X-CSRF-Token", token);
+    const csrf = getCsrfToken();
+    if (csrf) {
+      headers.set("X-CSRF-Token", csrf);
     }
     const response = await fetch(`${API_BASE_URL}${path}`, {
       ...init,

@@ -7,6 +7,7 @@ import { closeDatabase, getDatabase } from './database';
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
 import taskRoutes from './routes/tasks';
+import userRoutes from './routes/users';
 import { authenticateToken, readCsrfToken } from './middleware/readSession';
 
 // Load environment variables
@@ -26,6 +27,7 @@ app.use(readCsrfToken);
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', authenticateToken, projectRoutes);
 app.use('/api/tasks', authenticateToken, taskRoutes);
+app.use('/api/users', authenticateToken, userRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
