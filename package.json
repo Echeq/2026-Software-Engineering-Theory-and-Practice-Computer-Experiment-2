@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "description": "SPMP - Project and Task Management Platform",
     "scripts": {
+        "inject:user": "ts-node backend/scripts/injectUser.ts",
         "install:all": "npm install && npm run install:backend && npm run install:frontend",
         "install:backend": "cd backend && npm install",
         "install:frontend": "cd frontend && npm install",
@@ -15,7 +16,8 @@
         "start": "cd backend && npm start"
     },
     "devDependencies": {
-        "concurrently": "^9.1.2"
+        "concurrently": "^9.1.2",
+        "ts-node": "^10.9.2"
     },
     "keywords": [
         "project-management",

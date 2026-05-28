@@ -1,6 +1,8 @@
+import "../css/dashboard.css";
+import "./i18n";
+import { createProject, getCurrentUser, isSessionError, logout } from "./core/services";
+
 /* Original pre-sidebar layout backed up in ./dashboard.layout-backup.ts */
-const API_BASE_URL = `${window.location.origin}/api`;
-const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
 const THEME_STORAGE_KEY = "dashboard-theme";
 const MOBILE_SIDEBAR_BREAKPOINT = 960;
 const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
@@ -11,58 +13,8 @@ interface User {
   email: string;
 }
 
-interface Project {
-  id: string;
-  name: string;
-  description: string | null;
-  owner_id: string;
-  status: string;
-  created_at: string;
-  taskCount?: number;
-}
-
-interface UserResponse {
-  user: User;
-}
-
-interface ProjectsResponse {
-  projects: Project[];
-}
-
-interface CreateProjectResponse {
-  project: Project;
-}
-
 type DashboardTheme = "light" | "dark";
 type ProjectSortOption = "newest" | "oldest" | "az";
-
-let isPreviewMode = false;
-const PREVIEW_PROJECTS: Project[] = [
-  {
-    id: "preview-1",
-    name: "Semester Project Planner",
-    description: "Track milestones, assignments, and deadlines for the current term.",
-    owner_id: "preview-user",
-    status: "active",
-    created_at: new Date("2026-03-12").toISOString()
-  },
-  {
-    id: "preview-2",
-    name: "UX Research Board",
-    description: "Collect interview notes, usability feedback, and iteration ideas.",
-    owner_id: "preview-user",
-    status: "in-review",
-    created_at: new Date("2026-04-02").toISOString()
-  },
-  {
-    id: "preview-3",
-    name: "Frontend Showcase",
-    description: "A visual preview project to review the dashboard style without backend data.",
-    owner_id: "preview-user",
-    status: "planning",
-    created_at: new Date("2026-04-18").toISOString()
-  }
-];
 
 let currentUser: User | null = null;
 let userNameElement: HTMLElement | null = null;
@@ -86,6 +38,9 @@ let projectFormMessageBox: HTMLElement | null = null;
 let projectSubmitButton: HTMLButtonElement | null = null;
 let closeProjectModalButton: HTMLButtonElement | null = null;
 let cancelProjectModalButton: HTMLButtonElement | null = null;
+let projectSearchInput: HTMLInputElement | null = null;
+let projectStatusInput: HTMLInputElement | null = null;
+let projectLanguageInput: HTMLInputElement | null = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   void initializeDashboard();
@@ -96,18 +51,12 @@ async function initializeDashboard(): Promise<void> {
   initializeTheme();
   refreshGreetingBanner();
   syncSidebarState();
+  syncLanguageInput();
   setupEventListeners();
-
-  const token = getStoredToken();
-
-  if (!token) {
-    loadPreviewDashboard();
-    return;
-  }
 
   renderProjectsLoading();
   await loadUserData();
-  await loadProjects();
+  refreshProjectsList();
 }
 
 function cacheElements(): void {
@@ -132,6 +81,9 @@ function cacheElements(): void {
   projectSubmitButton = document.getElementById("project-submit-btn") as HTMLButtonElement | null;
   closeProjectModalButton = document.getElementById("close-project-modal") as HTMLButtonElement | null;
   cancelProjectModalButton = document.getElementById("cancel-project-btn") as HTMLButtonElement | null;
+  projectSearchInput = document.getElementById("project-search-input") as HTMLInputElement | null;
+  projectStatusInput = document.getElementById("project-status-input") as HTMLInputElement | null;
+  projectLanguageInput = document.getElementById("project-language-input") as HTMLInputElement | null;
 }
 
 function setupEventListeners(): void {
@@ -148,7 +100,11 @@ function setupEventListeners(): void {
   window.addEventListener("resize", syncSidebarState);
   document.addEventListener("keydown", handleEscapeKey);
   document.addEventListener("app-language-change", refreshGreetingBanner);
+  document.addEventListener("app-language-change", handleLanguageChange);
   document.addEventListener("htmx:afterSwap", handleProjectsAfterSwap as EventListener);
+  document.querySelectorAll<HTMLButtonElement>(".filter-button").forEach((button) => {
+    button.addEventListener("click", () => handleFilterButtonClick(button));
+  });
 
   document.querySelectorAll(".sidebar-link").forEach((link) => {
     link.addEventListener("click", () => {
@@ -249,28 +205,9 @@ function handleSidebarBackdropClick(event: Event): void {
   }
 }
 
-function loadPreviewDashboard(): void {
-  isPreviewMode = true;
-  currentUser = {
-    id: "preview-user",
-    name: "Anna Ivanova",
-    email: "anna.ivanova@example.com"
-  };
-
-  if (userNameElement) {
-    userNameElement.textContent = currentUser.name;
-  }
-  updateUserAvatar(currentUser.name);
-
-  refreshGreetingBanner();
-  showProjectsMessage(i18n("dashboard.preview"), "success");
-  renderProjects(PREVIEW_PROJECTS);
-}
-
 async function loadUserData(): Promise<void> {
   try {
-    const data = await requestWithAuth<UserResponse>("/auth/me");
-    currentUser = data.user;
+    currentUser = await getCurrentUser();
 
     if (userNameElement) {
       userNameElement.textContent = currentUser.name;
@@ -279,9 +216,8 @@ async function loadUserData(): Promise<void> {
 
     refreshGreetingBanner();
   } catch (error) {
-    console.error("Error loading user data:", error);
-
-    if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
+    if (isSessionError(error)) {
+      redirectToLogin();
       return;
     }
 
@@ -294,24 +230,9 @@ async function loadUserData(): Promise<void> {
   }
 }
 
-async function loadProjects(options: { preserveMessage?: boolean } = {}): Promise<void> {
-  if (!options.preserveMessage) {
-    showProjectsMessage("");
-  }
-
-  renderProjectsLoading();
-
-  try {
-    const data = await requestWithAuth<ProjectsResponse>("/projects");
-    renderProjects(data.projects);
-  } catch (error) {
-    console.error("Error loading projects:", error);
-
-    if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
-      return;
-    }
-
-    renderProjectsError(getErrorText(error, "Failed to load projects. Please refresh the page."));
+function refreshProjectsList(): void {
+  if (window.htmx) {
+    window.htmx.trigger(document.body, "projects:refresh");
   }
 }
 
@@ -330,85 +251,6 @@ function renderProjectsLoading(): void {
         <div class="skeleton-line skeleton-line-footer"></div>
       </article>
     `).join("")}
-  `;
-}
-
-function renderProjects(projects: Project[]): void {
-  if (!projectsListElement) {
-    return;
-  }
-
-  const sortedProjects = sortProjects(projects, readSelectedSort());
-
-  if (sortedProjects.length === 0) {
-    projectsListElement.innerHTML = `
-      <article class="state-card empty-state-card">
-        <div class="empty-state-illustration" aria-hidden="true">
-          <svg viewBox="0 0 160 120" class="empty-state-svg" focusable="false">
-            <rect x="26" y="24" width="108" height="72" rx="14"></rect>
-            <rect x="42" y="40" width="38" height="8" rx="4"></rect>
-            <rect x="42" y="56" width="62" height="6" rx="3"></rect>
-            <rect x="42" y="68" width="48" height="6" rx="3"></rect>
-            <circle cx="116" cy="52" r="10"></circle>
-            <path d="M118 18l6 8"></path>
-            <path d="M30 96l10-10"></path>
-          </svg>
-        </div>
-      <h3>${escapeHtml(i18n("dashboard.noProjects"))}</h3>
-      <p>${escapeHtml(i18n("dashboard.noProjectsText"))}</p>
-      <button type="button" class="submit-button empty-state-action" id="empty-state-create-project-btn">${escapeHtml(i18n("dashboard.createProject"))}</button>
-      </article>
-    `;
-
-    document.getElementById("empty-state-create-project-btn")?.addEventListener("click", openProjectModal, { once: true });
-    return;
-  }
-
-  projectsListElement.innerHTML = sortedProjects.map((project) => {
-    const creatorName = escapeHtml(currentUser?.name || "You");
-    const taskCount = typeof project.taskCount === "number" ? project.taskCount : 0;
-    const normalizedStatus = project.status.trim().toLowerCase();
-    const statusIndicator = getStatusIconMarkup(normalizedStatus);
-    const description = project.description?.trim()
-      ? `<p class="project-description">${escapeHtml(project.description.trim())}</p>`
-      : '<p class="project-description is-empty">No description yet.</p>';
-    const query = new URLSearchParams({
-      projectId: project.id,
-      projectName: project.name,
-      status: formatStatus(project.status),
-      creator: currentUser?.name || "You",
-      createdAt: project.created_at
-    }).toString();
-
-    return `
-      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}">
-        <div class="project-head">
-          <div class="project-title-wrap">
-            <h3 class="project-name">${escapeHtml(project.name)}</h3>
-            <span class="project-task-count">${escapeHtml(i18n("common.tasksCount", { count: taskCount }))}</span>
-          </div>
-          <span class="project-status">${statusIndicator}${escapeHtml(formatStatus(project.status))}</span>
-        </div>
-        ${description}
-        <div class="project-meta">
-          <span class="project-owner">${creatorName}</span>
-          <span>${escapeHtml(formatProjectDate(project.created_at))}</span>
-        </div>
-      </a>
-    `;
-  }).join("");
-}
-
-function renderProjectsError(text: string): void {
-  if (!projectsListElement) {
-    return;
-  }
-
-  projectsListElement.innerHTML = `
-    <article class="state-card">
-      <h3>${escapeHtml(i18n("dashboard.projectsUnavailable"))}</h3>
-      <p>${escapeHtml(text)}</p>
-    </article>
   `;
 }
 
@@ -432,40 +274,17 @@ async function handleProjectSubmit(event: Event): Promise<void> {
   setProjectSubmitting(true);
 
   try {
-    if (isPreviewMode && currentUser) {
-      PREVIEW_PROJECTS.unshift({
-        id: `preview-${Date.now()}`,
-        name,
-        description: description || null,
-        owner_id: currentUser.id,
-        status: "planning",
-        created_at: new Date().toISOString()
-      });
-
-      closeProjectModal();
-      showProjectsMessage(i18n("dashboard.previewProjectCreated"), "success");
-      renderProjects(PREVIEW_PROJECTS);
-      return;
-    }
-
-    await requestWithAuth<CreateProjectResponse>("/projects", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name,
-        description: description || undefined
-      })
+    await createProject({
+      name,
+      description: description || undefined
     });
 
     closeProjectModal();
     showProjectsMessage(i18n("dashboard.projectCreated"), "success");
-    await loadProjects({ preserveMessage: true });
+    refreshProjectsList();
   } catch (error) {
-    console.error("Error creating project:", error);
-
-    if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
+    if (isSessionError(error)) {
+      redirectToLogin();
       return;
     }
 
@@ -596,6 +415,22 @@ function handleProjectSortChange(): void {
   sortRenderedProjectCards();
 }
 
+function handleFilterButtonClick(button: HTMLButtonElement): void {
+  const value = button.value || "all";
+
+  if (projectStatusInput) {
+    projectStatusInput.value = value;
+  }
+
+  document.querySelectorAll<HTMLButtonElement>(".filter-button").forEach((item) => {
+    const isActive = item === button;
+    item.classList.toggle("is-active", isActive);
+    item.setAttribute("aria-pressed", String(isActive));
+  });
+
+  refreshProjectsList();
+}
+
 function handleProjectsAfterSwap(event: Event): void {
   const customEvent = event as CustomEvent;
 
@@ -605,6 +440,12 @@ function handleProjectsAfterSwap(event: Event): void {
 
   document.getElementById("empty-state-create-project-btn")?.addEventListener("click", openProjectModal, { once: true });
   sortRenderedProjectCards();
+}
+
+function handleLanguageChange(): void {
+  refreshGreetingBanner();
+  syncLanguageInput();
+  refreshProjectsList();
 }
 
 function refreshGreetingBanner(): void {
@@ -648,38 +489,14 @@ function getInitials(name: string): string {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
-function getStoredToken(): string {
-  return localStorage.getItem("token")?.trim() || "";
-}
-
 function redirectToLogin(): void {
-  window.location.href = "../index.html";
+  window.location.href = "/";
 }
 
-function logout(): void {
+async function handleLogout(): Promise<void> {
   closeSidebar();
-  localStorage.removeItem("token");
-  void fetch(`${API_BASE_URL}/auth/logout`, {
-    method: "POST",
-    credentials: "same-origin"
-  });
+  await logout();
   redirectToLogin();
-}
-
-function getStatusIconMarkup(status: string): string {
-  if (status === "active") {
-    return '<span class="status-indicator" aria-hidden="true"></span><svg class="status-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.75 8h2l1.25-3 2 6 1.5-4h3.75" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  }
-
-  if (status === "planning" || status === "planned" || status === "start-next" || status === "queued") {
-    return '<svg class="status-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.25" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 5.25V8l1.75 1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  }
-
-  if (["done", "completed", "complete", "closed", "shipped", "finished"].includes(status)) {
-    return '<svg class="status-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.25" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M5.5 8.1 7.2 9.8l3.3-3.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  }
-
-  return "";
 }
 
 function readSelectedSort(): ProjectSortOption {
@@ -759,46 +576,6 @@ function readProjectCreatedAt(card: HTMLElement): number {
   return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
-async function requestWithAuth<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = getStoredToken();
-  const headers = new Headers(init.headers);
-
-  if (token) {
-    headers.set("X-CSRF-Token", token);
-  }
-
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers,
-    credentials: "same-origin"
-  });
-
-  const data = await response.json().catch(() => ({}));
-
-  if (response.status === 401 || response.status === 403) {
-    logout();
-    throw new Error(SESSION_EXPIRED_MESSAGE);
-  }
-
-  if (!response.ok) {
-    throw new Error(readMessage(data, "Request failed."));
-  }
-
-  return data as T;
-}
-
-function readMessage(data: unknown, fallback: string): string {
-  if (typeof data === "object" && data !== null && "message" in data) {
-    const message = (data as { message?: unknown }).message;
-
-    if (typeof message === "string" && message.trim()) {
-      return message;
-    }
-  }
-
-  return fallback;
-}
-
 function getErrorText(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) {
     return error.message;
@@ -812,6 +589,12 @@ function formatStatus(status: string): string {
     .split("-")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function syncLanguageInput(): void {
+  if (projectLanguageInput) {
+    projectLanguageInput.value = window.I18n?.getLanguage() || "en";
+  }
 }
 
 function formatProjectDate(dateString: string): string {

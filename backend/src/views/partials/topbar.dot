@@ -1,0 +1,25 @@
+<header class="main-topbar">
+  <div class="topbar-left">
+    <button
+      id="sidebar-toggle-btn"
+      type="button"
+      class="menu-toggle"
+      aria-expanded="false"
+      aria-controls="dashboard-sidebar"
+      aria-label="Open navigation menu"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="topbar-copy">
+      <span class="section-tag" data-i18n="{{=it.tagKey}}">Workspace</span>
+      <p class="topbar-label" data-i18n="{{=it.labelKey}}">Workspace copy</p>
+    </div>
+  </div>
+
+  <div class="topbar-actions">
+    <button id="theme-toggle-btn" type="button" class="theme-toggle" aria-pressed="false" data-i18n="theme.dark" data-i18n-aria-label="theme.toDark">Dark Mode</button>
+  </div>
+</header>

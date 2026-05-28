@@ -4,12 +4,12 @@ import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import { closeDatabase, getDatabase } from './database';
-import { ensureManagerUser } from './bootstrap/manager';
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
 import taskRoutes from './routes/tasks';
-import userRoutes from './routes/users';
 import { authenticateToken, readCsrfToken } from './middleware/readSession';
+import pageRoutes from './routes/pages';
+import { configureViews } from './services/views';
 
 // Load environment variables
 dotenv.config();
@@ -17,6 +17,8 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+
+configureViews(app);
 
 // Middleware
 app.use(cors());
@@ -28,7 +30,7 @@ app.use(readCsrfToken);
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', authenticateToken, projectRoutes);
 app.use('/api/tasks', authenticateToken, taskRoutes);
-app.use('/api/users', authenticateToken, userRoutes);
+app.use(pageRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -37,10 +39,6 @@ app.get('/api/health', (req, res) => {
 
 if (fs.existsSync(frontendDistPath)) {
   app.use(express.static(frontendDistPath));
-
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendDistPath, 'index.html'));
-  });
 }
 
 // Error handling middleware
@@ -66,7 +64,6 @@ process.on('SIGTERM', () => {
 async function startServer(): Promise<void> {
   try {
     await getDatabase();
-    await ensureManagerUser();
     console.log('Database initialized');
     
     app.listen(PORT, () => {
