@@ -1024,8 +1024,84 @@
     const data = await request("/auth/me");
     return data.user;
   }
+  async function getProjectTasks(projectId) {
+    const data = await request(`/projects/${encodeURIComponent(projectId)}/tasks`);
+    return data.tasks;
+  }
+  async function createTask(input) {
+    const data = await request("/tasks", {
+      method: "POST",
+      body: JSON.stringify(input)
+    });
+    return data.task;
+  }
   function isSessionError(error) {
     return error instanceof ApiError && (error.status === 401 || error.status === 403 || error.message === getAuthErrorMessage());
+  }
+
+  // src/core/format.ts
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  function normalizeTaskColumn(status) {
+    const normalized = status.trim().toLowerCase();
+    if (["done", "completed", "complete", "closed"].includes(normalized)) {
+      return "done";
+    }
+    if (["active", "in-progress", "doing", "review"].includes(normalized)) {
+      return "doing";
+    }
+    return "todo";
+  }
+
+  // src/components/task-views.ts
+  function renderTaskBoard(target, tasks) {
+    const columns = [
+      { id: "todo", title: "To Do", caption: "Work that has not started yet." },
+      { id: "doing", title: "In Progress", caption: "Tasks currently being delivered." },
+      { id: "done", title: "Done", caption: "Completed tasks kept for reference." }
+    ];
+    target.innerHTML = columns.map((column) => {
+      const items = tasks.filter((task) => normalizeTaskColumn(task.status) === column.id);
+      const cards = items.length > 0 ? items.map((task) => renderTaskCard(task)).join("") : `
+        <article class="state-card empty-column-card">
+          <h3>No tasks</h3>
+          <p>Nothing is currently in this column.</p>
+        </article>
+      `;
+      return `
+      <section class="kanban-column" aria-labelledby="task-column-${column.id}">
+        <header class="kanban-column-header">
+          <div class="kanban-column-copy">
+            <h3 id="task-column-${column.id}" class="kanban-column-title">${escapeHtml(column.title)}</h3>
+            <p class="kanban-column-caption">${escapeHtml(column.caption)}</p>
+          </div>
+          <span class="kanban-count">${items.length}</span>
+        </header>
+        <div class="kanban-list">${cards}</div>
+      </section>
+    `;
+    }).join("");
+  }
+  function renderTaskCard(task) {
+    const description = task.description?.trim() ? `<p class="project-description">${escapeHtml(task.description.trim())}</p>` : `<p class="project-description is-empty">${escapeHtml("No details added yet.")}</p>`;
+    return `
+    <article class="project-card">
+      <div class="project-head">
+        <div class="project-title-wrap">
+          <h3 class="project-name">${escapeHtml(task.title)}</h3>
+          <span class="project-task-count">${escapeHtml(task.priority)}</span>
+        </div>
+        <span class="project-status">${escapeHtml(task.status)}</span>
+      </div>
+      ${description}
+      <div class="project-meta">
+        <span>${escapeHtml(task.due_date ? `Due ${task.due_date.slice(0, 10)}` : "No due date")}</span>
+      </div>
+    </article>
+  `;
   }
 
   // src/tasks.ts
@@ -1225,5 +1301,93 @@
         year: "numeric"
       }) });
     }
+    function getProjectIdFromUrl() {
+      return new URLSearchParams(window.location.search).get("projectId");
+    }
+    async function loadTasks() {
+      const projectId = getProjectIdFromUrl();
+      if (!projectId) return;
+      const list = document.getElementById("tasks-list");
+      list.innerHTML = `<article class="state-card"><h3>Loading tasks...</h3></article>`;
+      try {
+        const tasks = await getProjectTasks(projectId);
+        renderTaskBoard(list, tasks);
+      } catch {
+        list.innerHTML = `<article class="state-card"><h3>Could not load tasks</h3></article>`;
+      }
+    }
+    function openTaskModal() {
+      const modal = document.getElementById("task-modal");
+      modal.hidden = false;
+      modal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+      document.getElementById("task-title")?.focus();
+    }
+    function closeTaskModal() {
+      const modal = document.getElementById("task-modal");
+      modal.hidden = true;
+      modal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("modal-open");
+      document.getElementById("task-form")?.reset();
+      const msg = document.getElementById("task-form-message");
+      if (msg) msg.textContent = "";
+      setTaskSubmitting(false);
+    }
+    function setTaskSubmitting(submitting) {
+      const btn = document.getElementById("task-submit-btn");
+      if (btn) {
+        btn.disabled = submitting;
+        btn.textContent = submitting ? "Creating..." : "Create Task";
+      }
+    }
+    async function handleTaskFormSubmit(event) {
+      event.preventDefault();
+      const projectId = getProjectIdFromUrl();
+      if (!projectId) return;
+      const title = document.getElementById("task-title").value.trim();
+      const description = document.getElementById("task-description").value.trim();
+      const priority = document.getElementById("task-priority").value;
+      const dueDate = document.getElementById("task-due-date").value;
+      const msg = document.getElementById("task-form-message");
+      if (!title) {
+        msg.textContent = "Title is required.";
+        msg.className = "form-message is-error";
+        return;
+      }
+      setTaskSubmitting(true);
+      msg.textContent = "";
+      try {
+        await createTask({
+          title,
+          description: description || void 0,
+          project_id: projectId,
+          priority: priority || void 0,
+          due_date: dueDate || void 0
+        });
+        closeTaskModal();
+        await loadTasks();
+      } catch (error) {
+        msg.textContent = error instanceof Error ? error.message : "Failed to create task.";
+        msg.className = "form-message is-error";
+        setTaskSubmitting(false);
+      }
+    }
+    function initTaskManagement() {
+      const projectId = getProjectIdFromUrl();
+      if (!projectId) return;
+      const addBtn = document.getElementById("new-task-btn");
+      if (addBtn) addBtn.hidden = false;
+      addBtn?.addEventListener("click", openTaskModal);
+      document.getElementById("close-task-modal")?.addEventListener("click", closeTaskModal);
+      document.getElementById("cancel-task-btn")?.addEventListener("click", closeTaskModal);
+      document.getElementById("task-form")?.addEventListener("submit", (e) => void handleTaskFormSubmit(e));
+      document.getElementById("task-modal")?.addEventListener("click", (e) => {
+        if (e.target.dataset.closeModal === "true") closeTaskModal();
+      });
+      void loadTasks();
+    }
+    document.addEventListener("DOMContentLoaded", () => {
+      initTaskManagement();
+    });
   })(TasksPage || (TasksPage = {}));
 })();

@@ -1,6 +1,7 @@
 import "../css/dashboard.css";
 import "./i18n";
-import { getCurrentUser, isSessionError, logout } from "./core/services";
+import { getCurrentUser, getProjectTasks, createTask, isSessionError, logout } from "./core/services";
+import { renderTaskBoard } from "./components/task-views";
 
 namespace TasksPage {
   const THEME_STORAGE_KEY = "dashboard-theme";
@@ -252,4 +253,112 @@ namespace TasksPage {
       year: "numeric"
     }) });
   }
+
+  // ── Task management ────────────────────────────────────────────────────────
+
+  function getProjectIdFromUrl(): string | null {
+    return new URLSearchParams(window.location.search).get("projectId");
+  }
+
+  async function loadTasks(): Promise<void> {
+    const projectId = getProjectIdFromUrl();
+    if (!projectId) return;
+
+    const list = document.getElementById("tasks-list")!;
+    list.innerHTML = `<article class="state-card"><h3>Loading tasks...</h3></article>`;
+
+    try {
+      const tasks = await getProjectTasks(projectId);
+      renderTaskBoard(list, tasks);
+    } catch {
+      list.innerHTML = `<article class="state-card"><h3>Could not load tasks</h3></article>`;
+    }
+  }
+
+  function openTaskModal(): void {
+    const modal = document.getElementById("task-modal")!;
+    modal.hidden = false;
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    (document.getElementById("task-title") as HTMLInputElement)?.focus();
+  }
+
+  function closeTaskModal(): void {
+    const modal = document.getElementById("task-modal")!;
+    modal.hidden = true;
+    modal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    (document.getElementById("task-form") as HTMLFormElement)?.reset();
+    const msg = document.getElementById("task-form-message");
+    if (msg) msg.textContent = "";
+    setTaskSubmitting(false);
+  }
+
+  function setTaskSubmitting(submitting: boolean): void {
+    const btn = document.getElementById("task-submit-btn") as HTMLButtonElement | null;
+    if (btn) {
+      btn.disabled = submitting;
+      btn.textContent = submitting ? "Creating..." : "Create Task";
+    }
+  }
+
+  async function handleTaskFormSubmit(event: Event): Promise<void> {
+    event.preventDefault();
+    const projectId = getProjectIdFromUrl();
+    if (!projectId) return;
+
+    const title = (document.getElementById("task-title") as HTMLInputElement).value.trim();
+    const description = (document.getElementById("task-description") as HTMLTextAreaElement).value.trim();
+    const priority = (document.getElementById("task-priority") as HTMLSelectElement).value;
+    const dueDate = (document.getElementById("task-due-date") as HTMLInputElement).value;
+    const msg = document.getElementById("task-form-message")!;
+
+    if (!title) {
+      msg.textContent = "Title is required.";
+      msg.className = "form-message is-error";
+      return;
+    }
+
+    setTaskSubmitting(true);
+    msg.textContent = "";
+
+    try {
+      await createTask({
+        title,
+        description: description || undefined,
+        project_id: projectId,
+        priority: priority || undefined,
+        due_date: dueDate || undefined,
+      });
+      closeTaskModal();
+      await loadTasks();
+    } catch (error) {
+      msg.textContent = error instanceof Error ? error.message : "Failed to create task.";
+      msg.className = "form-message is-error";
+      setTaskSubmitting(false);
+    }
+  }
+
+  function initTaskManagement(): void {
+    const projectId = getProjectIdFromUrl();
+    if (!projectId) return;
+
+    const addBtn = document.getElementById("new-task-btn");
+    if (addBtn) addBtn.hidden = false;
+
+    addBtn?.addEventListener("click", openTaskModal);
+    document.getElementById("close-task-modal")?.addEventListener("click", closeTaskModal);
+    document.getElementById("cancel-task-btn")?.addEventListener("click", closeTaskModal);
+    document.getElementById("task-form")?.addEventListener("submit", (e) => void handleTaskFormSubmit(e));
+    document.getElementById("task-modal")?.addEventListener("click", (e) => {
+      if ((e.target as HTMLElement).dataset.closeModal === "true") closeTaskModal();
+    });
+
+    void loadTasks();
+  }
+
+  // Wire task management into page init
+  document.addEventListener("DOMContentLoaded", () => {
+    initTaskManagement();
+  });
 }
