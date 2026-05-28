@@ -47,7 +47,7 @@ function getStoredToken(): string {
 }
 
 function redirectToLogin(): void {
-  window.location.href = "../index.html";
+  window.location.href = "/";
 }
 
 function logout(): void {

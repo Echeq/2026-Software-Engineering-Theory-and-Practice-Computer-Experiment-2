@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { SessionModel } from "../models/Session";
 import { resolveEntryAssets } from "../services/assets";
 import { renderNamedTemplate, serializeForScript } from "../services/views";
 
@@ -10,8 +11,18 @@ const appRoutes = {
   projects: "/dashboard/projects",
   tasks: "/dashboard/tasks",
   settings: "/dashboard/settings",
+  team: "/dashboard/team",
   apiBase: "/api"
 } as const;
+
+function hasActiveSession(req: Request): boolean {
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader) return false;
+  const pair = cookieHeader.split(";").map(p => p.trim()).find(p => p.startsWith("sessionId="));
+  if (!pair) return false;
+  const sessionId = decodeURIComponent(pair.slice("sessionId=".length));
+  return !!SessionModel.findActiveById(sessionId);
+}
 
 router.get(["/", "/index.html"], (_req, res) => {
   renderAuthPage(res, {
@@ -75,6 +86,18 @@ router.get(["/dashboard/settings", "/dashboard/settings.html"], (req, res) => {
   });
 });
 
+router.get(["/dashboard/team", "/dashboard/team.html"], (req, res) => {
+  renderWorkspacePage(req, res, {
+    pageId: "team",
+    title: "SPMP | Team",
+    entry: "src/team.ts",
+    activePage: "team",
+    topbarTagKey: "team.topbarTag",
+    topbarLabelKey: "team.topbarLabel",
+    contentTemplate: "partials/tasks-content"
+  });
+});
+
 export default router;
 
 function renderAuthPage(res: Response, options: {
@@ -109,15 +132,19 @@ function renderAuthPage(res: Response, options: {
 }
 
 function renderWorkspacePage(req: Request, res: Response, options: {
-  pageId: "dashboard" | "projects" | "tasks" | "settings";
+  pageId: "dashboard" | "projects" | "tasks" | "settings" | "team";
   title: string;
   entry: string;
-  activePage: "dashboard" | "projects" | "tasks" | "settings";
+  activePage: "dashboard" | "projects" | "tasks" | "settings" | "team";
   topbarTagKey: string;
   topbarLabelKey: string;
   contentTemplate: string;
   includeProjectModal?: boolean;
 }): void {
+  if (!hasActiveSession(req)) {
+    res.redirect("/");
+    return;
+  }
   const assets = resolveEntryAssets(options.entry);
   const sidebar = renderNamedTemplate("partials/sidebar", {
     routes: appRoutes,
