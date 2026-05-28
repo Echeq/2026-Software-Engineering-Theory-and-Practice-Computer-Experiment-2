@@ -8,17 +8,13 @@ import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
 import taskRoutes from './routes/tasks';
 import { authenticateToken, readCsrfToken } from './middleware/readSession';
-import pageRoutes from './routes/pages';
-import { configureViews } from './services/views';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const frontendDistPath = path.join(__dirname, '../../frontend/dist');
-
-configureViews(app);
+const frontendPath = path.join(__dirname, '../../frontend');
 
 // Middleware
 app.use(cors());
@@ -30,15 +26,15 @@ app.use(readCsrfToken);
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', authenticateToken, projectRoutes);
 app.use('/api/tasks', authenticateToken, taskRoutes);
-app.use(pageRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-if (fs.existsSync(frontendDistPath)) {
-  app.use(express.static(frontendDistPath));
+// Serve static frontend files
+if (fs.existsSync(frontendPath)) {
+  app.use(express.static(frontendPath));
 }
 
 // Error handling middleware
@@ -65,7 +61,7 @@ async function startServer(): Promise<void> {
   try {
     await getDatabase();
     console.log('Database initialized');
-    
+
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
       console.log(`API available at http://localhost:${PORT}/api`);

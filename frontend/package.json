@@ -3,12 +3,11 @@
   "version": "1.0.0",
   "description": "SPMP Frontend - Project and Task Management Platform",
   "scripts": {
-    "build": "vite build",
-    "dev": "vite",
-    "preview": "vite preview"
+    "build": "esbuild src/login.ts src/dashboard.ts src/projects.ts src/tasks.ts src/settings.ts src/team.ts src/i18n.ts --bundle --outdir=js --platform=browser --target=es2020 --loader:.css=empty",
+    "watch": "npm run build -- --watch"
   },
   "devDependencies": {
-    "typescript": "^5.3.3",
-    "vite": "^6.3.5"
+    "esbuild": "^0.28.0",
+    "typescript": "^5.3.3"
   }
 }
