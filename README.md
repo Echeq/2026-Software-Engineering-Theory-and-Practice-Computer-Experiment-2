@@ -12,47 +12,67 @@ A full-stack web-based project and task management platform built with Node.js, 
 
 ## 🚀 Quick Setup
 
-### Step 1: Configure Environment
+Follow these steps to get the project running:
+
+### 1. Install Root Dependencies
+```bash
+npm install
+```
+
+### 2. Install All Project Dependencies
+```bash
+npm run install:all
+```
+
+### 3. Configure Environment Variables
 
 Create or edit `.env` file in `backend/` directory:
 
 ```env
-# Server Configuration
-PORT=8000
-
 # Security
 JWT_SECRET=change-this-secret
 
 # Environment
 NODE_ENV=development
 
-# Default Manager Account (optional - for first-time setup)
+# Default Manager Account (for first-time setup)
 MANAGER_NAME=System Manager
 MANAGER_EMAIL=ur@email.com
 MANAGER_PASSWORD=urpassword
+
+# Default Regular User (member role)
+USER_NAME=Regular User
+USER_EMAIL=user@email.com
+USER_PASSWORD=userpassword
 ```
 
-> **Tip:** A default `.env` file is already included in `backend/` with these values.
+> **Note:** The backend already includes a `.env.example` file you can copy as a starting point.
 
----
-
-### Step 2: Install Dependencies
-
+### 4. Inject Default Users
 ```bash
-npm run install:all
+npm run inject:user
 ```
 
----
+### 5. Build the Project
+```bash
+npm run build
+```
 
-### Step 3: Run the Server
-
+### 6. Start the Development Server
 ```bash
 npm run dev
 ```
 
-Then open **http://localhost:8000** in your browser.
+## 🌐 Ports Information
 
----
+When the server starts, you'll see two different services running:
+
+- **Vite Frontend**: Runs on port 5173 (shown as `http://localhost:5173` in VITE output)
+- **Backend Server**: Runs on port 3000 (shown as `Server running on http://localhost:3000`)
+
+**For testing your .env configuration:** Use the backend server URL (`http://localhost:3000`) as this is where the API runs and where you'll test authentication and environment variables.
+
+The frontend will automatically proxy API requests to the backend, so you can interact with the full application through `http://localhost:5173` in your browser, but the backend API itself is accessible directly at `http://localhost:3000/api`.
 
 ## 🧹 Database Reset
 
@@ -81,8 +101,13 @@ npm run dev
 | `npm run install:backend` | Install backend dependencies only |
 | `npm run install:frontend` | Install frontend dependencies only |
 | `npm run build:frontend` | Build frontend TypeScript |
-| `npm run dev` | Run backend in development mode (auto-reload) |
+| `npm run build:backend` | Build backend TypeScript |
+| `npm run build` | Build both frontend and backend |
+| `npm run dev:backend` | Run backend in development mode |
+| `npm run dev:frontend` | Run frontend in development mode (Vite) |
+| `npm run dev` | Run both backend and frontend concurrently |
 | `npm run start` | Run backend in production mode |
+| `npm run inject:user` | Inject default users into database |
 
 ---
 
@@ -98,7 +123,7 @@ npm run dev
 
 ### Frontend
 - **Languages**: HTML5, CSS3, TypeScript
-- **No frameworks**: Pure vanilla TypeScript
+- **Build Tool**: Vite
 - **Architecture**: Modular with separate files per page
 
 ---
@@ -113,6 +138,7 @@ spmp-platform/
 │   │   ├── middleware/        # Auth middleware
 │   │   ├── models/            # User, Project, Task models
 │   │   ├── routes/            # API routes
+│   │   ├── scripts/           # Utility scripts (injectUser.ts)
 │   │   └── server.ts          # Main entry point
 │   ├── dist/                  # Compiled JS
 │   ├── data/                  # SQLite database
@@ -120,11 +146,10 @@ spmp-platform/
 │   └── package.json
 ├── frontend/                  # Frontend files
 │   ├── src/                   # TypeScript sources
-│   ├── js/                    # Compiled JS
-│   ├── css/                   # Stylesheets
+│   ├── dist/                  # Compiled assets
 │   ├── index.html             # Login page
 │   ├── signup.html            # Registration
-│   ├── dashboard/             # Dashboard pages
+│   ├── vite.config.ts         # Vite configuration
 │   └── package.json
 ├── docs/                      # Documentation
 │   └── external_logs/
@@ -199,8 +224,8 @@ Full API documentation: [Backend API Docs](./docs/external_logs/deisgn_logs/back
 
 ## 💻 Usage
 
-1. Open browser at **http://localhost:8000**
-2. Click "Sign Up" to create an account
+1. Open browser at **http://localhost:5173** (frontend)
+2. Click "Sign Up" to create an account OR use the injected default users
 3. Login with your credentials
 4. Access the dashboard to:
    - Create new projects
@@ -214,10 +239,10 @@ Full API documentation: [Backend API Docs](./docs/external_logs/deisgn_logs/back
 
 | Name | Role |
 |------|------|
-| **陈昌发** | Project Leader + Documentation + Code Supervision |
+| **陈昌发** | Project Leader + Documentation + Code Supervision + QA |
 | **李欣** | Backend + APIs + Database Design & Management |
 | **任杰** | Frontend + UI/UX Design |
-| **孔刚** | Full Testing + Deployment Testing + Security |
+| **孔刚** | Frontend Helper + Backend Helper |
 
 ---
 
