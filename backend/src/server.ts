@@ -9,6 +9,7 @@ import projectRoutes from './routes/projects';
 import taskRoutes from './routes/tasks';
 import userRoutes from './routes/users';
 import { authenticateToken, readCsrfToken } from './middleware/readSession';
+import { ensureManagerUser } from './bootstrap/manager';
 
 // Load environment variables
 dotenv.config();
@@ -62,6 +63,7 @@ process.on('SIGTERM', () => {
 async function startServer(): Promise<void> {
   try {
     await getDatabase();
+    await ensureManagerUser();
     console.log('Database initialized');
 
     app.listen(PORT, () => {
