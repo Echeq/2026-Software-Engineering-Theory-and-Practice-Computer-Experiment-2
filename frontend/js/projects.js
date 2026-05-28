@@ -981,7 +981,7 @@
     if (!response.ok) {
       const message = readMessage(payload, "Request failed.");
       const error = new ApiError(response.status, message);
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401) {
         clearSessionStorage();
       }
       throw error;
@@ -1025,7 +1025,7 @@
     return data.user;
   }
   function isSessionError(error) {
-    return error instanceof ApiError && (error.status === 401 || error.status === 403 || error.message === getAuthErrorMessage());
+    return error instanceof ApiError && (error.status === 401 || error.message === getAuthErrorMessage());
   }
 
   // src/projects.ts

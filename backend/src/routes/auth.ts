@@ -120,6 +120,7 @@ router.get("/me", authenticateToken, (req: AuthRequest, res: Response) => {
             id: req.user.id,
             name: req.user.name,
             email: req.user.email,
+            role: req.user.role,
         },
     });
 });

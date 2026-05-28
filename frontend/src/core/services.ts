@@ -51,7 +51,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const message = readMessage(payload, "Request failed.");
     const error = new ApiError(response.status, message);
 
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       clearSessionStorage();
     }
 
@@ -158,5 +158,5 @@ export async function createTask(input: {
 }
 
 export function isSessionError(error: unknown): boolean {
-  return error instanceof ApiError && (error.status === 401 || error.status === 403 || error.message === getAuthErrorMessage());
+  return error instanceof ApiError && (error.status === 401 || error.message === getAuthErrorMessage());
 }

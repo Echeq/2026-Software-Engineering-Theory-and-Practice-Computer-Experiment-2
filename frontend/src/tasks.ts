@@ -38,6 +38,7 @@ namespace TasksPage {
     syncSidebarState();
     setupEventListeners();
     hydrateSelectedProject();
+    initTaskManagement();
 
     await loadUserData();
   }
@@ -357,8 +358,4 @@ namespace TasksPage {
     void loadTasks();
   }
 
-  // Wire task management into page init
-  document.addEventListener("DOMContentLoaded", () => {
-    initTaskManagement();
-  });
 }
