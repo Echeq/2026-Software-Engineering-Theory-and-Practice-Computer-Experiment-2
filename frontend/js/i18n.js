@@ -18,14 +18,23 @@ const LANGUAGE_OPTIONS = {
 };
 let languageMenuEventsBound = false;
 let notificationCenterEventsBound = false;
-const NOTIFICATION_COUNT = 3;
+const NOTIFICATIONS_STORAGE_KEY = "app-notifications-state";
+const DEFAULT_NOTIFICATIONS = [
+    { id: "notification-design-review", key: "notifications.item1", read: false },
+    { id: "notification-project-comment", key: "notifications.item2", read: false },
+    { id: "notification-workspace-saved", key: "notifications.item3", read: false }
+];
 const translations = {
     en: {
         "language.english": "English",
         "language.chinese": "Chinese",
         "language.spanish": "Spanish",
+        "language.current": "Language: {language}",
         "notifications.buttonLabel": "Notifications",
         "notifications.title": "Notifications",
+        "notifications.close": "Close notifications",
+        "notifications.dismiss": "Dismiss notification",
+        "notifications.empty": "No notifications right now.",
         "notifications.item1": "Design review has been scheduled for tomorrow morning.",
         "notifications.item2": "A new comment was added to the Frontend Showcase project.",
         "notifications.item3": "Your workspace preferences were saved on this device.",
@@ -125,6 +134,12 @@ const translations = {
         "dashboard.noProjectsFoundText": "Try another search or filter, or create a new project.",
         "dashboard.projectsUnavailable": "Projects unavailable",
         "dashboard.preview": "Preview mode: dashboard style is shown with demo data.",
+        "dashboard.previewProject1Name": "Semester Project Planner",
+        "dashboard.previewProject1Description": "Track milestones, assignments, and deadlines for the current term.",
+        "dashboard.previewProject2Name": "UX Research Board",
+        "dashboard.previewProject2Description": "Collect interview notes, usability feedback, and iteration ideas.",
+        "dashboard.previewProject3Name": "Frontend Showcase",
+        "dashboard.previewProject3Description": "A visual preview project to review the dashboard style without backend data.",
         "dashboard.previewProjectCreated": "Preview project created successfully.",
         "dashboard.projectCreated": "Project created successfully.",
         "dashboard.projectCreateFailed": "Failed to create project.",
@@ -148,10 +163,16 @@ const translations = {
         "projects.boardMode": "Board Mode",
         "projects.boardModeName": "Projects Pipeline",
         "projects.boardModeText": "Open any project card to continue into the tasks view.",
-        "projects.kanbanTag": "Kanban",
+        "projects.kanbanTag": "Board",
         "projects.flowTitle": "Project Flow",
         "projects.flowSubtitle": "Each column groups projects by their current delivery phase.",
         "projects.preview": "Preview mode: the projects board is shown with demo data.",
+        "projects.previewProject1Name": "Semester Project Planner",
+        "projects.previewProject1Description": "Plan milestones, deadlines, and release order before implementation begins.",
+        "projects.previewProject2Name": "Research Collaboration Hub",
+        "projects.previewProject2Description": "Coordinate active project updates, meeting notes, and shared feedback across the team.",
+        "projects.previewProject3Name": "Frontend Showcase",
+        "projects.previewProject3Description": "Completed presentation-ready project used to review the latest interface iteration.",
         "projects.loadingText": "Preparing your kanban board.",
         "projects.emptyColumn": "No projects",
         "projects.emptyColumnText": "No projects are currently assigned to this column.",
@@ -177,15 +198,15 @@ const translations = {
         "tasks.subtitleLocalDefault": "Create tasks locally and optionally attach them to a selected project.",
         "tasks.noProjectStatus": "No status",
         "tasks.noProjectContextSaved": "No project context saved yet. Open a project card from Projects or choose one in the form.",
-        "tasks.localStorageTag": "IndexedDB",
+        "tasks.localStorageTag": "Local Tasks",
         "tasks.localBoardTitle": "Local Task Board",
-        "tasks.localBoardSubtitle": "Your local task board powered by IndexedDB.",
+        "tasks.localBoardSubtitle": "Your local task board saved on this device.",
         "tasks.addTask": "Add Task",
         "tasks.saveTask": "Save Task",
         "tasks.loadingTitle": "Loading tasks...",
-        "tasks.loadingText": "Opening the local IndexedDB task store.",
+        "tasks.loadingText": "Opening your saved local tasks.",
         "tasks.unavailableTitle": "Tasks unavailable",
-        "tasks.modalSubtitle": "Create a task and save it locally in IndexedDB on this device.",
+        "tasks.modalSubtitle": "Create a task and save it locally on this device.",
         "tasks.closeTaskDialog": "Close add task dialog",
         "tasks.form.title": "Title",
         "tasks.form.titlePlaceholder": "Add a clear task title",
@@ -196,6 +217,9 @@ const translations = {
         "tasks.form.dueDate": "Due Date",
         "tasks.form.dueDatePlaceholder": "YYYY-MM-DD",
         "tasks.form.project": "Project",
+        "tasks.filters.priority": "Priority",
+        "tasks.filters.status": "Status",
+        "tasks.clearFilters": "Clear filters",
         "tasks.status.todo": "To-Do",
         "tasks.status.inProgress": "In Progress",
         "tasks.status.done": "Done",
@@ -290,15 +314,18 @@ const translations = {
         "common.loading": "Loading...",
         "common.unavailable": "Unavailable",
         "common.tasksCount": "{count} tasks",
+        "common.tasksCompletedCounter": "{completed} of {total} tasks completed",
         "common.createdRecently": "Created recently",
         "common.createdDate": "Created {date}",
         "common.percentComplete": "{percent}% complete",
+        "common.noTasksYet": "No tasks yet",
         "auth.sessionExpired": "Your session has expired. Please log in again."
     },
     zh: {
         "language.english": "English",
         "language.chinese": "中文",
         "language.spanish": "Español",
+        "language.current": "语言：{language}",
         "login.title": "登录",
         "login.subtitle": "用于管理项目和任务的平台。",
         "login.email": "邮箱",
@@ -385,6 +412,12 @@ const translations = {
         "dashboard.noProjectsFoundText": "尝试其他搜索或筛选条件，或者创建一个新项目。",
         "dashboard.projectsUnavailable": "项目不可用",
         "dashboard.preview": "预览模式：当前展示的是带有示例数据的仪表盘样式。",
+        "dashboard.previewProject1Name": "学期项目规划器",
+        "dashboard.previewProject1Description": "跟踪本学期的里程碑、作业和截止日期。",
+        "dashboard.previewProject2Name": "用户体验研究看板",
+        "dashboard.previewProject2Description": "收集访谈记录、可用性反馈和迭代想法。",
+        "dashboard.previewProject3Name": "前端展示",
+        "dashboard.previewProject3Description": "一个用于在没有后端数据时预览仪表盘样式的示例项目。",
         "dashboard.previewProjectCreated": "预览项目创建成功。",
         "dashboard.projectCreated": "项目创建成功。",
         "dashboard.projectCreateFailed": "创建项目失败。",
@@ -412,6 +445,12 @@ const translations = {
         "projects.flowTitle": "项目流",
         "projects.flowSubtitle": "每一列按当前交付阶段对项目进行分组。",
         "projects.preview": "预览模式：当前展示的是带有示例数据的项目看板。",
+        "projects.previewProject1Name": "学期项目规划器",
+        "projects.previewProject1Description": "在实现开始前规划里程碑、截止时间和发布顺序。",
+        "projects.previewProject2Name": "研究协作中心",
+        "projects.previewProject2Description": "协调团队中的项目更新、会议记录和共享反馈。",
+        "projects.previewProject3Name": "前端展示",
+        "projects.previewProject3Description": "一个已完成、可用于展示最新界面迭代成果的项目。",
         "projects.loadingText": "正在准备你的项目看板。",
         "projects.emptyColumn": "没有项目",
         "projects.emptyColumnText": "当前没有项目分配到这一列。",
@@ -479,14 +518,17 @@ const translations = {
         "common.you": "你",
         "common.unavailable": "不可用",
         "common.tasksCount": "{count} 个任务",
+        "common.tasksCompletedCounter": "已完成 {total} 个任务中的 {completed} 个",
         "common.createdRecently": "最近创建",
         "common.createdDate": "创建于 {date}",
+        "common.noTasksYet": "还没有任务",
         "auth.sessionExpired": "登录已过期，请重新登录。"
     },
     es: {
         "language.english": "English",
         "language.chinese": "中文",
         "language.spanish": "Español",
+        "language.current": "Idioma: {language}",
         "login.title": "Iniciar sesión",
         "login.subtitle": "Una plataforma para gestionar proyectos y tareas.",
         "login.email": "Correo electrónico",
@@ -573,6 +615,12 @@ const translations = {
         "dashboard.noProjectsFoundText": "Prueba otra búsqueda o filtro, o crea un proyecto nuevo.",
         "dashboard.projectsUnavailable": "Proyectos no disponibles",
         "dashboard.preview": "Modo de vista previa: se muestra el estilo del panel con datos de demostración.",
+        "dashboard.previewProject1Name": "Planificador del proyecto semestral",
+        "dashboard.previewProject1Description": "Sigue hitos, tareas y fechas limite del trimestre actual.",
+        "dashboard.previewProject2Name": "Tablero de investigacion UX",
+        "dashboard.previewProject2Description": "Reune notas de entrevistas, comentarios de usabilidad e ideas de iteracion.",
+        "dashboard.previewProject3Name": "Vitrina frontend",
+        "dashboard.previewProject3Description": "Un proyecto de vista previa visual para revisar el estilo del panel sin datos del backend.",
         "dashboard.previewProjectCreated": "Proyecto de vista previa creado correctamente.",
         "dashboard.projectCreated": "Proyecto creado correctamente.",
         "dashboard.projectCreateFailed": "No se pudo crear el proyecto.",
@@ -596,10 +644,16 @@ const translations = {
         "projects.boardMode": "Modo tablero",
         "projects.boardModeName": "Flujo de proyectos",
         "projects.boardModeText": "Abre cualquier tarjeta de proyecto para continuar en la vista de tareas.",
-        "projects.kanbanTag": "Kanban",
+        "projects.kanbanTag": "Board",
         "projects.flowTitle": "Flujo del proyecto",
         "projects.flowSubtitle": "Cada columna agrupa proyectos por su fase actual.",
         "projects.preview": "Modo de vista previa: el tablero de proyectos se muestra con datos de demostración.",
+        "projects.previewProject1Name": "Planificador del proyecto semestral",
+        "projects.previewProject1Description": "Planifica hitos, fechas limite y orden de lanzamientos antes de empezar la implementacion.",
+        "projects.previewProject2Name": "Centro de colaboracion de investigacion",
+        "projects.previewProject2Description": "Coordina actualizaciones activas del proyecto, notas de reuniones y comentarios compartidos del equipo.",
+        "projects.previewProject3Name": "Vitrina frontend",
+        "projects.previewProject3Description": "Proyecto completado y listo para presentacion para revisar la ultima iteracion de la interfaz.",
         "projects.loadingText": "Preparando tu tablero kanban.",
         "projects.emptyColumn": "Sin proyectos",
         "projects.emptyColumnText": "No hay proyectos asignados a esta columna.",
@@ -667,8 +721,10 @@ const translations = {
         "common.you": "Tú",
         "common.unavailable": "No disponible",
         "common.tasksCount": "{count} tareas",
+        "common.tasksCompletedCounter": "{completed} de {total} tareas completadas",
         "common.createdRecently": "Creado recientemente",
         "common.createdDate": "Creado {date}",
+        "common.noTasksYet": "Aún no hay tareas",
         "auth.sessionExpired": "Tu sesión ha expirado. Inicia sesión de nuevo."
     }
 };
@@ -708,16 +764,16 @@ Object.assign(translations.en, {
     "tasks.subtitleLocalDefault": "Create tasks locally and optionally attach them to a selected project.",
     "tasks.noProjectStatus": "No status",
     "tasks.noProjectContextSaved": "No project context saved yet. Open a project card from Projects or choose one in the form.",
-    "tasks.localStorageTag": "IndexedDB",
+    "tasks.localStorageTag": "Local Tasks",
     "tasks.localBoardTitle": "Local Task Board",
-    "tasks.localBoardSubtitle": "Your local task board powered by IndexedDB.",
+    "tasks.localBoardSubtitle": "Your local task board saved on this device.",
     "tasks.storageOpenFailed": "Failed to open local task storage. Please refresh the page.",
     "tasks.addTask": "Add Task",
     "tasks.saveTask": "Save Task",
     "tasks.loadingTitle": "Loading tasks...",
-    "tasks.loadingText": "Opening the local IndexedDB task store.",
+    "tasks.loadingText": "Opening your saved local tasks.",
     "tasks.unavailableTitle": "Tasks unavailable",
-    "tasks.modalSubtitle": "Create a task and save it locally in IndexedDB on this device.",
+    "tasks.modalSubtitle": "Create a task and save it locally on this device.",
     "tasks.closeTaskDialog": "Close add task dialog",
     "tasks.form.title": "Title",
     "tasks.form.titlePlaceholder": "Add a clear task title",
@@ -728,6 +784,15 @@ Object.assign(translations.en, {
     "tasks.form.dueDate": "Due Date",
     "tasks.form.dueDatePlaceholder": "YYYY-MM-DD",
     "tasks.form.project": "Project",
+    "tasks.filters.priority": "Priority",
+    "tasks.filters.status": "Status",
+    "tasks.clearFilters": "Clear filters",
+    "tasks.sort.label": "Sort",
+    "tasks.sort.createdDesc": "Date created: newest first",
+    "tasks.sort.createdAsc": "Date created: oldest first",
+    "tasks.sort.dueAsc": "Due date: earliest first",
+    "tasks.sort.dueDesc": "Due date: latest first",
+    "tasks.sort.priorityDesc": "Priority: High to Low",
     "tasks.status.todo": "To-Do",
     "tasks.status.inProgress": "In Progress",
     "tasks.status.done": "Done",
@@ -756,7 +821,9 @@ Object.assign(translations.en, {
     "projects.viewListAria": "List view",
     "status.todo": "To-Do",
     "common.loading": "Loading...",
-    "common.percentComplete": "{percent}% complete"
+    "common.percentComplete": "{percent}% complete",
+    "common.tasksCompletedCounter": "{completed} of {total} tasks completed",
+    "common.noTasksYet": "No tasks yet"
 });
 Object.assign(translations.zh, {
     "app.title.login": "SPMP | 登录",
@@ -777,6 +844,7 @@ Object.assign(translations.zh, {
     "app.brand.workspace": "项目工作区",
     "app.password.show": "显示",
     "app.password.hide": "隐藏",
+    "notifications.close": "关闭通知",
     "dashboard.closeProjectDialog": "关闭创建项目对话框",
     "dashboard.projectFallbackDescription": "尚无描述。",
     "dashboard.projectsLoadFailed": "加载项目失败，请刷新页面。",
@@ -793,17 +861,17 @@ Object.assign(translations.zh, {
     "tasks.subtitleLocalProject": "{projectName} 的本地任务流程。",
     "tasks.subtitleLocalDefault": "在本地创建任务，并可选择关联到当前项目。",
     "tasks.noProjectStatus": "无状态",
-    "tasks.noProjectContextSaved": "尚未保存项目上下文。请从项目页打开一个项目卡片，或在表单中选择项目。",
-    "tasks.localStorageTag": "IndexedDB",
-    "tasks.localBoardTitle": "本地任务看板",
-    "tasks.localBoardSubtitle": "你的本地任务看板由 IndexedDB 提供支持。",
+        "tasks.noProjectContextSaved": "尚未保存项目上下文。请从项目页打开一个项目卡片，或在表单中选择项目。",
+        "tasks.localStorageTag": "本地任务",
+        "tasks.localBoardTitle": "本地任务看板",
+        "tasks.localBoardSubtitle": "你的本地任务会保存在这台设备上。",
     "tasks.storageOpenFailed": "打开本地任务存储失败，请刷新页面。",
     "tasks.addTask": "添加任务",
-    "tasks.saveTask": "保存任务",
-    "tasks.loadingTitle": "正在加载任务...",
-    "tasks.loadingText": "正在打开本地 IndexedDB 任务存储。",
-    "tasks.unavailableTitle": "任务不可用",
-    "tasks.modalSubtitle": "创建任务并将其保存在此设备的 IndexedDB 中。",
+        "tasks.saveTask": "保存任务",
+        "tasks.loadingTitle": "正在加载任务...",
+        "tasks.loadingText": "正在打开你保存在本地的任务。",
+        "tasks.unavailableTitle": "任务不可用",
+        "tasks.modalSubtitle": "创建任务并将其保存在这台设备上。",
     "tasks.closeTaskDialog": "关闭添加任务对话框",
     "tasks.form.title": "标题",
     "tasks.form.titlePlaceholder": "输入清晰的任务标题",
@@ -814,6 +882,15 @@ Object.assign(translations.zh, {
     "tasks.form.dueDate": "截止日期",
     "tasks.form.dueDatePlaceholder": "YYYY-MM-DD",
     "tasks.form.project": "项目",
+    "tasks.filters.priority": "优先级",
+    "tasks.filters.status": "状态",
+    "tasks.clearFilters": "清除筛选",
+    "tasks.sort.label": "排序",
+    "tasks.sort.createdDesc": "创建时间：最新在前",
+    "tasks.sort.createdAsc": "创建时间：最旧在前",
+    "tasks.sort.dueAsc": "截止日期：最早在前",
+    "tasks.sort.dueDesc": "截止日期：最晚在前",
+    "tasks.sort.priorityDesc": "优先级：高到低",
     "tasks.status.todo": "待办",
     "tasks.status.inProgress": "进行中",
     "tasks.status.done": "已完成",
@@ -842,7 +919,9 @@ Object.assign(translations.zh, {
     "projects.viewListAria": "列表视图",
     "status.todo": "待办",
     "common.loading": "加载中...",
-    "common.percentComplete": "已完成 {percent}%"
+    "common.percentComplete": "已完成 {percent}%",
+    "common.tasksCompletedCounter": "已完成 {total} 个任务中的 {completed} 个",
+    "common.noTasksYet": "还没有任务"
 });
 Object.assign(translations.es, {
     "app.title.login": "SPMP | Iniciar sesión",
@@ -863,6 +942,7 @@ Object.assign(translations.es, {
     "app.brand.workspace": "Espacio de proyectos",
     "app.password.show": "Mostrar",
     "app.password.hide": "Ocultar",
+    "notifications.close": "Cerrar notificaciones",
     "dashboard.closeProjectDialog": "Cerrar diálogo de crear proyecto",
     "dashboard.projectFallbackDescription": "Todavía no hay descripción.",
     "dashboard.projectsLoadFailed": "No se pudieron cargar los proyectos. Actualiza la página.",
@@ -879,17 +959,17 @@ Object.assign(translations.es, {
     "tasks.subtitleLocalProject": "Flujo local de tareas para {projectName}.",
     "tasks.subtitleLocalDefault": "Crea tareas localmente y, si quieres, asígnalas al proyecto seleccionado.",
     "tasks.noProjectStatus": "Sin estado",
-    "tasks.noProjectContextSaved": "Todavía no hay contexto de proyecto guardado. Abre una tarjeta desde Proyectos o elige uno en el formulario.",
-    "tasks.localStorageTag": "IndexedDB",
-    "tasks.localBoardTitle": "Tablero local de tareas",
-    "tasks.localBoardSubtitle": "Tu tablero local de tareas funciona con IndexedDB.",
+        "tasks.noProjectContextSaved": "Todavía no hay contexto de proyecto guardado. Abre una tarjeta desde Proyectos o elige uno en el formulario.",
+        "tasks.localStorageTag": "Tareas locales",
+        "tasks.localBoardTitle": "Tablero local de tareas",
+        "tasks.localBoardSubtitle": "Tus tareas locales se guardan en este dispositivo.",
     "tasks.storageOpenFailed": "No se pudo abrir el almacenamiento local de tareas. Actualiza la página.",
     "tasks.addTask": "Añadir tarea",
-    "tasks.saveTask": "Guardar tarea",
-    "tasks.loadingTitle": "Cargando tareas...",
-    "tasks.loadingText": "Abriendo el almacén local de tareas en IndexedDB.",
-    "tasks.unavailableTitle": "Tareas no disponibles",
-    "tasks.modalSubtitle": "Crea una tarea y guárdala localmente en IndexedDB en este dispositivo.",
+        "tasks.saveTask": "Guardar tarea",
+        "tasks.loadingTitle": "Cargando tareas...",
+        "tasks.loadingText": "Abriendo tus tareas guardadas localmente.",
+        "tasks.unavailableTitle": "Tareas no disponibles",
+        "tasks.modalSubtitle": "Crea una tarea y guárdala localmente en este dispositivo.",
     "tasks.closeTaskDialog": "Cerrar diálogo de añadir tarea",
     "tasks.form.title": "Título",
     "tasks.form.titlePlaceholder": "Añade un título claro para la tarea",
@@ -900,6 +980,15 @@ Object.assign(translations.es, {
     "tasks.form.dueDate": "Fecha límite",
     "tasks.form.dueDatePlaceholder": "YYYY-MM-DD",
     "tasks.form.project": "Proyecto",
+    "tasks.filters.priority": "Prioridad",
+    "tasks.filters.status": "Estado",
+    "tasks.clearFilters": "Limpiar filtros",
+    "tasks.sort.label": "Ordenar",
+    "tasks.sort.createdDesc": "Fecha de creación: más recientes primero",
+    "tasks.sort.createdAsc": "Fecha de creación: más antiguos primero",
+    "tasks.sort.dueAsc": "Fecha límite: más próximas primero",
+    "tasks.sort.dueDesc": "Fecha límite: más lejanas primero",
+    "tasks.sort.priorityDesc": "Prioridad: Alta a Baja",
     "tasks.status.todo": "Por hacer",
     "tasks.status.inProgress": "En progreso",
     "tasks.status.done": "Hecho",
@@ -928,7 +1017,9 @@ Object.assign(translations.es, {
     "projects.viewListAria": "Vista de lista",
     "status.todo": "Por hacer",
     "common.loading": "Cargando...",
-    "common.percentComplete": "{percent}% completado"
+    "common.percentComplete": "{percent}% completado",
+    "common.tasksCompletedCounter": "{completed} de {total} tareas completadas",
+    "common.noTasksYet": "Aún no hay tareas"
 });
 Object.assign(translations.en, {
     "settings.profileSave": "Save Changes",
@@ -983,6 +1074,8 @@ Object.assign(translations.es, {
 Object.assign(translations.zh, {
     "notifications.buttonLabel": "通知",
     "notifications.title": "通知",
+    "notifications.dismiss": "关闭此条通知",
+    "notifications.empty": "当前没有通知。",
     "notifications.item1": "明天上午已安排设计评审。",
     "notifications.item2": "Frontend Showcase 项目新增了一条评论。",
     "notifications.item3": "你的工作区偏好已保存在此设备上。"
@@ -990,10 +1083,130 @@ Object.assign(translations.zh, {
 Object.assign(translations.es, {
     "notifications.buttonLabel": "Notificaciones",
     "notifications.title": "Notificaciones",
+    "notifications.dismiss": "Descartar notificación",
+    "notifications.empty": "No hay notificaciones en este momento.",
     "notifications.item1": "Se ha programado una revisión de diseño para mañana por la mañana.",
     "notifications.item2": "Se añadió un comentario nuevo al proyecto Frontend Showcase.",
     "notifications.item3": "Tus preferencias del espacio de trabajo se guardaron en este dispositivo."
 });
+Object.assign(translations.en, {
+    "tasks.editTask": "Edit Task",
+    "tasks.saveEdit": "Save Changes",
+    "tasks.message.updated": "Task updated locally.",
+    "tasks.card.edit": "Edit"
+});
+Object.assign(translations.zh, {
+    "tasks.editTask": "编辑任务",
+    "tasks.saveEdit": "保存更改",
+    "tasks.message.updated": "任务已在本地更新。",
+    "tasks.card.edit": "编辑"
+});
+Object.assign(translations.es, {
+    "tasks.editTask": "Editar tarea",
+    "tasks.saveEdit": "Guardar cambios",
+    "tasks.message.updated": "Tarea actualizada localmente.",
+    "tasks.card.edit": "Editar"
+});
+Object.assign(translations.zh, {
+    "tasks.editTask": "\u7f16\u8f91\u4efb\u52a1",
+    "tasks.saveEdit": "\u4fdd\u5b58\u66f4\u6539",
+    "tasks.message.updated": "\u4efb\u52a1\u5df2\u5728\u672c\u5730\u66f4\u65b0\u3002",
+    "tasks.card.edit": "\u7f16\u8f91"
+});
+Object.assign(translations.es, {
+    "tasks.editTask": "Editar tarea",
+    "tasks.saveEdit": "Guardar cambios",
+    "tasks.message.updated": "Tarea actualizada localmente.",
+    "tasks.card.edit": "Editar"
+});
+function createDefaultNotifications() {
+    return DEFAULT_NOTIFICATIONS.map((notification) => ({ ...notification }));
+}
+function sanitizeNotificationState(value) {
+    if (!Array.isArray(value)) {
+        return createDefaultNotifications();
+    }
+    const fallbackById = new Map(DEFAULT_NOTIFICATIONS.map((notification) => [notification.id, notification]));
+    return value
+        .filter((item) => item && typeof item.id === "string")
+        .map((item) => {
+        const fallback = fallbackById.get(item.id);
+        if (!fallback) {
+            return null;
+        }
+        return {
+            id: fallback.id,
+            key: typeof item.key === "string" ? item.key : fallback.key,
+            read: Boolean(item.read)
+        };
+    })
+        .filter(Boolean);
+}
+function loadNotificationState() {
+    const raw = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+    if (!raw) {
+        const defaults = createDefaultNotifications();
+        saveNotificationState(defaults);
+        return defaults;
+    }
+    try {
+        const notifications = sanitizeNotificationState(JSON.parse(raw));
+        saveNotificationState(notifications);
+        return notifications;
+    }
+    catch (_error) {
+        const defaults = createDefaultNotifications();
+        saveNotificationState(defaults);
+        return defaults;
+    }
+}
+function saveNotificationState(notifications) {
+    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+}
+function getUnreadNotificationCount(notifications) {
+    return notifications.reduce((count, notification) => count + (notification.read ? 0 : 1), 0);
+}
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+function buildNotificationItemsMarkup(notifications) {
+    if (!notifications.length) {
+        return `
+      <article class="notification-item">
+        <p>${escapeHtml(t("notifications.empty"))}</p>
+      </article>
+    `;
+    }
+    return notifications.map((notification) => `
+      <article class="notification-item${notification.read ? "" : " is-unread"}" data-notification-id="${escapeHtml(notification.id)}">
+        <p>${escapeHtml(t(notification.key))}</p>
+        <button
+          type="button"
+          class="close-btn notification-item-dismiss"
+          data-dismiss-notification="${escapeHtml(notification.id)}"
+          aria-label="${escapeHtml(t("notifications.dismiss"))}"
+          title="${escapeHtml(t("notifications.dismiss"))}"
+        >&times;</button>
+      </article>
+    `).join("");
+}
+function markNotificationsRead(notificationIds) {
+    if (!notificationIds.length) {
+        return;
+    }
+    const notifications = loadNotificationState().map((notification) => notificationIds.includes(notification.id)
+        ? { ...notification, read: true }
+        : notification);
+    saveNotificationState(notifications);
+}
+function dismissNotification(notificationId) {
+    saveNotificationState(loadNotificationState().filter((notification) => notification.id !== notificationId));
+}
 function interpolate(template, values = {}) {
     return template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ""));
 }
@@ -1023,6 +1236,50 @@ function getLanguage() {
 }
 function getLanguageOption(language) {
     return LANGUAGE_OPTIONS[language];
+}
+function readDynamicTranslationValues(raw) {
+    if (!raw) {
+        return undefined;
+    }
+    try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : undefined;
+    }
+    catch (_error) {
+        return undefined;
+    }
+}
+function applyDynamicTranslations(root = document) {
+    const elements = root === document
+        ? document.querySelectorAll("[data-i18n-dynamic-key]")
+        : root.querySelectorAll("[data-i18n-dynamic-key]");
+    elements.forEach((element) => {
+        const key = element.dataset.i18nDynamicKey;
+        if (!key) {
+            return;
+        }
+        element.textContent = t(key, readDynamicTranslationValues(element.dataset.i18nDynamicValues || ""));
+    });
+}
+function setDynamicTranslation(element, key, values) {
+    if (!element) {
+        return;
+    }
+    element.dataset.i18nDynamicKey = key;
+    if (values && Object.keys(values).length > 0) {
+        element.dataset.i18nDynamicValues = JSON.stringify(values);
+    }
+    else {
+        delete element.dataset.i18nDynamicValues;
+    }
+    element.textContent = t(key, values);
+}
+function clearDynamicTranslation(element) {
+    if (!element) {
+        return;
+    }
+    delete element.dataset.i18nDynamicKey;
+    delete element.dataset.i18nDynamicValues;
 }
 function applyTranslations(root = document) {
     if (root === document) {
@@ -1058,6 +1315,7 @@ function applyTranslations(root = document) {
         input.value = getLanguage();
     });
     document.documentElement.lang = getLanguage() === "zh" ? "zh" : getLanguage();
+    applyDynamicTranslations(root);
 }
 function updateSwitcherSelection() {
     const currentLanguage = getLanguage();
@@ -1097,7 +1355,7 @@ function updateSwitcherSelection() {
             currentLabel.textContent = option.label;
         }
         if (trigger) {
-            trigger.setAttribute("aria-label", `Language: ${option.label}`);
+            trigger.setAttribute("aria-label", t("language.current", { language: option.label }));
         }
     });
 }
@@ -1109,32 +1367,7 @@ function refreshHtmxProjectsList() {
 }
 function refreshNotificationCenterTranslations() {
     document.querySelectorAll(".notification-center").forEach((center) => {
-        const trigger = center.querySelector(".notification-center-trigger");
-        const triggerLabel = center.querySelector(".notification-center-label");
-        const panel = center.querySelector(".notification-center-panel");
-        const titleElement = center.querySelector(".notification-center-header strong");
-        const items = center.querySelectorAll(".notification-item p");
-        if (trigger) {
-            trigger.setAttribute("aria-label", t("notifications.buttonLabel"));
-        }
-        if (triggerLabel) {
-            triggerLabel.textContent = t("notifications.buttonLabel");
-        }
-        if (panel) {
-            panel.setAttribute("aria-label", t("notifications.title"));
-        }
-        if (titleElement) {
-            titleElement.textContent = t("notifications.title");
-        }
-        if (items[0]) {
-            items[0].textContent = t("notifications.item1");
-        }
-        if (items[1]) {
-            items[1].textContent = t("notifications.item2");
-        }
-        if (items[2]) {
-            items[2].textContent = t("notifications.item3");
-        }
+        renderNotificationCenter(center);
     });
 }
 function setLanguage(language) {
@@ -1239,23 +1472,50 @@ function setNotificationCenterOpen(center, isOpen) {
     trigger.setAttribute("aria-expanded", String(isOpen));
     panel.hidden = !isOpen;
 }
-function setNotificationUnreadState(center, hasUnread) {
+function renderNotificationCenter(center) {
     if (!center) {
         return;
     }
-    center.dataset.hasUnread = hasUnread ? "true" : "false";
+    const notifications = loadNotificationState();
+    const unreadCount = getUnreadNotificationCount(notifications);
+    const trigger = center.querySelector(".notification-center-trigger");
+    const triggerLabel = center.querySelector(".notification-center-label");
+    const panel = center.querySelector(".notification-center-panel");
+    const titleElement = center.querySelector(".notification-center-header strong");
+    const closeButton = center.querySelector(".notification-center-close");
     const badge = center.querySelector(".notification-badge");
-    if (badge) {
-        if (!hasUnread) {
-            badge.textContent = "0";
-        }
-        else if (!badge.textContent?.trim() || badge.textContent.trim() === "0") {
-            badge.textContent = String(NOTIFICATION_COUNT);
-        }
-        badge.hidden = !hasUnread;
-        badge.style.display = hasUnread ? "" : "none";
-        badge.classList.toggle("hidden", !hasUnread);
+    const countElement = center.querySelector(".notification-center-count");
+    const list = center.querySelector(".notification-center-list");
+    if (trigger) {
+        trigger.setAttribute("aria-label", t("notifications.buttonLabel"));
     }
+    if (triggerLabel) {
+        triggerLabel.textContent = t("notifications.buttonLabel");
+    }
+    if (panel) {
+        panel.setAttribute("aria-label", t("notifications.title"));
+    }
+    if (titleElement) {
+        titleElement.textContent = t("notifications.title");
+    }
+    if (closeButton) {
+        closeButton.setAttribute("aria-label", t("notifications.close"));
+        closeButton.setAttribute("title", t("notifications.close"));
+    }
+    if (list) {
+        list.innerHTML = buildNotificationItemsMarkup(notifications);
+    }
+    if (badge) {
+        badge.textContent = String(unreadCount);
+        badge.hidden = unreadCount === 0;
+        badge.style.display = unreadCount === 0 ? "none" : "";
+        badge.classList.toggle("hidden", unreadCount === 0);
+    }
+    if (countElement) {
+        countElement.textContent = String(unreadCount);
+        countElement.hidden = unreadCount === 0;
+    }
+    center.dataset.hasUnread = unreadCount > 0 ? "true" : "false";
 }
 function closeNotificationCenters() {
     document.querySelectorAll(".notification-center.is-open").forEach((center) => {
@@ -1293,13 +1553,34 @@ function upgradeNotificationCenter(center) {
         closeNotificationCenters();
         setNotificationCenterOpen(center, shouldOpen);
         if (shouldOpen) {
-            setNotificationUnreadState(center, false);
+            const unreadIds = loadNotificationState()
+                .filter((notification) => !notification.read)
+                .map((notification) => notification.id);
+            markNotificationsRead(unreadIds);
+            renderNotificationCenter(center);
         }
     });
     center.querySelector(".notification-center-close")?.addEventListener("click", () => {
         setNotificationCenterOpen(center, false);
         center.querySelector(".notification-center-trigger")?.focus();
     });
+    center.querySelector(".notification-center-list")?.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) {
+            return;
+        }
+        const dismissButton = target.closest("[data-dismiss-notification]");
+        if (!dismissButton) {
+            return;
+        }
+        const notificationId = dismissButton.getAttribute("data-dismiss-notification")?.trim() || "";
+        if (!notificationId) {
+            return;
+        }
+        dismissNotification(notificationId);
+        renderNotificationCenter(center);
+    });
+    renderNotificationCenter(center);
     bindNotificationCenterEvents();
 }
 function injectNotificationCenter() {
@@ -1323,7 +1604,7 @@ function injectNotificationCenter() {
           <path d="M8.2 15.2a2 2 0 0 0 3.6 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
         </svg>
       </span>
-      <span class="notification-badge" aria-hidden="true">${NOTIFICATION_COUNT}</span>
+      <span class="notification-badge" aria-hidden="true"></span>
       <span class="notification-center-label">${t("notifications.buttonLabel")}</span>
     </button>
 
@@ -1331,29 +1612,18 @@ function injectNotificationCenter() {
       <div class="notification-center-header">
         <strong>${t("notifications.title")}</strong>
         <div class="notification-center-header-actions">
-          <span class="notification-center-count">${NOTIFICATION_COUNT}</span>
+          <span class="notification-center-count"></span>
           <button
             type="button"
             class="close-btn notification-center-close"
-            aria-label="Close notifications"
+            aria-label="${t("notifications.close")}"
           >&times;</button>
         </div>
       </div>
-      <div class="notification-center-list">
-        <article class="notification-item">
-          <p>${t("notifications.item1")}</p>
-        </article>
-        <article class="notification-item">
-          <p>${t("notifications.item2")}</p>
-        </article>
-        <article class="notification-item">
-          <p>${t("notifications.item3")}</p>
-        </article>
-      </div>
+      <div class="notification-center-list"></div>
     </section>
   `;
     dashboardTopbarActions.insertAdjacentElement("afterbegin", wrapper);
-    setNotificationUnreadState(wrapper, true);
     upgradeNotificationCenter(wrapper);
 }
 function upgradeDashboardLanguageSwitcher() {
@@ -1414,8 +1684,10 @@ function initializeI18n() {
 }
 window.I18n = {
     applyTranslations,
+    clearDynamicTranslation,
     getLanguage,
     setLanguage,
+    setDynamicTranslation,
     t
 };
 if (document.readyState === "loading") {

@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n-document-title="app.title.projects">SPMP | Projects</title>
   <link rel="stylesheet" href="../css/dashboard.css">
-  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="../js/i18n.js" defer></script>
 </head>
 <body>
@@ -47,7 +46,7 @@
       <div class="sidebar-footer">
         <div class="user-panel" aria-live="polite">
           <span id="user-avatar" class="user-avatar" aria-hidden="true">U</span>
-          <strong id="user-name" class="user-display" data-i18n="common.loading">Loading...</strong>
+          <strong id="user-name" class="user-display"></strong>
         </div>
         <button id="logout-btn" type="button" class="secondary-button sidebar-logout"><svg class="button-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5H5.5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2H8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 6.5 15 10l-4 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 10H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span data-i18n="sidebar.logout">Log Out</span></button>
       </div>
@@ -81,18 +80,8 @@
 
       <section class="overview-panel" aria-labelledby="projects-page-title">
         <div class="overview-copy">
-          <span class="brand-tag">SPMP</span>
-          <h1 id="projects-page-title" data-i18n="projects.title">Projects Board</h1>
-          <p class="subtitle" data-i18n="projects.subtitle">
-            Manage your project pipeline.
-          </p>
-        </div>
-
-        <div class="overview-actions">
-          <div class="overview-note">
-            <span class="overview-note-label" data-i18n="projects.boardMode">Board Mode</span>
-            <strong data-i18n="projects.boardModeName">Projects Pipeline</strong>
-            <p data-i18n="projects.boardModeText">Open any project card to continue into the tasks view.</p>
+          <div class="page-title-row">
+            <h1 id="projects-page-title" data-i18n="projects.title">Projects Board</h1>
           </div>
         </div>
       </section>
@@ -100,7 +89,7 @@
       <section class="projects-section projects-board-section" aria-labelledby="projects-board-title">
         <div class="section-header">
           <div class="section-copy">
-            <span class="section-tag" data-i18n="projects.kanbanTag">Kanban</span>
+            <span class="section-tag" data-i18n="projects.kanbanTag">Board</span>
             <h2 id="projects-board-title" data-i18n="projects.flowTitle">Project Flow</h2>
             <p class="section-subtitle" data-i18n="projects.flowSubtitle">Drag projects across stages to update their status.</p>
           </div>
@@ -138,74 +127,5 @@
   </main>
 
   <script src="../js/projects.js" defer></script>
-  <script>
-    (() => {
-      const root = document.getElementById("projects-board");
-
-      if (!root) {
-        return;
-      }
-
-      function refreshProjectsAos() {
-        if (window.AOS && typeof AOS.refreshHard === "function") {
-          AOS.refreshHard();
-        }
-      }
-
-      function initializeProjectsAos() {
-        if (window.AOS && typeof AOS.init === "function") {
-          AOS.init({ duration: 600, once: true, easing: 'ease-out' });
-          refreshProjectsAos();
-        }
-      }
-
-      document.addEventListener("DOMContentLoaded", initializeProjectsAos, { once: true });
-
-      const statusMatchers = [
-        { value: "active", labels: ["active", "进行中", "activo"] },
-        { value: "in-review", labels: ["in review", "评审中", "en revisión"] },
-        { value: "planning", labels: ["planning", "规划中", "planificación"] }
-      ];
-
-      function readCardStatus(text) {
-        const normalized = (text || "").trim().toLowerCase();
-
-        for (const matcher of statusMatchers) {
-          if (matcher.labels.some((label) => normalized.includes(label))) {
-            return matcher.value;
-          }
-        }
-
-        return "";
-      }
-
-      function applyProjectCardStatus() {
-        root.querySelectorAll(".project-card").forEach((card) => {
-          const statusText = card.querySelector(".project-status")?.textContent || "";
-          const status = readCardStatus(statusText);
-
-          if (status) {
-            card.setAttribute("data-project-status", status);
-            return;
-          }
-
-          card.removeAttribute("data-project-status");
-        });
-      }
-
-      applyProjectCardStatus();
-
-      const observer = new MutationObserver(() => {
-        applyProjectCardStatus();
-        refreshProjectsAos();
-      });
-
-      observer.observe(root, {
-        childList: true,
-        subtree: true
-      });
-    })();
-  </script>
-  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 </body>
 </html>

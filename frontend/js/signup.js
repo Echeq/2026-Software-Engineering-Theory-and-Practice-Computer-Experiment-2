@@ -4,6 +4,22 @@
     const THEME_STORAGE_KEY = "theme";
     const LEGACY_THEME_STORAGE_KEY = "dashboard-theme";
     const i18n = (key, values) => window.I18n?.t(key, values) || key;
+    const setDynamicText = (element, key, values) => {
+        if (!element) {
+            return;
+        }
+        if (typeof window.I18n?.setDynamicTranslation === "function") {
+            window.I18n.setDynamicTranslation(element, key, values);
+            return;
+        }
+        element.textContent = i18n(key, values);
+    };
+    const clearDynamicText = (element) => {
+        if (!element) {
+            return;
+        }
+        window.I18n?.clearDynamicTranslation?.(element);
+    };
     const form = document.getElementById("signup-form");
     const nameInput = document.getElementById("name");
     const emailInput = document.getElementById("email");
@@ -12,18 +28,12 @@
     const messageBox = document.getElementById("form-message");
     const submitButton = document.querySelector(".submit-button");
     const themeToggleButton = document.getElementById("theme-toggle-btn");
-    initializeAos();
     initializeTheme();
     initializeParticles();
     updateThemeToggle();
     form.addEventListener("submit", handleFormSubmit);
     themeToggleButton?.addEventListener("click", toggleTheme);
-    document.addEventListener("app-language-change", updateThemeToggle);
-    function initializeAos() {
-        if (window.AOS && typeof AOS.init === "function") {
-            AOS.init({ duration: 600, once: true, easing: 'ease-out' });
-        }
-    }
+    document.addEventListener("app-language-change", handleLanguageChange);
     function initializeTheme() {
         const storedTheme = localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
         const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -141,20 +151,20 @@
         const confirmPassword = confirmPasswordInput.value.trim();
         const isValid = validateForm(name, email, password, confirmPassword);
         if (!isValid) {
-            showMessage(i18n("signup.validation.fix"), "error");
+            showMessage("", "error", "signup.validation.fix");
             return;
         }
         setLoadingState(true);
         try {
             await registerUser(name, email, password);
-            showMessage(i18n("signup.success"), "success");
+            showMessage("", "success", "signup.success");
             form.reset();
             setTimeout(() => {
                 window.location.href = "./index.html";
             }, 1500);
         }
         catch (error) {
-            showMessage(error instanceof Error ? error.message : i18n("signup.failed"), "error");
+            showMessage(error instanceof Error ? error.message : "", "error", error instanceof Error ? "" : "signup.failed");
         }
         finally {
             setLoadingState(false);
@@ -163,35 +173,35 @@
     function validateForm(name, email, password, confirmPassword) {
         let isValid = true;
         if (!name) {
-            setFieldError("name", i18n("signup.validation.nameRequired"));
+            setFieldError("name", "signup.validation.nameRequired");
             isValid = false;
         }
         else if (name.length < 2) {
-            setFieldError("name", i18n("signup.validation.nameShort"));
+            setFieldError("name", "signup.validation.nameShort");
             isValid = false;
         }
         if (!email) {
-            setFieldError("email", i18n("signup.validation.emailRequired"));
+            setFieldError("email", "signup.validation.emailRequired");
             isValid = false;
         }
         else if (!isEmailValid(email)) {
-            setFieldError("email", i18n("signup.validation.emailInvalid"));
+            setFieldError("email", "signup.validation.emailInvalid");
             isValid = false;
         }
         if (!password) {
-            setFieldError("password", i18n("signup.validation.passwordRequired"));
+            setFieldError("password", "signup.validation.passwordRequired");
             isValid = false;
         }
         else if (password.length < 6) {
-            setFieldError("password", i18n("signup.validation.passwordShort"));
+            setFieldError("password", "signup.validation.passwordShort");
             isValid = false;
         }
         if (!confirmPassword) {
-            setFieldError("confirm-password", i18n("signup.validation.confirmRequired"));
+            setFieldError("confirm-password", "signup.validation.confirmRequired");
             isValid = false;
         }
         else if (password !== confirmPassword) {
-            setFieldError("confirm-password", i18n("signup.validation.confirmMismatch"));
+            setFieldError("confirm-password", "signup.validation.confirmMismatch");
             isValid = false;
         }
         return isValid;
@@ -199,29 +209,46 @@
     function isEmailValid(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
-    function setFieldError(fieldId, text) {
+    function setFieldError(fieldId, key) {
         const input = document.getElementById(fieldId);
         const errorBox = document.querySelector(`[data-error-for="${fieldId}"]`);
         input.classList.add("input-error");
-        errorBox.textContent = text;
+        setDynamicText(errorBox, key);
     }
     function resetErrors() {
+        clearDynamicText(messageBox);
         messageBox.textContent = "";
         messageBox.className = "form-message";
         document.querySelectorAll(".field-error").forEach((element) => {
+            clearDynamicText(element);
             element.textContent = "";
         });
         document.querySelectorAll(".input-error").forEach((input) => {
             input.classList.remove("input-error");
         });
     }
-    function showMessage(text, type) {
-        messageBox.textContent = text;
+    function showMessage(text, type, key = "", values) {
+        if (key) {
+            setDynamicText(messageBox, key, values);
+        }
+        else {
+            clearDynamicText(messageBox);
+            messageBox.textContent = text;
+        }
         messageBox.className = `form-message ${type}`;
     }
     function setLoadingState(isLoading) {
         submitButton.disabled = isLoading;
-        submitButton.textContent = isLoading ? i18n("signup.submitting") : i18n("signup.submit");
+        if (isLoading) {
+            setDynamicText(submitButton, "signup.submitting");
+            return;
+        }
+        clearDynamicText(submitButton);
+        submitButton.textContent = i18n("signup.submit");
+    }
+    function handleLanguageChange() {
+        updateThemeToggle();
+        setLoadingState(Boolean(submitButton?.disabled));
     }
     async function registerUser(name, email, password) {
         const response = await fetch(`${API_BASE_URL}/auth/register`, {

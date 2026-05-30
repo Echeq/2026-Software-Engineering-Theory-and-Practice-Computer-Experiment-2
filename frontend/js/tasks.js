@@ -3,6 +3,7 @@ var TasksPage;
 (function (TasksPage) {
     const API_BASE_URL = `${window.location.origin}/api`;
     const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
+    const SETTINGS_STORAGE_KEY = "dashboard-settings-state";
     const THEME_STORAGE_KEY = "dashboard-theme";
     const MOBILE_SIDEBAR_BREAKPOINT = 960;
     const DB_NAME = "SPMP_DB";
@@ -14,6 +15,22 @@ var TasksPage;
     const EMPTY_COLUMN_LOTTIE_PATH = "https://assets2.lottiefiles.com/packages/lf20_ysrn2iwp.json";
     const TASK_SORTABLE_GROUP_NAME = "tasks";
     const i18n = (key, values) => window.I18n?.t(key, values) || key;
+    const setDynamicText = (element, key, values) => {
+        if (!element) {
+            return;
+        }
+        if (typeof window.I18n?.setDynamicTranslation === "function") {
+            window.I18n.setDynamicTranslation(element, key, values);
+            return;
+        }
+        element.textContent = i18n(key, values);
+    };
+    const clearDynamicText = (element) => {
+        if (!element) {
+            return;
+        }
+        window.I18n?.clearDynamicTranslation?.(element);
+    };
     const TASK_COLUMNS = [
         { id: "Todo", titleKey: "tasks.status.todo", captionKey: "tasks.column.todoCaption", className: "task-column-todo" },
         { id: "In Progress", titleKey: "tasks.status.inProgress", captionKey: "tasks.column.inProgressCaption", className: "task-column-progress" },
@@ -35,6 +52,8 @@ var TasksPage;
     let taskModalElement = null;
     let closeTaskModalButton = null;
     let cancelTaskModalButton = null;
+    let saveTaskButton = null;
+    let taskModalTitleElement = null;
     let taskFormElement = null;
     let taskFormMessageElement = null;
     let tasksMessageElement = null;
@@ -45,8 +64,20 @@ var TasksPage;
     let taskPrioritySelect = null;
     let taskDueDateInput = null;
     let taskProjectSelect = null;
+    let taskFilterPrioritySelect = null;
+    let taskFilterStatusSelect = null;
+    let taskSortSelect = null;
+    let clearTaskFiltersButton = null;
     let selectedProjectContext = null;
     let knownProjects = [];
+    let allTasks = [];
+    let hasLoadedTasks = false;
+    let editingTaskId = null;
+    const taskFilters = {
+        priority: "all",
+        status: "all",
+        sort: "created-desc"
+    };
     const emptyColumnAnimations = new Map();
     const taskColumnSortables = [];
     document.addEventListener("DOMContentLoaded", () => {
@@ -57,7 +88,6 @@ var TasksPage;
         initializeTheme();
         syncSidebarState();
         setupEventListeners();
-        initializeAos();
         hydrateProjectContext();
         renderSelectedProjectContext();
         renderProjectOptions();
@@ -77,16 +107,6 @@ var TasksPage;
         }
         await loadUserData();
     }
-    function initializeAos() {
-        if (window.AOS && typeof AOS.init === "function") {
-            AOS.init({ duration: 600, once: true, easing: 'ease-out' });
-        }
-    }
-    function refreshAos() {
-        if (window.AOS && typeof AOS.refreshHard === "function") {
-            AOS.refreshHard();
-        }
-    }
     function cacheElements() {
         userNameElement = document.getElementById("user-name");
         userAvatarElement = document.getElementById("user-avatar");
@@ -95,6 +115,9 @@ var TasksPage;
         sidebarToggleButton = document.getElementById("sidebar-toggle-btn");
         sidebarElement = document.getElementById("dashboard-sidebar");
         sidebarBackdropElement = document.getElementById("sidebar-backdrop");
+        if (userNameElement) {
+            userNameElement.textContent = "";
+        }
         selectedProjectNameElement = document.getElementById("selected-project-name");
         selectedProjectMetaElement = document.getElementById("selected-project-meta");
         tasksPageSubtitleElement = document.getElementById("tasks-page-subtitle");
@@ -102,6 +125,8 @@ var TasksPage;
         taskModalElement = document.getElementById("task-modal");
         closeTaskModalButton = document.getElementById("close-task-modal");
         cancelTaskModalButton = document.getElementById("cancel-task-modal");
+        saveTaskButton = document.getElementById("save-task-btn");
+        taskModalTitleElement = document.getElementById("task-modal-title");
         taskFormElement = document.getElementById("task-form");
         taskFormMessageElement = document.getElementById("task-form-message");
         tasksMessageElement = document.getElementById("tasks-message");
@@ -112,6 +137,10 @@ var TasksPage;
         taskPrioritySelect = document.getElementById("task-priority");
         taskDueDateInput = document.getElementById("task-due-date");
         taskProjectSelect = document.getElementById("task-project");
+        taskFilterPrioritySelect = document.getElementById("task-filter-priority");
+        taskFilterStatusSelect = document.getElementById("task-filter-status");
+        taskSortSelect = document.getElementById("task-sort-select");
+        clearTaskFiltersButton = document.getElementById("clear-task-filters-btn");
     }
     function setupEventListeners() {
         logoutButton?.addEventListener("click", logout);
@@ -124,6 +153,10 @@ var TasksPage;
         taskModalElement?.addEventListener("click", handleTaskModalClick);
         taskFormElement?.addEventListener("submit", handleTaskFormSubmit);
         tasksBoardElement?.addEventListener("click", handleBoardClick);
+        taskFilterPrioritySelect?.addEventListener("change", handleTaskFilterChange);
+        taskFilterStatusSelect?.addEventListener("change", handleTaskFilterChange);
+        taskSortSelect?.addEventListener("change", handleTaskFilterChange);
+        clearTaskFiltersButton?.addEventListener("click", clearTaskFilters);
         window.addEventListener("resize", syncSidebarState);
         document.addEventListener("keydown", handleEscapeKey);
         document.addEventListener("app-language-change", handleLanguageChange);
@@ -209,11 +242,16 @@ var TasksPage;
         }
     }
     function handleLanguageChange() {
+        renderUserName(currentUser ? "" : i18n("common.unavailable"));
         renderSelectedProjectContext();
         renderProjectOptions();
         renderVisibleTaskSelectLabels();
-        if (db) {
-            void loadAndRenderTasks();
+        syncSidebarState();
+        if (taskDueDateInput) {
+            taskDueDateInput.lang = getCurrentLocale();
+        }
+        if (hasLoadedTasks) {
+            renderFilteredTasks();
             return;
         }
         renderBoardLoading();
@@ -223,6 +261,7 @@ var TasksPage;
         const queryProjectId = searchParams.get("projectId")?.trim() || "";
         const queryProjectName = searchParams.get("projectName")?.trim() || "";
         const queryStatus = searchParams.get("status")?.trim() || "";
+        const queryStatusKey = searchParams.get("statusKey")?.trim() || "";
         const queryCreator = searchParams.get("creator")?.trim() || "";
         const queryCreatedAt = searchParams.get("createdAt")?.trim() || "";
         knownProjects = readKnownProjects();
@@ -230,16 +269,21 @@ var TasksPage;
         if (queryProjectId || queryProjectName) {
             selectedProjectContext = {
                 projectId: queryProjectId,
-                projectName: queryProjectName || "Selected Project",
+                projectName: queryProjectName || i18n("tasks.selectedProject"),
                 status: queryStatus,
-                creator: queryCreator,
+                statusKey: queryStatusKey,
+                creator: getDisplayName(queryCreator || i18n("common.you")),
                 createdAt: queryCreatedAt
             };
             persistSelectedProjectContext(selectedProjectContext);
             registerKnownProject(selectedProjectContext);
         }
         else if (storedContext) {
-            selectedProjectContext = storedContext;
+            selectedProjectContext = {
+                ...storedContext,
+                creator: getDisplayName(storedContext.creator || i18n("common.you"))
+            };
+            persistSelectedProjectContext(selectedProjectContext);
             registerKnownProject(storedContext);
         }
         else {
@@ -260,7 +304,14 @@ var TasksPage;
                 typeof parsed.status === "string" &&
                 typeof parsed.creator === "string" &&
                 typeof parsed.createdAt === "string") {
-                return parsed;
+                return {
+                    projectId: parsed.projectId,
+                    projectName: parsed.projectName,
+                    status: parsed.status,
+                    statusKey: typeof parsed.statusKey === "string" ? parsed.statusKey : "",
+                    creator: parsed.creator,
+                    createdAt: parsed.createdAt
+                };
             }
         }
         catch (error) {
@@ -289,6 +340,7 @@ var TasksPage;
                 projectId: item.projectId,
                 projectName: item.projectName,
                 status: typeof item.status === "string" ? item.status : "",
+                statusKey: typeof item.statusKey === "string" ? item.statusKey : "",
                 creator: typeof item.creator === "string" ? item.creator : "",
                 createdAt: typeof item.createdAt === "string" ? item.createdAt : ""
             }));
@@ -311,15 +363,16 @@ var TasksPage;
             projectId: context.projectId,
             projectName: context.projectName,
             status: context.status,
-            creator: context.creator,
+            statusKey: context.statusKey || "",
+            creator: getDisplayName(context.creator || i18n("common.you")),
             createdAt: context.createdAt
         });
         persistKnownProjects(nextProjects.slice(0, 24));
     }
     function renderSelectedProjectContext() {
         const projectName = selectedProjectContext?.projectName?.trim() || i18n("tasks.noProject");
-        const status = formatTaskContextStatus(selectedProjectContext?.status?.trim() || "") || i18n("tasks.noProjectStatus");
-        const creator = selectedProjectContext?.creator?.trim() || i18n("common.unavailable");
+        const status = formatProjectContextStatus(selectedProjectContext?.statusKey || "", selectedProjectContext?.status?.trim() || "") || i18n("tasks.noProjectStatus");
+        const creator = getDisplayName(selectedProjectContext?.creator?.trim() || i18n("common.unavailable"));
         const createdAt = formatProjectDate(selectedProjectContext?.createdAt?.trim() || "");
         if (selectedProjectNameElement) {
             selectedProjectNameElement.textContent = projectName;
@@ -358,6 +411,7 @@ var TasksPage;
         if (!tasksBoardElement) {
             return;
         }
+        hasLoadedTasks = false;
         destroyTaskBoardSorting();
         destroyEmptyColumnAnimations();
         tasksBoardElement.innerHTML = `
@@ -371,6 +425,7 @@ var TasksPage;
         if (!tasksBoardElement) {
             return;
         }
+        hasLoadedTasks = false;
         destroyTaskBoardSorting();
         destroyEmptyColumnAnimations();
         tasksBoardElement.innerHTML = `
@@ -385,40 +440,55 @@ var TasksPage;
         clearTaskFormMessage();
         const title = taskTitleInput?.value.trim() || "";
         if (!title) {
-            showTaskFormMessage(i18n("tasks.validation.titleRequired"), "error");
+            showTaskFormMessage("", "error", "tasks.validation.titleRequired");
             taskTitleInput?.focus();
             return;
         }
         const dueDate = taskDueDateInput?.value.trim() || "";
         if (dueDate && !isIsoDateValue(dueDate)) {
-            showTaskFormMessage(i18n("tasks.validation.invalidDueDate"), "error");
+            showTaskFormMessage("", "error", "tasks.validation.invalidDueDate");
             taskDueDateInput?.focus();
             return;
         }
         const projectIdValue = taskProjectSelect?.value || EMPTY_PROJECT_ID;
         const projectId = projectIdValue === EMPTY_PROJECT_ID ? "" : projectIdValue;
+        const isEditing = editingTaskId !== null;
+        const existingTask = getEditingTask();
         const task = {
             projectId,
             title,
             description: taskDescriptionInput?.value.trim() || "",
             status: normalizeStatus(taskStatusSelect?.value || "Todo"),
             priority: normalizePriority(taskPrioritySelect?.value || "Medium"),
-            createdAt: new Date().toISOString(),
+            createdAt: existingTask?.createdAt || new Date().toISOString(),
             dueDate
         };
         try {
-            await addTask(task);
+            if (isEditing) {
+                await updateTask(editingTaskId, task);
+            }
+            else {
+                await addTask(task);
+            }
             closeTaskModal();
-            showTasksMessage(i18n("tasks.message.saved"), "success");
+            showTasksMessage("", "success", isEditing ? "tasks.message.updated" : "tasks.message.saved");
             await loadAndRenderTasks();
         }
         catch (error) {
             console.error("Error saving task:", error);
-            showTaskFormMessage(i18n("tasks.message.saveFailed"), "error");
+            showTaskFormMessage("", "error", "tasks.message.saveFailed");
         }
     }
     function handleBoardClick(event) {
         const target = event.target;
+        const editButton = target?.closest("[data-edit-task-id]");
+        if (editButton) {
+            const editTaskId = Number(editButton.getAttribute("data-edit-task-id"));
+            if (Number.isFinite(editTaskId)) {
+                openTaskModal(editTaskId);
+            }
+            return;
+        }
         const deleteButton = target?.closest("[data-delete-task-id]");
         if (!deleteButton) {
             return;
@@ -432,15 +502,15 @@ var TasksPage;
     async function deleteTaskAndRefresh(taskId) {
         try {
             await deleteTask(taskId);
-            showTasksMessage(i18n("tasks.message.deleted"), "success");
+            showTasksMessage("", "success", "tasks.message.deleted");
             await loadAndRenderTasks();
         }
         catch (error) {
             console.error("Error deleting task:", error);
-            showTasksMessage(i18n("tasks.message.deleteFailed"), "error");
+            showTasksMessage("", "error", "tasks.message.deleteFailed");
         }
     }
-    function openTaskModal() {
+    function openTaskModal(taskId) {
         if (!taskModalElement) {
             return;
         }
@@ -448,6 +518,11 @@ var TasksPage;
         closeSidebar();
         resetTaskForm();
         renderProjectOptions();
+        if (Number.isFinite(taskId)) {
+            editingTaskId = Number(taskId);
+            populateTaskFormForEditing(editingTaskId);
+        }
+        updateTaskModalCopy();
         taskModalElement.hidden = false;
         taskModalElement.setAttribute("aria-hidden", "false");
         document.body.classList.add("modal-open");
@@ -461,16 +536,7 @@ var TasksPage;
         taskModalElement.setAttribute("aria-hidden", "true");
         document.body.classList.remove("modal-open");
         clearTaskFormMessage();
-        taskFormElement?.reset();
-        if (taskProjectSelect) {
-            taskProjectSelect.value = selectedProjectContext?.projectId || EMPTY_PROJECT_ID;
-        }
-        if (taskStatusSelect) {
-            taskStatusSelect.value = "Todo";
-        }
-        if (taskPrioritySelect) {
-            taskPrioritySelect.value = "Medium";
-        }
+        resetTaskForm();
     }
     function handleTaskModalClick(event) {
         const target = event.target;
@@ -480,6 +546,7 @@ var TasksPage;
     }
     function resetTaskForm() {
         taskFormElement?.reset();
+        editingTaskId = null;
         if (taskStatusSelect) {
             taskStatusSelect.value = "Todo";
         }
@@ -489,22 +556,35 @@ var TasksPage;
         if (taskProjectSelect) {
             taskProjectSelect.value = selectedProjectContext?.projectId || EMPTY_PROJECT_ID;
         }
+        updateTaskModalCopy();
     }
-    function showTaskFormMessage(text, type = "") {
+function showTaskFormMessage(text, type = "", key = "", values) {
         if (!taskFormMessageElement) {
             return;
         }
-        taskFormMessageElement.textContent = text;
+        if (key) {
+            setDynamicText(taskFormMessageElement, key, values);
+        }
+        else {
+            clearDynamicText(taskFormMessageElement);
+            taskFormMessageElement.textContent = text;
+        }
         taskFormMessageElement.className = type ? `form-message ${type}` : "form-message";
     }
     function clearTaskFormMessage() {
         showTaskFormMessage("");
     }
-    function showTasksMessage(text, type = "") {
+function showTasksMessage(text, type = "", key = "", values) {
         if (!tasksMessageElement) {
             return;
         }
-        tasksMessageElement.textContent = text;
+        if (key) {
+            setDynamicText(tasksMessageElement, key, values);
+        }
+        else {
+            clearDynamicText(tasksMessageElement);
+            tasksMessageElement.textContent = text;
+        }
         tasksMessageElement.className = type ? `form-message ${type}` : "form-message";
     }
     async function openDatabase() {
@@ -541,6 +621,36 @@ var TasksPage;
             };
             request.onsuccess = () => {
                 resolve();
+            };
+        });
+    }
+    async function updateTask(taskId, task) {
+        const database = ensureDatabase();
+        return await new Promise((resolve, reject) => {
+            const transaction = database.transaction(TASKS_STORE_NAME, "readwrite");
+            const store = transaction.objectStore(TASKS_STORE_NAME);
+            const getRequest = store.get(taskId);
+            getRequest.onerror = () => {
+                reject(getRequest.error || new Error("Failed to read task for update."));
+            };
+            getRequest.onsuccess = () => {
+                const existingTask = getRequest.result;
+                if (!existingTask || typeof existingTask !== "object") {
+                    reject(new Error("Task not found for update."));
+                    return;
+                }
+                const putRequest = store.put({
+                    ...existingTask,
+                    ...task,
+                    id: taskId,
+                    createdAt: task.createdAt || existingTask.createdAt || new Date().toISOString()
+                });
+                putRequest.onerror = () => {
+                    reject(putRequest.error || new Error("Failed to update task."));
+                };
+                putRequest.onsuccess = () => {
+                    resolve();
+                };
             };
         });
     }
@@ -619,9 +729,83 @@ var TasksPage;
         return db;
     }
     async function loadAndRenderTasks() {
-        const tasks = await getAllTasks();
-        renderTasksBoard(tasks);
-        refreshVisibleProjectCompletionCards(tasks);
+        allTasks = await getAllTasks();
+        hasLoadedTasks = true;
+        renderFilteredTasks();
+    }
+    function renderFilteredTasks() {
+        const visibleTasks = sortTasks(getFilteredTasks(allTasks));
+        renderTasksBoard(visibleTasks);
+        refreshVisibleProjectCompletionCards(visibleTasks);
+    }
+    function getFilteredTasks(tasks) {
+        return tasks.filter((task) => matchesTaskFilters(task));
+    }
+    function matchesTaskFilters(task) {
+        const matchesPriority = taskFilters.priority === "all" || normalizePriority(task.priority) === taskFilters.priority;
+        const matchesStatus = taskFilters.status === "all" || normalizeStatus(task.status) === taskFilters.status;
+        return matchesPriority && matchesStatus;
+    }
+    function handleTaskFilterChange() {
+        taskFilters.priority = taskFilterPrioritySelect?.value || "all";
+        taskFilters.status = taskFilterStatusSelect?.value || "all";
+        taskFilters.sort = taskSortSelect?.value || "created-desc";
+        renderFilteredTasks();
+    }
+    function clearTaskFilters() {
+        taskFilters.priority = "all";
+        taskFilters.status = "all";
+        taskFilters.sort = "created-desc";
+        if (taskFilterPrioritySelect) {
+            taskFilterPrioritySelect.value = "all";
+        }
+        if (taskFilterStatusSelect) {
+            taskFilterStatusSelect.value = "all";
+        }
+        if (taskSortSelect) {
+            taskSortSelect.value = "created-desc";
+        }
+        renderFilteredTasks();
+    }
+    function sortTasks(tasks) {
+        const sort = taskFilters.sort;
+        const priorityRank = {
+            High: 3,
+            Medium: 2,
+            Low: 1
+        };
+        return [...tasks].sort((left, right) => {
+            if (sort === "created-asc" || sort === "created-desc") {
+                const leftTime = new Date(left.createdAt).getTime();
+                const rightTime = new Date(right.createdAt).getTime();
+                const safeLeftTime = Number.isNaN(leftTime) ? 0 : leftTime;
+                const safeRightTime = Number.isNaN(rightTime) ? 0 : rightTime;
+                return sort === "created-asc" ? safeLeftTime - safeRightTime : safeRightTime - safeLeftTime;
+            }
+            if (sort === "due-asc" || sort === "due-desc") {
+                const leftTime = readSortableDueDate(left.dueDate);
+                const rightTime = readSortableDueDate(right.dueDate);
+                return sort === "due-asc" ? leftTime - rightTime : rightTime - leftTime;
+            }
+            if (sort === "priority-desc") {
+                const leftPriority = priorityRank[normalizePriority(left.priority)] || 0;
+                const rightPriority = priorityRank[normalizePriority(right.priority)] || 0;
+                if (rightPriority !== leftPriority) {
+                    return rightPriority - leftPriority;
+                }
+                const leftTime = new Date(left.createdAt).getTime();
+                const rightTime = new Date(right.createdAt).getTime();
+                return rightTime - leftTime;
+            }
+            return 0;
+        });
+    }
+    function readSortableDueDate(dateString) {
+        if (!isIsoDateValue(dateString)) {
+            return Number.MAX_SAFE_INTEGER;
+        }
+        const [year, month, day] = dateString.split("-").map(Number);
+        return new Date(year, month - 1, day).getTime();
     }
     function renderTasksBoard(tasks) {
         if (!tasksBoardElement) {
@@ -634,27 +818,20 @@ var TasksPage;
             "In Progress": [],
             Done: []
         };
-        tasks
-            .sort((left, right) => {
-            const leftTime = new Date(left.createdAt).getTime();
-            const rightTime = new Date(right.createdAt).getTime();
-            return rightTime - leftTime;
-        })
-            .forEach((task) => {
+        tasks.forEach((task) => {
             groupedTasks[normalizeStatus(task.status)].push(task);
         });
         tasksBoardElement.innerHTML = TASK_COLUMNS.map((column) => renderTaskColumn(column, groupedTasks[column.id])).join("");
         initializeEmptyColumnAnimations();
         initializeTaskBoardSorting();
         updateTaskCountBadges();
-        refreshAos();
     }
     function renderTaskColumn(column, tasks) {
         const cardsMarkup = tasks.length > 0
             ? tasks.map((task) => renderTaskCard(task)).join("")
             : renderEmptyTaskState(column);
         return `
-      <section class="kanban-column ${escapeHtml(column.className)}" aria-labelledby="task-column-${escapeHtml(getColumnDomId(column.id))}" data-column-status="${escapeHtml(column.id)}" data-aos="fade-up">
+      <section class="kanban-column ${escapeHtml(column.className)}" aria-labelledby="task-column-${escapeHtml(getColumnDomId(column.id))}" data-column-status="${escapeHtml(column.id)}">
         <header class="kanban-column-header">
           <div class="kanban-column-copy">
             <h3 id="task-column-${escapeHtml(getColumnDomId(column.id))}" class="kanban-column-title">${escapeHtml(i18n(column.titleKey))}</h3>
@@ -763,7 +940,7 @@ var TasksPage;
         }
         catch (error) {
             console.error("Error updating task status:", error);
-            showTasksMessage(i18n("tasks.message.statusUpdateFailed"), "error");
+            showTasksMessage("", "error", "tasks.message.statusUpdateFailed");
             await loadAndRenderTasks();
         }
     }
@@ -793,8 +970,9 @@ var TasksPage;
         const descriptionMarkup = task.description
             ? `<p class="task-card-description">${escapeHtml(task.description)}</p>`
             : `<p class="task-card-description is-empty">${escapeHtml(i18n("tasks.card.noDescription"))}</p>`;
-        const dueDateLabel = task.dueDate ? formatDueDate(task.dueDate) : i18n("tasks.card.noDueDate");
+        const dueDateDisplay = getDueDateDisplay(task.dueDate);
         const projectLabel = projectName || i18n("tasks.form.noProjectOption");
+        const editLabel = getSafeTaskEditLabel();
         return `
       <article class="project-card task-card" data-task-id="${task.id}">
         <div class="task-card-header">
@@ -802,15 +980,114 @@ var TasksPage;
             <h3 class="task-card-title">${escapeHtml(task.title)}</h3>
             <span class="task-priority-badge ${escapeHtml(priorityClass)}">${escapeHtml(formatPriorityLabel(task.priority))}</span>
           </div>
-          <button type="button" class="danger-button task-delete-button" data-delete-task-id="${task.id}">${escapeHtml(i18n("tasks.card.delete"))}</button>
+          <div class="task-card-actions">
+            <button type="button" class="task-edit-button" data-edit-task-id="${task.id}">
+              <span class="task-edit-button-icon" aria-hidden="true">✏️</span>
+              <span>${escapeHtml(editLabel)}</span>
+            </button>
+            <button type="button" class="danger-button task-delete-button" data-delete-task-id="${task.id}">${escapeHtml(i18n("tasks.card.delete"))}</button>
+          </div>
         </div>
         ${descriptionMarkup}
         <div class="task-meta-list">
           <span class="task-meta-item"><strong>${escapeHtml(i18n("tasks.card.projectLabel"))}</strong> ${escapeHtml(projectLabel)}</span>
-          <span class="task-meta-item"><strong>${escapeHtml(i18n("tasks.card.dueLabel"))}</strong> ${escapeHtml(dueDateLabel)}</span>
+          <span class="task-meta-item"><strong>${escapeHtml(i18n("tasks.card.dueLabel"))}</strong> <span class="task-due-date ${escapeHtml(dueDateDisplay.className)}">${dueDateDisplay.icon}${escapeHtml(dueDateDisplay.label)}</span></span>
         </div>
       </article>
     `;
+    }
+    function getDueDateDisplay(dateString) {
+        if (!dateString) {
+            return {
+                label: i18n("tasks.card.noDueDate"),
+                className: "",
+                icon: ""
+            };
+        }
+        const label = formatDueDate(dateString);
+        const urgency = getDueDateUrgency(dateString);
+        if (urgency === "overdue") {
+            return {
+                label,
+                className: "is-overdue",
+                icon: '<span class="task-due-date-icon" aria-hidden="true">⚠️</span>'
+            };
+        }
+        if (urgency === "warning") {
+            return {
+                label,
+                className: "is-warning",
+                icon: '<span class="task-due-date-icon" aria-hidden="true">⚠️</span>'
+            };
+        }
+        return {
+            label,
+            className: "",
+            icon: ""
+        };
+    }
+    function getEditingTask() {
+        if (editingTaskId === null) {
+            return null;
+        }
+        return allTasks.find((task) => task.id === editingTaskId) || null;
+    }
+    function getSafeTaskEditLabel() {
+        const translatedLabel = i18n("tasks.card.edit");
+        return translatedLabel && translatedLabel !== "tasks.card.edit" ? translatedLabel : "Edit";
+    }
+    function populateTaskFormForEditing(taskId) {
+        const task = allTasks.find((item) => item.id === taskId);
+        if (!task) {
+            editingTaskId = null;
+            updateTaskModalCopy();
+            return;
+        }
+        if (taskTitleInput) {
+            taskTitleInput.value = task.title || "";
+        }
+        if (taskDescriptionInput) {
+            taskDescriptionInput.value = task.description || "";
+        }
+        if (taskStatusSelect) {
+            taskStatusSelect.value = normalizeStatus(task.status);
+        }
+        if (taskPrioritySelect) {
+            taskPrioritySelect.value = normalizePriority(task.priority);
+        }
+        if (taskDueDateInput) {
+            taskDueDateInput.value = task.dueDate || "";
+        }
+        if (taskProjectSelect) {
+            taskProjectSelect.value = task.projectId || EMPTY_PROJECT_ID;
+        }
+    }
+    function updateTaskModalCopy() {
+        const isEditing = editingTaskId !== null;
+        if (taskModalTitleElement) {
+            taskModalTitleElement.textContent = i18n(isEditing ? "tasks.editTask" : "tasks.addTask");
+        }
+        if (saveTaskButton) {
+            saveTaskButton.textContent = i18n(isEditing ? "tasks.saveEdit" : "tasks.saveTask");
+        }
+    }
+    function getDueDateUrgency(dateString) {
+        if (!isIsoDateValue(dateString)) {
+            return "";
+        }
+        const [year, month, day] = dateString.split("-").map(Number);
+        const dueDate = new Date(year, month - 1, day);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        dueDate.setHours(0, 0, 0, 0);
+        const diffInDays = Math.round((dueDate.getTime() - today.getTime()) / 86400000);
+        if (diffInDays < 0) {
+            return "overdue";
+        }
+        if (diffInDays <= 2) {
+            return "warning";
+        }
+        return "";
     }
     function getProjectNameById(projectId) {
         if (!projectId) {
@@ -854,18 +1131,37 @@ var TasksPage;
         }
         return "Medium";
     }
-    function formatTaskContextStatus(status) {
-        const normalizedStatus = normalizeStatus(status || "");
-        if (normalizedStatus === "Done") {
-            return i18n("tasks.status.done");
+    function formatProjectContextStatus(statusKey, status) {
+        if (statusKey) {
+            return i18n(statusKey);
         }
-        if (normalizedStatus === "In Progress") {
-            return i18n("tasks.status.inProgress");
+        const normalizedStatusKey = getLegacyProjectContextStatusKey(status);
+        return normalizedStatusKey ? i18n(normalizedStatusKey) : status || "";
+    }
+    function getLegacyProjectContextStatusKey(status) {
+        const normalized = (status || "").trim().toLowerCase();
+        if (!normalized) {
+            return "";
         }
-        if (normalizedStatus === "Todo") {
-            return i18n("tasks.status.todo");
+        if (["planning", "规划中", "planificación"].includes(normalized)) {
+            return "status.planning";
         }
-        return status || "";
+        if (["active", "activo"].includes(normalized)) {
+            return "status.active";
+        }
+        if (["in review", "in-review", "评审中", "en revisión"].includes(normalized)) {
+            return "status.inReview";
+        }
+        if (["done", "已完成", "hecho"].includes(normalized)) {
+            return "status.done";
+        }
+        if (["start next", "start-next", "接下来开始", "empezar después"].includes(normalized)) {
+            return "projects.startNext";
+        }
+        if (["in progress", "in-progress", "进行中", "en progreso"].includes(normalized)) {
+            return "projects.inProgress";
+        }
+        return "";
     }
     function formatPriorityLabel(priority) {
         const normalizedPriority = normalizePriority(priority || "");
@@ -999,7 +1295,7 @@ var TasksPage;
         return "high";
     }
     function formatProjectCompletionLabel(percentage) {
-        return `${percentage}% complete`;
+        return i18n("common.percentComplete", { percent: percentage });
     }
     function isCompletedTaskStatus(status) {
         return typeof status === "string" && status.trim().toLowerCase() === "done";
@@ -1016,18 +1312,14 @@ var TasksPage;
             name: "Anna Ivanova",
             email: "anna.ivanova@example.com"
         };
-        if (userNameElement) {
-            userNameElement.textContent = currentUser.name;
-        }
+        renderUserName();
         updateUserAvatar(currentUser.name);
     }
     async function loadUserData() {
         try {
             const data = await requestWithAuth("/auth/me");
             currentUser = data.user;
-            if (userNameElement) {
-                userNameElement.textContent = currentUser.name;
-            }
+            renderUserName();
             updateUserAvatar(currentUser.name);
         }
         catch (error) {
@@ -1035,10 +1327,33 @@ var TasksPage;
             if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
                 return;
             }
-            if (userNameElement) {
-                userNameElement.textContent = i18n("common.unavailable");
-            }
+            renderUserName(i18n("common.unavailable"));
             updateUserAvatar(i18n("common.unavailable"));
+        }
+    }
+    function renderUserName(fallback = "") {
+        if (!userNameElement) {
+            return;
+        }
+        const name = getDisplayName(fallback);
+        userNameElement.textContent = name;
+    }
+    function getDisplayName(fallback = "") {
+        const storedName = readStoredProfileName();
+        return storedName || currentUser?.name?.trim() || fallback;
+    }
+    function readStoredProfileName() {
+        try {
+            const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+            if (!raw) {
+                return "";
+            }
+            const parsed = JSON.parse(raw);
+            return typeof parsed?.profileName === "string" ? parsed.profileName.trim() : "";
+        }
+        catch (error) {
+            console.warn("Failed to read stored profile name:", error);
+            return "";
         }
     }
     function getStoredToken() {

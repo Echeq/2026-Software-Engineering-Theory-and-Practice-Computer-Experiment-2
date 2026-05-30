@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n-document-title="app.title.dashboard">SPMP | Dashboard</title>
   <link rel="stylesheet" href="../css/dashboard.css">
-  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="../js/i18n.js" defer></script>
 </head>
 <body>
@@ -48,7 +47,7 @@
       <div class="sidebar-footer">
         <div class="user-panel" aria-live="polite">
           <span id="user-avatar" class="user-avatar" aria-hidden="true">U</span>
-          <strong id="user-name" class="user-display" data-i18n="common.loading">Loading...</strong>
+          <strong id="user-name" class="user-display"></strong>
         </div>
         <button id="logout-btn" type="button" class="secondary-button sidebar-logout"><svg class="button-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5H5.5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2H8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 6.5 15 10l-4 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 10H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span data-i18n="sidebar.logout">Log Out</span></button>
       </div>
@@ -80,26 +79,22 @@
         <div class="topbar-actions"></div>
       </header>
 
-      <section class="greeting-banner" data-i18n-aria-label="app.aria.dailyGreeting" aria-label="Daily greeting" data-aos="fade-down">
+      <section class="greeting-banner" data-i18n-aria-label="app.aria.dailyGreeting" aria-label="Daily greeting">
         <p id="local-greeting-title" class="greeting-title" aria-live="polite">Good morning</p>
         <time id="local-greeting-date" class="greeting-date" aria-live="polite"></time>
       </section>
 
       <section class="overview-panel" aria-labelledby="dashboard-title">
         <div class="overview-copy">
-          <span class="brand-tag">SPMP</span>
-          <h1 id="dashboard-title" data-i18n="dashboard.title">Projects Dashboard</h1>
+          <div class="page-title-row">
+            <h1 id="dashboard-title" data-i18n="dashboard.title">Projects Dashboard</h1>
+          </div>
           <p class="subtitle" data-i18n="dashboard.subtitle">
             Track projects, manage tasks, and stay organized.
           </p>
         </div>
 
         <div class="overview-actions">
-          <div class="overview-note">
-            <span class="overview-note-label" data-i18n="dashboard.currentView">Current View</span>
-            <strong data-i18n="dashboard.currentViewName">Dashboard Overview</strong>
-            <p data-i18n="dashboard.currentViewText">Review active projects and create a new workspace when needed.</p>
-          </div>
           <button id="new-project-btn" type="button" class="submit-button" data-i18n="dashboard.createProject">Create New Project</button>
         </div>
       </section>
@@ -114,7 +109,7 @@
         </div>
 
         <div class="dashboard-stats-grid">
-          <article class="project-card dashboard-chart-card" data-aos="fade-up">
+          <article class="project-card dashboard-chart-card">
             <div class="dashboard-chart-copy">
               <h3 data-i18n="dashboard.projectStatusTitle">Project Status</h3>
             </div>
@@ -123,7 +118,7 @@
             </div>
           </article>
 
-          <article class="project-card dashboard-chart-card" data-aos="fade-up">
+          <article class="project-card dashboard-chart-card">
             <div class="dashboard-chart-copy">
               <h3 data-i18n="dashboard.taskOverviewTitle">Task Overview</h3>
             </div>
@@ -224,7 +219,6 @@
     <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
       <div class="modal-header">
         <div>
-          <span class="brand-tag">SPMP</span>
           <h2 id="project-modal-title" data-i18n="dashboard.projectModalTitle">Create New Project</h2>
           <p class="subtitle" data-i18n="dashboard.projectModalSubtitle">Add a new project to your dashboard.</p>
         </div>
@@ -269,165 +263,6 @@
   </div>
 
   <script src="../js/dashboard.js" defer></script>
-  <script>
-    (() => {
-      const greetingTitleElement = document.getElementById("local-greeting-title");
-      const greetingDateElement = document.getElementById("local-greeting-date");
-      const userNameElement = document.getElementById("user-name");
-      const hiddenUserValues = new Set(["", "Loading...", "Unavailable", "不可用", "No disponible"]);
-
-      if (!greetingTitleElement || !greetingDateElement) {
-        return;
-      }
-
-      function getGreetingByHour(hour) {
-        if (hour >= 5 && hour < 12) {
-          return "Good morning";
-        }
-
-        if (hour >= 12 && hour < 18) {
-          return "Good afternoon";
-        }
-
-        if (hour >= 18 && hour < 22) {
-          return "Good evening";
-        }
-
-        return "Good night";
-      }
-
-      function getDisplayName() {
-        const name = userNameElement?.textContent?.trim() || "";
-        return hiddenUserValues.has(name) ? "" : name;
-      }
-
-      function getDisplayLocale() {
-        return document.documentElement.lang || navigator.language || undefined;
-      }
-
-      function formatDateForTimeElement(date) {
-        const year = String(date.getFullYear());
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        return `${year}-${month}-${day}`;
-      }
-
-      function updateGreetingBanner() {
-        const now = new Date();
-        const greeting = getGreetingByHour(now.getHours());
-        const displayName = getDisplayName();
-
-        greetingTitleElement.textContent = displayName ? `${greeting}, ${displayName}` : greeting;
-        greetingDateElement.textContent = new Intl.DateTimeFormat(getDisplayLocale(), {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          year: "numeric"
-        }).format(now);
-        greetingDateElement.dateTime = formatDateForTimeElement(now);
-      }
-
-      function startMinuteUpdates() {
-        const millisecondsUntilNextMinute = 60000 - (Date.now() % 60000);
-
-        window.setTimeout(() => {
-          updateGreetingBanner();
-          window.setInterval(updateGreetingBanner, 60000);
-        }, millisecondsUntilNextMinute);
-      }
-
-      updateGreetingBanner();
-      startMinuteUpdates();
-
-      if (userNameElement) {
-        const userNameObserver = new MutationObserver(() => {
-          updateGreetingBanner();
-        });
-
-        userNameObserver.observe(userNameElement, {
-          childList: true,
-          characterData: true,
-          subtree: true
-        });
-      }
-
-      document.addEventListener("app-language-change", updateGreetingBanner);
-      document.addEventListener("visibilitychange", () => {
-        if (!document.hidden) {
-          updateGreetingBanner();
-        }
-      });
-      window.addEventListener("focus", updateGreetingBanner);
-      window.addEventListener("pageshow", updateGreetingBanner);
-    })();
-  </script>
-  <script>
-    (() => {
-      const greetingTitleElement = document.getElementById("local-greeting-title");
-      const greetingDateElement = document.getElementById("local-greeting-date");
-      const userNameElement = document.getElementById("user-name");
-
-      if (!greetingTitleElement || !greetingDateElement) {
-        return;
-      }
-
-      function getLocalizedGreeting(hour) {
-        if (hour >= 5 && hour < 12) {
-          return window.I18n?.t("dashboard.greetingMorningFallback") || "Good morning";
-        }
-        if (hour >= 12 && hour < 18) {
-          return window.I18n?.t("dashboard.greetingAfternoonFallback") || "Good afternoon";
-        }
-        if (hour >= 18 && hour < 22) {
-          return window.I18n?.t("dashboard.greetingEveningFallback") || "Good evening";
-        }
-        return window.I18n?.t("dashboard.greetingNightFallback") || "Good night";
-      }
-
-      function getDisplayName() {
-        const name = userNameElement?.textContent?.trim() || "";
-        const hiddenValues = new Set([
-          "",
-          window.I18n?.t("common.loading") || "Loading...",
-          window.I18n?.t("common.unavailable") || "Unavailable"
-        ]);
-        return hiddenValues.has(name) ? "" : name;
-      }
-
-      function updateLocalizedGreeting() {
-        const now = new Date();
-        const greeting = getLocalizedGreeting(now.getHours());
-        const displayName = getDisplayName();
-        const locale = document.documentElement.lang || navigator.language || undefined;
-
-        greetingTitleElement.textContent = displayName ? `${greeting}, ${displayName}` : greeting;
-        greetingDateElement.textContent = new Intl.DateTimeFormat(locale, {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          year: "numeric"
-        }).format(now);
-      }
-
-      function scheduleLocalizedGreetingUpdate() {
-        updateLocalizedGreeting();
-        window.requestAnimationFrame(updateLocalizedGreeting);
-      }
-
-      document.addEventListener("app-language-change", scheduleLocalizedGreetingUpdate, true);
-      if (userNameElement) {
-        new MutationObserver(scheduleLocalizedGreetingUpdate).observe(userNameElement, {
-          childList: true,
-          characterData: true,
-          subtree: true
-        });
-      }
-      window.addEventListener("focus", updateLocalizedGreeting);
-      window.addEventListener("pageshow", updateLocalizedGreeting);
-      updateLocalizedGreeting();
-    })();
-  </script>
-  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>

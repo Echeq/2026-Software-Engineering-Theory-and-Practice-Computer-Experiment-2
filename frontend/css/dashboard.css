@@ -706,7 +706,6 @@ body[data-theme="dark"] .notification-center-panel {
   font-size: 14px;
 }
 
-.brand-tag,
 .section-tag {
   display: inline-flex;
   align-items: center;
@@ -902,10 +901,6 @@ body[data-theme="dark"] .theme-toggle::before {
   max-width: 540px;
 }
 
-.brand-tag {
-  margin-bottom: 8px;
-}
-
 .overview-copy h1,
 .modal-header h2 {
   margin-bottom: 8px;
@@ -927,36 +922,20 @@ body[data-theme="dark"] .theme-toggle::before {
 
 .overview-actions {
   display: grid;
-  align-content: space-between;
+  align-content: start;
+  justify-items: end;
   gap: 12px;
 }
 
-.overview-note {
-  display: grid;
-  gap: 6px;
-  padding: 14px;
-  border: 1px solid var(--surface-border);
-  border-radius: 12px;
-  background: var(--surface-muted);
+.page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
-.overview-note-label {
-  color: var(--text-subtle);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.overview-note strong {
-  font-size: 15px;
-  letter-spacing: -0.02em;
-}
-
-.overview-note p {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.5;
+.page-title-row h1 {
+  margin-bottom: 0;
 }
 
 .projects-section {
@@ -1353,6 +1332,13 @@ body[data-theme="dark"] .project-card:hover {
   color: #16a34a;
 }
 
+.project-progress-counter {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 body[data-theme="dark"] .project-progress-track {
   background: rgba(100, 116, 139, 0.28);
 }
@@ -1558,11 +1544,6 @@ body[data-theme="dark"] .project-card-link:focus-visible {
   white-space: normal;
 }
 
-.empty-column-card {
-  min-height: 120px;
-  padding: 18px;
-}
-
 .task-modal-card {
   width: min(100%, 620px);
 }
@@ -1582,12 +1563,76 @@ body[data-theme="dark"] .project-card-link:focus-visible {
   gap: 14px;
 }
 
-.task-card-header,
-.task-card-footer {
+.task-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 10px;
+}
+
+.task-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.task-card-actions .task-edit-button,
+.task-card-actions .task-delete-button {
+  width: 96px;
+  min-width: 96px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.task-edit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(79, 70, 229, 0.34);
+  border-radius: 10px;
+  background: rgba(79, 70, 229, 0.06);
+  color: #4f46e5;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+}
+
+.task-edit-button:hover,
+.task-edit-button:focus-visible {
+  outline: none;
+  transform: translateY(-1px);
+  border-color: rgba(79, 70, 229, 0.56);
+  background: rgba(79, 70, 229, 0.12);
+  box-shadow: 0 8px 16px rgba(79, 70, 229, 0.14);
+}
+
+.task-edit-button-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+body[data-theme="dark"] .task-edit-button {
+  border-color: rgba(165, 180, 252, 0.4);
+  background: rgba(79, 70, 229, 0.12);
+  color: #c7d2fe;
+}
+
+body[data-theme="dark"] .task-edit-button:hover,
+body[data-theme="dark"] .task-edit-button:focus-visible {
+  border-color: rgba(165, 180, 252, 0.68);
+  background: rgba(79, 70, 229, 0.2);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.28);
+  color: #eef2ff;
 }
 
 .task-card-title-wrap {
@@ -1630,7 +1675,29 @@ body[data-theme="dark"] .project-card-link:focus-visible {
   font-weight: 700;
 }
 
+.task-due-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.task-due-date-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.task-due-date.is-warning {
+  color: #F59E0B;
+}
+
+.task-due-date.is-overdue {
+  color: #EF4444;
+}
+
 .task-priority-badge {
+  width: 84px;
+  min-width: 84px;
+  height: 26px;
   min-height: 26px;
   display: inline-flex;
   align-items: center;
@@ -1682,9 +1749,9 @@ body[data-theme="dark"] .task-priority-badge.priority-high {
 }
 
 .task-delete-button {
-  min-width: 78px;
-  min-height: 34px;
-  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .task-empty-state {
@@ -1750,18 +1817,21 @@ body[data-theme="dark"] .task-empty-lottie {
   margin-bottom: 12px;
 }
 
-.detail-panel {
-  padding: 18px;
-  border: 1px solid var(--surface-border);
-  border-radius: 12px;
-  background: var(--surface);
+.tasks-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
-.detail-panel p {
-  max-width: 62ch;
-  color: var(--muted);
-  line-height: 1.5;
-  font-size: 13px;
+.tasks-filters .sort-field {
+  flex: 0 1 220px;
+}
+
+.tasks-filters .secondary-button {
+  min-height: 40px;
+  padding: 0 14px;
 }
 
 .settings-form {
@@ -2303,8 +2373,7 @@ body[data-theme="dark"] .danger-button {
     align-items: flex-start;
   }
 
-  .task-card-header,
-  .task-card-footer {
+  .task-card-header {
     flex-direction: column;
     align-items: stretch;
   }
@@ -2394,8 +2463,7 @@ body[data-theme="dark"] .danger-button {
 
   .project-card,
   .state-card,
-  .kanban-column,
-  .detail-panel {
+  .kanban-column {
     padding: 14px;
   }
 
@@ -2512,13 +2580,10 @@ body:not([data-theme="dark"]) .topbar-label,
 body:not([data-theme="dark"]) .subtitle,
 body:not([data-theme="dark"]) .section-subtitle,
 body:not([data-theme="dark"]) .project-description,
-body:not([data-theme="dark"]) .overview-note p,
 body:not([data-theme="dark"]) .state-card p,
-body:not([data-theme="dark"]) .detail-panel p,
 body:not([data-theme="dark"]) .settings-card-header p,
 body:not([data-theme="dark"]) .settings-inline-note,
 body:not([data-theme="dark"]) .search-label,
-body:not([data-theme="dark"]) .overview-note-label,
 body:not([data-theme="dark"]) .project-meta,
 body:not([data-theme="dark"]) .sidebar-brand-copy span {
   color: #475569;
@@ -2526,7 +2591,6 @@ body:not([data-theme="dark"]) .sidebar-brand-copy span {
 }
 
 body:not([data-theme="dark"]) .project-name,
-body:not([data-theme="dark"]) .overview-note strong,
 body:not([data-theme="dark"]) .section-copy h2,
 body:not([data-theme="dark"]) .overview-copy h1,
 body:not([data-theme="dark"]) .modal-header h2,
@@ -2544,7 +2608,6 @@ body:not([data-theme="dark"]) .form-group textarea {
 
 body:not([data-theme="dark"]) .project-status,
 body:not([data-theme="dark"]) .project-task-count,
-body:not([data-theme="dark"]) .brand-tag,
 body:not([data-theme="dark"]) .section-tag,
 body:not([data-theme="dark"]) .filter-button,
 body:not([data-theme="dark"]) .submit-button,
@@ -2595,14 +2658,12 @@ body:not([data-theme="dark"]) .danger-button {
   .subtitle,
   .section-subtitle,
   .project-description,
-  .detail-panel p,
   .topbar-label {
     font-size: 12px;
   }
 
   .project-status,
   .project-task-count,
-  .brand-tag,
   .section-tag {
     font-size: 8px;
   }

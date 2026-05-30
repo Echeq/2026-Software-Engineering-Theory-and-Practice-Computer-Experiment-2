@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n-document-title="app.title.settings">SPMP | Settings</title>
   <link rel="stylesheet" href="../css/dashboard.css">
-  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="../js/i18n.js" defer></script>
 </head>
 <body>
@@ -47,7 +46,7 @@
       <div class="sidebar-footer">
         <div class="user-panel" aria-live="polite">
           <span id="user-avatar" class="user-avatar" aria-hidden="true">U</span>
-          <strong id="user-name" class="user-display" data-i18n="common.loading">Loading...</strong>
+          <strong id="user-name" class="user-display"></strong>
         </div>
         <button id="logout-btn" type="button" class="secondary-button sidebar-logout"><svg class="button-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5H5.5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2H8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 6.5 15 10l-4 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 10H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span data-i18n="sidebar.logout">Log Out</span></button>
       </div>
@@ -81,26 +80,18 @@
 
       <section class="overview-panel" aria-labelledby="settings-page-title">
         <div class="overview-copy">
-          <span class="brand-tag">SPMP</span>
-          <h1 id="settings-page-title" data-i18n="settings.title">Workspace Settings</h1>
+          <div class="page-title-row">
+            <h1 id="settings-page-title" data-i18n="settings.title">Workspace Settings</h1>
+          </div>
           <p class="subtitle" data-i18n="settings.subtitle">
             Manage your profile and preferences.
           </p>
-        </div>
-
-        <div class="overview-actions">
-          <div class="overview-note">
-            <span class="overview-note-label" data-i18n="settings.stateLabel">Local State</span>
-            <strong data-i18n="settings.stateName">Frontend Store</strong>
-            <p data-i18n="settings.stateText">Changes are saved locally on this device.</p>
-          </div>
         </div>
       </section>
 
       <section class="projects-section settings-section" aria-labelledby="settings-section-title">
         <div class="section-header">
           <div class="section-copy">
-            <span class="section-tag" data-i18n="settings.sectionTag">Preferences</span>
             <h2 id="settings-section-title" data-i18n="settings.sectionTitle">Settings Form</h2>
             <p class="section-subtitle" data-i18n="settings.sectionSubtitle">Update local profile inputs, account actions, and appearance controls.</p>
           </div>
@@ -109,7 +100,7 @@
         <p class="form-message" id="settings-message" aria-live="polite"></p>
 
         <form id="settings-form" class="settings-form" novalidate>
-          <article class="settings-card" data-aos="fade-up">
+          <article class="settings-card">
             <div class="settings-card-header">
               <h3 data-i18n="settings.profileTitle">Profile</h3>
               <p data-i18n="settings.profileText">Edit your name and email in local frontend state.</p>
@@ -144,7 +135,7 @@
             </div>
           </article>
 
-          <article class="settings-card" data-aos="fade-up">
+          <article class="settings-card">
             <div class="settings-card-header">
               <h3 data-i18n="settings.accountTitle">Account</h3>
               <p data-i18n="settings.accountText">Account security actions are available here as frontend-only interactions.</p>
@@ -156,7 +147,7 @@
             </div>
           </article>
 
-          <article class="settings-card" data-aos="fade-up">
+          <article class="settings-card">
             <div class="settings-card-header">
               <h3 data-i18n="settings.notificationsTitle">Notification preferences</h3>
               <p data-i18n="settings.notificationsText">Choose which alerts stay enabled on this device.</p>
@@ -209,7 +200,7 @@
             </div>
           </article>
 
-          <article class="settings-card" data-aos="fade-up">
+          <article class="settings-card">
             <div class="settings-card-header">
               <h3 data-i18n="settings.appearanceTitle">Appearance</h3>
               <p data-i18n="settings.appearanceText">Switch between light and dark mode and keep the choice in local state.</p>
@@ -232,7 +223,7 @@
             </div>
           </article>
 
-          <article class="settings-card" data-aos="fade-up">
+          <article class="settings-card">
             <div class="settings-card-header">
               <h3 data-i18n="settings.displayTitle">Display preferences</h3>
               <p data-i18n="settings.displayText">Choose how the projects page should open by default on this device.</p>
@@ -250,7 +241,7 @@
             </div>
           </article>
 
-          <article class="settings-card settings-card-danger" data-aos="fade-up">
+          <article class="settings-card settings-card-danger">
             <div class="settings-card-header">
               <h3 data-i18n="settings.dangerTitle">Reset &amp; Clear</h3>
               <p data-i18n="settings.dangerText">Remove all locally saved preferences and session data from this browser.</p>
@@ -271,7 +262,6 @@
     <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="change-password-modal-title">
       <div class="modal-header">
         <div>
-          <span class="brand-tag">SPMP</span>
           <h2 id="change-password-modal-title" data-i18n="settings.passwordModalTitle">Change Password</h2>
           <p class="subtitle" data-i18n="settings.passwordModalSubtitle">This frontend-only flow validates the form locally and does not contact the backend.</p>
         </div>
@@ -373,6 +363,5 @@
   </div>
 
   <script src="../js/settings.js" defer></script>
-  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 </body>
 </html>

@@ -558,13 +558,6 @@ body[data-theme="dark"] .submit-button:hover {
     padding: 8px;
   }
 
-  .language-switcher {
-    top: 8px;
-    right: 8px;
-    left: 8px;
-    justify-content: center;
-  }
-
   .auth-page-controls {
     top: 8px;
     right: 8px;

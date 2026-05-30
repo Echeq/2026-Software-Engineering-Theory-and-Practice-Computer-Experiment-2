@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n-document-title="app.title.tasks">SPMP | Tasks</title>
   <link rel="stylesheet" href="../css/dashboard.css">
-  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="../js/i18n.js" defer></script>
   <style>
     .task-board-section .kanban-list {
@@ -75,7 +74,7 @@
       <div class="sidebar-footer">
         <div class="user-panel" aria-live="polite">
           <span id="user-avatar" class="user-avatar" aria-hidden="true">U</span>
-          <strong id="user-name" class="user-display" data-i18n="common.loading">Loading...</strong>
+          <strong id="user-name" class="user-display"></strong>
         </div>
         <button id="logout-btn" type="button" class="secondary-button sidebar-logout"><svg class="button-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5H5.5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2H8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 6.5 15 10l-4 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 10H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span data-i18n="sidebar.logout">Log Out</span></button>
       </div>
@@ -109,34 +108,67 @@
 
       <section class="overview-panel" aria-labelledby="tasks-page-title">
         <div class="overview-copy">
-          <span class="brand-tag">SPMP</span>
-          <h1 id="tasks-page-title" data-i18n="tasks.title">Tasks Workspace</h1>
+          <div class="page-title-row">
+            <h1 id="tasks-page-title" data-i18n="tasks.title">Tasks Workspace</h1>
+          </div>
           <p id="tasks-page-subtitle" class="subtitle" data-i18n="tasks.subtitleDefault">
             Manage tasks across your projects.
           </p>
         </div>
-
-        <div class="overview-actions">
-          <div class="overview-note">
-            <span class="overview-note-label" data-i18n="tasks.selectedProject">Selected Project</span>
-            <strong id="selected-project-name" data-i18n="tasks.noProject">No project selected</strong>
-            <p id="selected-project-meta" data-i18n="tasks.noProjectMeta">Choose a project card from the projects board to view task context.</p>
-          </div>
-        </div>
       </section>
+
+      <div hidden aria-hidden="true">
+        <strong id="selected-project-name" data-i18n="tasks.noProject">No project selected</strong>
+        <p id="selected-project-meta" data-i18n="tasks.noProjectMeta">Choose a project card from the projects board to view task context.</p>
+      </div>
 
       <section class="projects-section task-board-section" aria-labelledby="task-board-title">
         <div class="section-header">
           <div class="section-copy">
-            <span class="section-tag" data-i18n="tasks.localStorageTag">IndexedDB</span>
+            <span class="section-tag" data-i18n="tasks.localStorageTag">Local Tasks</span>
             <h2 id="task-board-title" data-i18n="tasks.localBoardTitle">Local Task Board</h2>
-            <p class="section-subtitle">Your local task board — powered by IndexedDB.</p>
+            <p class="section-subtitle" data-i18n="tasks.localBoardSubtitle">Your local task board powered by IndexedDB.</p>
           </div>
 
           <button id="open-task-modal-btn" type="button" class="submit-button" data-i18n="tasks.addTask">Add Task</button>
         </div>
 
         <p class="form-message" id="tasks-message" aria-live="polite"></p>
+
+        <div class="tasks-filters" aria-label="Task filters">
+          <label class="sort-field" for="task-filter-priority">
+            <span class="search-label" data-i18n="tasks.filters.priority">Priority</span>
+            <select id="task-filter-priority" class="sort-select">
+              <option value="all" data-i18n="dashboard.filter.all">All</option>
+              <option value="High" data-i18n="tasks.priority.high">High</option>
+              <option value="Medium" data-i18n="tasks.priority.medium">Medium</option>
+              <option value="Low" data-i18n="tasks.priority.low">Low</option>
+            </select>
+          </label>
+
+          <label class="sort-field" for="task-filter-status">
+            <span class="search-label" data-i18n="tasks.filters.status">Status</span>
+            <select id="task-filter-status" class="sort-select">
+              <option value="all" data-i18n="dashboard.filter.all">All</option>
+              <option value="Todo" data-i18n="tasks.status.todo">To-Do</option>
+              <option value="In Progress" data-i18n="tasks.status.inProgress">In Progress</option>
+              <option value="Done" data-i18n="tasks.status.done">Done</option>
+            </select>
+          </label>
+
+          <label class="sort-field" for="task-sort-select">
+            <span class="search-label" data-i18n="tasks.sort.label">Sort</span>
+            <select id="task-sort-select" class="sort-select">
+              <option value="created-desc" data-i18n="tasks.sort.createdDesc">Date created: newest first</option>
+              <option value="created-asc" data-i18n="tasks.sort.createdAsc">Date created: oldest first</option>
+              <option value="due-asc" data-i18n="tasks.sort.dueAsc">Due date: earliest first</option>
+              <option value="due-desc" data-i18n="tasks.sort.dueDesc">Due date: latest first</option>
+              <option value="priority-desc" data-i18n="tasks.sort.priorityDesc">Priority: High to Low</option>
+            </select>
+          </label>
+
+          <button id="clear-task-filters-btn" type="button" class="secondary-button" data-i18n="tasks.clearFilters">Clear filters</button>
+        </div>
 
         <div id="tasks-board" class="kanban-board">
           <article class="state-card">
@@ -154,7 +186,6 @@
     <section class="modal-card task-modal-card" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
       <div class="modal-header">
         <div>
-          <span class="brand-tag">SPMP</span>
           <h2 id="task-modal-title" data-i18n="tasks.addTask">Add Task</h2>
           <p class="subtitle" data-i18n="tasks.modalSubtitle">Create a task and save it locally in IndexedDB on this device.</p>
         </div>
@@ -244,7 +275,6 @@
   </div>
 
   <script src="../js/tasks.js" defer></script>
-  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </body>

@@ -1,8 +1,8 @@
 "use strict";
-/* Original pre-sidebar layout backed up in ./dashboard.layout-backup.ts */
 const API_BASE_URL = `${window.location.origin}/api`;
 const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
 const THEME_STORAGE_KEY = "dashboard-theme";
+const SETTINGS_STORAGE_KEY = "dashboard-settings-state";
 const DEFAULT_PROJECT_VIEW_STORAGE_KEY = "defaultProjectView";
 const MOBILE_SIDEBAR_BREAKPOINT = 960;
 const DB_NAME = "SPMP_DB";
@@ -11,28 +11,44 @@ const TASKS_STORE_NAME = "tasks";
 const PROJECT_STATUS_CHART_COLORS = ["#94A3B8", "#22C55E", "#F59E0B", "#6366F1"];
 const TASK_OVERVIEW_CHART_COLORS = ["#94A3B8", "#F59E0B", "#22C55E"];
 const i18n = (key, values) => window.I18n?.t(key, values) || key;
+const setDynamicText = (element, key, values) => {
+    if (!element) {
+        return;
+    }
+    if (typeof window.I18n?.setDynamicTranslation === "function") {
+        window.I18n.setDynamicTranslation(element, key, values);
+        return;
+    }
+    element.textContent = i18n(key, values);
+};
+const clearDynamicText = (element) => {
+    if (!element) {
+        return;
+    }
+    window.I18n?.clearDynamicTranslation?.(element);
+};
 let isPreviewMode = false;
-const PREVIEW_PROJECTS = [
+const PREVIEW_PROJECT_BLUEPRINTS = [
     {
         id: "preview-1",
-        name: "Semester Project Planner",
-        description: "Track milestones, assignments, and deadlines for the current term.",
+        nameKey: "dashboard.previewProject1Name",
+        descriptionKey: "dashboard.previewProject1Description",
         owner_id: "preview-user",
         status: "active",
         created_at: new Date("2026-03-12").toISOString()
     },
     {
         id: "preview-2",
-        name: "UX Research Board",
-        description: "Collect interview notes, usability feedback, and iteration ideas.",
+        nameKey: "dashboard.previewProject2Name",
+        descriptionKey: "dashboard.previewProject2Description",
         owner_id: "preview-user",
         status: "in-review",
         created_at: new Date("2026-04-02").toISOString()
     },
     {
         id: "preview-3",
-        name: "Frontend Showcase",
-        description: "A visual preview project to review the dashboard style without backend data.",
+        nameKey: "dashboard.previewProject3Name",
+        descriptionKey: "dashboard.previewProject3Description",
         owner_id: "preview-user",
         status: "planning",
         created_at: new Date("2026-04-18").toISOString()
@@ -70,6 +86,19 @@ let projectStatusChart = null;
 let taskOverviewChart = null;
 let taskStatusCounts = createTaskStatusCounts();
 let currentProjectView = "grid";
+let projectsRenderState = "loading";
+let lastProjectsErrorText = "";
+let greetingRefreshIntervalId = 0;
+function getPreviewProjects() {
+    return PREVIEW_PROJECT_BLUEPRINTS.map((project) => ({
+        id: project.id,
+        name: i18n(project.nameKey),
+        description: i18n(project.descriptionKey),
+        owner_id: project.owner_id,
+        status: project.status,
+        created_at: project.created_at
+    }));
+}
 document.addEventListener("DOMContentLoaded", () => {
     void initializeDashboard();
 });
@@ -78,9 +107,9 @@ async function initializeDashboard() {
     applyStoredProjectView();
     initializeTheme();
     refreshGreetingBanner();
+    startGreetingRefreshTimer();
     syncSidebarState();
     setupEventListeners();
-    initializeAos();
     await initializeDashboardCharts();
     const token = getStoredToken();
     if (!token) {
@@ -91,16 +120,6 @@ async function initializeDashboard() {
     await loadUserData();
     await loadProjects();
 }
-function initializeAos() {
-    if (window.AOS && typeof AOS.init === "function") {
-        AOS.init({ duration: 600, once: true, easing: 'ease-out' });
-    }
-}
-function refreshAos() {
-    if (window.AOS && typeof AOS.refreshHard === "function") {
-        AOS.refreshHard();
-    }
-}
 async function initializeDashboardCharts() {
     await refreshTaskStatusCounts();
     renderDashboardCharts();
@@ -108,8 +127,8 @@ async function initializeDashboardCharts() {
 function cacheElements() {
     userNameElement = document.getElementById("user-name");
     userAvatarElement = document.getElementById("user-avatar");
-    greetingTitleElement = document.getElementById("greeting-banner-title");
-    greetingDateElement = document.getElementById("greeting-banner-date");
+    greetingTitleElement = document.getElementById("local-greeting-title");
+    greetingDateElement = document.getElementById("local-greeting-date");
     projectsMessageBox = document.getElementById("projects-message");
     projectsListElement = document.getElementById("projects-list");
     projectSearchInputElement = document.getElementById("project-search-input");
@@ -131,6 +150,9 @@ function cacheElements() {
     cancelProjectModalButton = document.getElementById("cancel-project-btn");
     projectStatusChartCanvas = document.getElementById("project-status-chart");
     taskOverviewChartCanvas = document.getElementById("task-overview-chart");
+    if (userNameElement) {
+        userNameElement.textContent = "";
+    }
 }
 function readStoredProjectView() {
     const value = localStorage.getItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY);
@@ -163,7 +185,21 @@ function setupEventListeners() {
     });
     window.addEventListener("resize", syncSidebarState);
     document.addEventListener("keydown", handleEscapeKey);
-    document.addEventListener("app-language-change", refreshGreetingBanner);
+    document.addEventListener("app-language-change", handleLanguageChange);
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+            refreshGreetingBanner();
+            void refreshProjectCardsFromIndexedDb();
+        }
+    });
+    window.addEventListener("focus", refreshGreetingBanner);
+    window.addEventListener("focus", () => {
+        void refreshProjectCardsFromIndexedDb();
+    });
+    window.addEventListener("pageshow", refreshGreetingBanner);
+    window.addEventListener("pageshow", () => {
+        void refreshProjectCardsFromIndexedDb();
+    });
     document.querySelectorAll(".sidebar-link").forEach((link) => {
         link.addEventListener("click", () => {
             if (isMobileViewport()) {
@@ -248,13 +284,11 @@ async function loadPreviewDashboard() {
         name: "Anna Ivanova",
         email: "anna.ivanova@example.com"
     };
-    if (userNameElement) {
-        userNameElement.textContent = currentUser.name;
-    }
+    renderUserName();
     updateUserAvatar(currentUser.name);
     refreshGreetingBanner();
-    showProjectsMessage(i18n("dashboard.preview"), "success");
-    allProjects = [...PREVIEW_PROJECTS];
+    showProjectsMessage("", "success", "dashboard.preview");
+    allProjects = getPreviewProjects();
     await refreshProjectCompletionLookup(allProjects);
     renderVisibleProjects();
 }
@@ -262,9 +296,7 @@ async function loadUserData() {
     try {
         const data = await requestWithAuth("/auth/me");
         currentUser = data.user;
-        if (userNameElement) {
-            userNameElement.textContent = currentUser.name;
-        }
+        renderUserName();
         updateUserAvatar(currentUser.name);
         refreshGreetingBanner();
     }
@@ -273,11 +305,34 @@ async function loadUserData() {
         if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
             return;
         }
-        if (userNameElement) {
-            userNameElement.textContent = i18n("common.unavailable");
-        }
+        renderUserName(i18n("common.unavailable"));
         updateUserAvatar(i18n("common.unavailable"));
         refreshGreetingBanner();
+    }
+}
+function renderUserName(fallback = "") {
+    if (!userNameElement) {
+        return;
+    }
+    const name = getDisplayName(fallback);
+    userNameElement.textContent = name;
+}
+function getDisplayName(fallback = "") {
+    const storedName = readStoredProfileName();
+    return storedName || currentUser?.name?.trim() || fallback;
+}
+function readStoredProfileName() {
+    try {
+        const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+        if (!raw) {
+            return "";
+        }
+        const parsed = JSON.parse(raw);
+        return typeof parsed?.profileName === "string" ? parsed.profileName.trim() : "";
+    }
+    catch (error) {
+        console.warn("Failed to read stored profile name:", error);
+        return "";
     }
 }
 async function loadProjects(options = {}) {
@@ -303,6 +358,7 @@ function renderProjectsLoading() {
     if (!projectsListElement) {
         return;
     }
+    projectsRenderState = "loading";
     applyStoredProjectView();
     projectsListElement.innerHTML = `
     ${Array.from({ length: 3 }, () => `
@@ -321,6 +377,7 @@ function renderProjects(projects) {
     if (!projectsListElement) {
         return;
     }
+    projectsRenderState = "ready";
     applyStoredProjectView();
     if (projects.length === 0) {
         projectsListElement.innerHTML = `
@@ -346,12 +403,10 @@ function renderProjects(projects) {
         return;
     }
     projectsListElement.innerHTML = projects.map((project, index) => {
-        const creatorName = escapeHtml(currentUser?.name || i18n("common.you"));
-        const taskCount = typeof project.taskCount === "number" ? project.taskCount : 0;
+        const creatorName = escapeHtml(getDisplayName(i18n("common.you")));
         const normalizedStatus = getNormalizedProjectStatus(project.status);
         const statusIndicator = getStatusIconMarkup(normalizedStatus);
         const progress = getProjectCompletionSummary(project.id);
-        const aosDelay = getProjectCardAosDelay(index);
         const description = project.description?.trim()
             ? `<p class="project-description">${escapeHtml(project.description.trim())}</p>`
             : `<p class="project-description is-empty">${escapeHtml(i18n("dashboard.projectFallbackDescription"))}</p>`;
@@ -359,15 +414,16 @@ function renderProjects(projects) {
             projectId: project.id,
             projectName: project.name,
             status: formatStatus(project.status),
-            creator: currentUser?.name || i18n("common.you"),
+            statusKey: getProjectStatusKey(project.status),
+            creator: getDisplayName(i18n("common.you")),
             createdAt: project.created_at
         }).toString();
         return `
-      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}" data-project-status="${escapeHtml(normalizedStatus)}" data-aos="fade-up" data-aos-delay="${aosDelay}">
+      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}" data-project-status="${escapeHtml(normalizedStatus)}">
         <div class="project-head">
           <div class="project-title-wrap">
             <h3 class="project-name">${escapeHtml(project.name)}</h3>
-            <span class="project-task-count">${escapeHtml(i18n("common.tasksCount", { count: taskCount }))}</span>
+            <span class="project-task-count">${escapeHtml(i18n("common.tasksCount", { count: progress.totalTasks }))}</span>
           </div>
           <span class="project-status">${statusIndicator}${escapeHtml(formatStatus(project.status))}</span>
         </div>
@@ -389,16 +445,18 @@ function renderProjects(projects) {
           </div>
           <span class="project-progress-text">${escapeHtml(progress.label)}</span>
         </div>
+        <p class="project-progress-counter">${escapeHtml(progress.counterLabel)}</p>
       </a>
     `;
     }).join("");
-    refreshAos();
     renderProjectStatusChart();
 }
 function renderProjectsError(text) {
     if (!projectsListElement) {
         return;
     }
+    projectsRenderState = "error";
+    lastProjectsErrorText = text;
     applyStoredProjectView();
     projectsListElement.innerHTML = `
     <article class="state-card">
@@ -418,13 +476,13 @@ async function handleProjectSubmit(event) {
     const description = projectDescriptionInput.value.trim();
     const isValid = validateProjectForm(name, description);
     if (!isValid) {
-        showProjectFormMessage(i18n("dashboard.validation.fix"), "error");
+        showProjectFormMessage("", "error", "dashboard.validation.fix");
         return;
     }
     setProjectSubmitting(true);
     try {
         if (isPreviewMode && currentUser) {
-            PREVIEW_PROJECTS.unshift({
+            allProjects.unshift({
                 id: `preview-${Date.now()}`,
                 name,
                 description: description || null,
@@ -433,8 +491,7 @@ async function handleProjectSubmit(event) {
                 created_at: new Date().toISOString()
             });
             closeProjectModal();
-            showProjectsMessage(i18n("dashboard.previewProjectCreated"), "success");
-            allProjects = [...PREVIEW_PROJECTS];
+            showProjectsMessage("", "success", "dashboard.previewProjectCreated");
             await refreshProjectCompletionLookup(allProjects);
             renderVisibleProjects();
             return;
@@ -450,7 +507,7 @@ async function handleProjectSubmit(event) {
             })
         });
         closeProjectModal();
-        showProjectsMessage(i18n("dashboard.projectCreated"), "success");
+        showProjectsMessage("", "success", "dashboard.projectCreated");
         await loadProjects({ preserveMessage: true });
     }
     catch (error) {
@@ -458,7 +515,7 @@ async function handleProjectSubmit(event) {
         if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
             return;
         }
-        showProjectFormMessage(getErrorText(error, i18n("dashboard.projectCreateFailed")), "error");
+        showProjectFormMessage(getErrorText(error, i18n("dashboard.projectCreateFailed")), "error", error instanceof Error && error.message.trim() ? "" : "dashboard.projectCreateFailed");
     }
     finally {
         setProjectSubmitting(false);
@@ -467,48 +524,61 @@ async function handleProjectSubmit(event) {
 function validateProjectForm(name, description) {
     let isValid = true;
     if (!name) {
-        setProjectFieldError("project-name", i18n("dashboard.validation.projectRequired"));
+        setProjectFieldError("project-name", "dashboard.validation.projectRequired");
         isValid = false;
     }
     else if (name.length < 2) {
-        setProjectFieldError("project-name", i18n("dashboard.validation.projectShort"));
+        setProjectFieldError("project-name", "dashboard.validation.projectShort");
         isValid = false;
     }
     if (description.length > 500) {
-        setProjectFieldError("project-description", i18n("dashboard.validation.projectDescriptionLong"));
+        setProjectFieldError("project-description", "dashboard.validation.projectDescriptionLong");
         isValid = false;
     }
     return isValid;
 }
-function setProjectFieldError(fieldId, text) {
+function setProjectFieldError(fieldId, key) {
     const input = document.getElementById(fieldId);
     const errorBox = document.querySelector(`[data-error-for="${fieldId}"]`);
     input?.classList.add("input-error");
     if (errorBox) {
-        errorBox.textContent = text;
+        setDynamicText(errorBox, key);
     }
 }
 function resetProjectFormErrors() {
     showProjectFormMessage("");
     projectFormElement?.querySelectorAll(".field-error").forEach((element) => {
+        clearDynamicText(element);
         element.textContent = "";
     });
     projectFormElement?.querySelectorAll(".input-error").forEach((element) => {
         element.classList.remove("input-error");
     });
 }
-function showProjectsMessage(text, type) {
+function showProjectsMessage(text, type, key = "", values) {
     if (!projectsMessageBox) {
         return;
     }
-    projectsMessageBox.textContent = text;
+    if (key) {
+        setDynamicText(projectsMessageBox, key, values);
+    }
+    else {
+        clearDynamicText(projectsMessageBox);
+        projectsMessageBox.textContent = text;
+    }
     projectsMessageBox.className = type ? `form-message ${type}` : "form-message";
 }
-function showProjectFormMessage(text, type) {
+function showProjectFormMessage(text, type, key = "", values) {
     if (!projectFormMessageBox) {
         return;
     }
-    projectFormMessageBox.textContent = text;
+    if (key) {
+        setDynamicText(projectFormMessageBox, key, values);
+    }
+    else {
+        clearDynamicText(projectFormMessageBox);
+        projectFormMessageBox.textContent = text;
+    }
     projectFormMessageBox.className = type ? `form-message ${type}` : "form-message";
 }
 function setProjectSubmitting(isSubmitting) {
@@ -516,7 +586,12 @@ function setProjectSubmitting(isSubmitting) {
         return;
     }
     projectSubmitButton.disabled = isSubmitting;
-    projectSubmitButton.textContent = isSubmitting ? i18n("dashboard.projectSubmitting") : i18n("dashboard.projectSubmit");
+    if (isSubmitting) {
+        setDynamicText(projectSubmitButton, "dashboard.projectSubmitting");
+        return;
+    }
+    clearDynamicText(projectSubmitButton);
+    projectSubmitButton.textContent = i18n("dashboard.projectSubmit");
 }
 function openProjectModal() {
     if (!projectModalElement) {
@@ -571,18 +646,63 @@ function handleProjectFilterClick(event) {
     setActiveProjectFilter(button.value);
     renderVisibleProjects();
 }
+function handleLanguageChange() {
+    renderUserName(currentUser ? "" : i18n("common.unavailable"));
+    refreshGreetingBanner();
+    updateDashboardChartTranslations();
+    syncSidebarState();
+    setProjectSubmitting(Boolean(projectSubmitButton?.disabled));
+    if (projectsRenderState === "ready") {
+        refreshProjectCompletionLookupLabels();
+        renderVisibleProjects();
+        return;
+    }
+    if (projectsRenderState === "error") {
+        renderProjectsError(lastProjectsErrorText);
+        return;
+    }
+    renderProjectsLoading();
+}
+function updateDashboardChartTranslations() {
+    if (projectStatusChart) {
+        projectStatusChart.data.labels = getProjectStatusChartLabels();
+        projectStatusChart.update();
+    }
+    if (taskOverviewChart) {
+        taskOverviewChart.data.labels = getTaskOverviewChartLabels();
+        taskOverviewChart.update();
+    }
+}
 function refreshGreetingBanner() {
     const today = new Date();
-    const displayName = currentUser?.name.trim() || "";
+    const displayName = getDisplayName();
+    const greetingKey = getGreetingFallbackKey(today.getHours());
+    const greeting = i18n(greetingKey);
     if (greetingTitleElement) {
-        greetingTitleElement.textContent = displayName
-            ? i18n("dashboard.greetingMorning", { name: displayName })
-            : i18n("dashboard.greetingMorningFallback");
+        greetingTitleElement.textContent = displayName ? `${greeting}, ${displayName}` : greeting;
     }
     if (greetingDateElement) {
         greetingDateElement.textContent = formatGreetingDate(today);
         greetingDateElement.dateTime = today.toISOString().slice(0, 10);
     }
+}
+function getGreetingFallbackKey(hour) {
+    if (hour >= 5 && hour < 12) {
+        return "dashboard.greetingMorningFallback";
+    }
+    if (hour >= 12 && hour < 18) {
+        return "dashboard.greetingAfternoonFallback";
+    }
+    if (hour >= 18 && hour < 22) {
+        return "dashboard.greetingEveningFallback";
+    }
+    return "dashboard.greetingNightFallback";
+}
+function startGreetingRefreshTimer() {
+    if (greetingRefreshIntervalId) {
+        return;
+    }
+    greetingRefreshIntervalId = window.setInterval(refreshGreetingBanner, 60000);
 }
 function updateUserAvatar(name) {
     if (!userAvatarElement) {
@@ -838,8 +958,11 @@ function readProjectStatusCountsFromCards() {
         inReview: 0,
         done: 0
     };
-    projectsListElement?.querySelectorAll(".project-card-link").forEach((card) => {
-        const status = card.getAttribute("data-project-status")?.trim().toLowerCase() || "";
+    if (projectsRenderState !== "ready") {
+        return counts;
+    }
+    getVisibleProjects().forEach((project) => {
+        const status = getNormalizedProjectStatus(project.status);
         if (status === "planning") {
             counts.planning += 1;
             return;
@@ -904,11 +1027,27 @@ function getDashboardChartThemeColors() {
         grid: "rgba(226, 232, 240, 0.12)"
     };
 }
-function getProjectCardAosDelay(index) {
-    return String(Math.min((index + 1) * 100, 300));
-}
 async function refreshProjectCompletionLookup(projects) {
     projectCompletionLookup = await readProjectCompletionLookup(projects);
+}
+function refreshProjectCompletionLookupLabels() {
+    projectCompletionLookup.forEach((summary, projectId) => {
+        projectCompletionLookup.set(projectId, {
+            percentage: summary.percentage,
+            tone: summary.tone,
+            label: formatProjectCompletionLabel(summary.percentage),
+            totalTasks: summary.totalTasks,
+            completedTasks: summary.completedTasks,
+            counterLabel: formatProjectCompletionCounter(summary.completedTasks, summary.totalTasks)
+        });
+    });
+}
+async function refreshProjectCardsFromIndexedDb() {
+    if (projectsRenderState !== "ready" || allProjects.length === 0) {
+        return;
+    }
+    await refreshProjectCompletionLookup(allProjects);
+    renderVisibleProjects();
 }
 async function readProjectCompletionLookup(projects) {
     const lookup = new Map();
@@ -1010,7 +1149,10 @@ function createProjectCompletionSummary(totalTasks, completedTasks) {
     return {
         percentage,
         tone: getProjectCompletionTone(percentage),
-        label: formatProjectCompletionLabel(percentage)
+        label: formatProjectCompletionLabel(percentage),
+        totalTasks: safeTotalTasks,
+        completedTasks: safeCompletedTasks,
+        counterLabel: formatProjectCompletionCounter(safeCompletedTasks, safeTotalTasks)
     };
 }
 function getProjectCompletionTone(percentage) {
@@ -1095,6 +1237,22 @@ function formatStatus(status) {
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(" ");
 }
+function getProjectStatusKey(status) {
+    const normalizedStatus = getNormalizedProjectStatus(status);
+    if (normalizedStatus === "planning") {
+        return "status.planning";
+    }
+    if (normalizedStatus === "active") {
+        return "status.active";
+    }
+    if (normalizedStatus === "in-review") {
+        return "status.inReview";
+    }
+    if (normalizedStatus === "done") {
+        return "status.done";
+    }
+    return "";
+}
 function formatProjectDate(dateString) {
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) {
@@ -1126,6 +1284,12 @@ function getCurrentLocale() {
 }
 function formatProjectCompletionLabel(percentage) {
     return i18n("common.percentComplete", { percent: percentage });
+}
+function formatProjectCompletionCounter(completedTasks, totalTasks) {
+    if (totalTasks <= 0) {
+        return i18n("common.noTasksYet");
+    }
+    return i18n("common.tasksCompletedCounter", { completed: completedTasks, total: totalTasks });
 }
 function escapeHtml(text) {
     const div = document.createElement("div");

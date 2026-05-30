@@ -4,6 +4,22 @@
     const THEME_STORAGE_KEY = "theme";
     const LEGACY_THEME_STORAGE_KEY = "dashboard-theme";
     const i18n = (key, values) => window.I18n?.t(key, values) || key;
+    const setDynamicText = (element, key, values) => {
+        if (!element) {
+            return;
+        }
+        if (typeof window.I18n?.setDynamicTranslation === "function") {
+            window.I18n.setDynamicTranslation(element, key, values);
+            return;
+        }
+        element.textContent = i18n(key, values);
+    };
+    const clearDynamicText = (element) => {
+        if (!element) {
+            return;
+        }
+        window.I18n?.clearDynamicTranslation?.(element);
+    };
     const form = document.getElementById("login-form");
     const emailInput = document.getElementById("email");
     const passwordInput = document.getElementById("password");
@@ -11,18 +27,12 @@
     const submitButton = document.querySelector(".submit-button");
     const themeToggleButton = document.getElementById("theme-toggle-btn");
     let alertTimeoutId = 0;
-    initializeAos();
     initializeTheme();
     initializeParticles();
     updateThemeToggle();
     form.addEventListener("submit", handleFormSubmit);
     themeToggleButton?.addEventListener("click", toggleTheme);
-    document.addEventListener("app-language-change", updateThemeToggle);
-    function initializeAos() {
-        if (window.AOS && typeof AOS.init === "function") {
-            AOS.init({ duration: 600, once: true, easing: 'ease-out' });
-        }
-    }
+    document.addEventListener("app-language-change", handleLanguageChange);
     function initializeTheme() {
         const storedTheme = localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
         const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -138,7 +148,7 @@
         const password = passwordInput.value.trim();
         const isValid = validateForm(email, password);
         if (!isValid) {
-            showMessage(i18n("login.validation.fix"), "error");
+            showMessage("", "error", "login.validation.fix");
             return;
         }
         setLoadingState(true);
@@ -147,14 +157,14 @@
             if (data.token) {
                 localStorage.setItem("token", data.token);
             }
-            showMessage(i18n("login.success"), "success");
+            showMessage("", "success", "login.success");
             form.reset();
             setTimeout(() => {
                 window.location.href = "./dashboard/index.html";
             }, 1000);
         }
         catch (error) {
-            showMessage(error instanceof Error ? error.message : i18n("login.failed"), "error");
+            showMessage(error instanceof Error ? error.message : "", "error", error instanceof Error ? "" : "login.failed");
         }
         finally {
             setLoadingState(false);
@@ -163,19 +173,19 @@
     function validateForm(email, password) {
         let isValid = true;
         if (!email) {
-            setFieldError("email", i18n("login.validation.emailRequired"));
+            setFieldError("email", "login.validation.emailRequired");
             isValid = false;
         }
         else if (!isEmailValid(email)) {
-            setFieldError("email", i18n("login.validation.emailInvalid"));
+            setFieldError("email", "login.validation.emailInvalid");
             isValid = false;
         }
         if (!password) {
-            setFieldError("password", i18n("login.validation.passwordRequired"));
+            setFieldError("password", "login.validation.passwordRequired");
             isValid = false;
         }
         else if (password.length < 6) {
-            setFieldError("password", i18n("login.validation.passwordShort"));
+            setFieldError("password", "login.validation.passwordShort");
             isValid = false;
         }
         return isValid;
@@ -183,26 +193,33 @@
     function isEmailValid(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
-    function setFieldError(fieldId, text) {
+    function setFieldError(fieldId, key) {
         const input = document.getElementById(fieldId);
         const errorBox = document.querySelector(`[data-error-for="${fieldId}"]`);
         input.classList.add("input-error");
-        errorBox.textContent = text;
+        setDynamicText(errorBox, key);
     }
     function resetErrors() {
         clearMessage();
         document.querySelectorAll(".field-error").forEach((element) => {
+            clearDynamicText(element);
             element.textContent = "";
         });
         document.querySelectorAll(".input-error").forEach((input) => {
             input.classList.remove("input-error");
         });
     }
-    function showMessage(text, type) {
+    function showMessage(text, type, key = "", values) {
         if (alertTimeoutId) {
             window.clearTimeout(alertTimeoutId);
         }
-        messageBox.textContent = text;
+        if (key) {
+            setDynamicText(messageBox, key, values);
+        }
+        else {
+            clearDynamicText(messageBox);
+            messageBox.textContent = text;
+        }
         messageBox.className = `form-message is-visible ${type}`;
         alertTimeoutId = window.setTimeout(() => {
             clearMessage();
@@ -213,12 +230,22 @@
             window.clearTimeout(alertTimeoutId);
             alertTimeoutId = 0;
         }
+        clearDynamicText(messageBox);
         messageBox.textContent = "";
         messageBox.className = "form-message";
     }
     function setLoadingState(isLoading) {
         submitButton.disabled = isLoading;
-        submitButton.textContent = isLoading ? i18n("login.submitting") : i18n("login.submit");
+        if (isLoading) {
+            setDynamicText(submitButton, "login.submitting");
+            return;
+        }
+        clearDynamicText(submitButton);
+        submitButton.textContent = i18n("login.submit");
+    }
+    function handleLanguageChange() {
+        updateThemeToggle();
+        setLoadingState(Boolean(submitButton?.disabled));
     }
     async function loginUser(email, password) {
         const response = await fetch(`${API_BASE_URL}/auth/login`, {

@@ -8,6 +8,22 @@ var SettingsPage;
     const DEFAULT_PROJECT_VIEW_STORAGE_KEY = "defaultProjectView";
     const MOBILE_SIDEBAR_BREAKPOINT = 960;
     const i18n = (key, values) => window.I18n?.t(key, values) || key;
+    const setDynamicText = (element, key, values) => {
+        if (!element) {
+            return;
+        }
+        if (typeof window.I18n?.setDynamicTranslation === "function") {
+            window.I18n.setDynamicTranslation(element, key, values);
+            return;
+        }
+        element.textContent = i18n(key, values);
+    };
+    const clearDynamicText = (element) => {
+        if (!element) {
+            return;
+        }
+        window.I18n?.clearDynamicTranslation?.(element);
+    };
     let currentUser = null;
     let settingsState = {
         profileName: "",
@@ -64,18 +80,12 @@ var SettingsPage;
         setupEventListeners();
         hydrateState();
         renderSettingsState();
-        initializeAos();
         const token = getStoredToken();
         if (!token) {
             loadPreviewUser();
             return;
         }
         await loadUserData();
-    }
-    function initializeAos() {
-        if (window.AOS && typeof AOS.init === "function") {
-            AOS.init({ duration: 600, once: true, easing: 'ease-out' });
-        }
     }
     function cacheElements() {
         userNameElement = document.getElementById("user-name");
@@ -114,6 +124,9 @@ var SettingsPage;
         sidebarToggleButton = document.getElementById("sidebar-toggle-btn");
         sidebarElement = document.getElementById("dashboard-sidebar");
         sidebarBackdropElement = document.getElementById("sidebar-backdrop");
+        if (userNameElement) {
+            userNameElement.textContent = "";
+        }
     }
     function setupEventListeners() {
         logoutButton?.addEventListener("click", logout);
@@ -149,7 +162,7 @@ var SettingsPage;
         sidebarBackdropElement?.addEventListener("click", handleSidebarBackdropClick);
         window.addEventListener("resize", syncSidebarState);
         document.addEventListener("keydown", handleEscapeKey);
-        document.addEventListener("app-language-change", renderSettingsState);
+        document.addEventListener("app-language-change", handleLanguageChange);
         document.querySelectorAll(".sidebar-link").forEach((link) => {
             link.addEventListener("click", () => {
                 if (isMobileViewport()) {
@@ -163,6 +176,11 @@ var SettingsPage;
         const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
         settingsState.theme = storedTheme || preferredTheme;
         applyTheme(settingsState.theme);
+    }
+    function handleLanguageChange() {
+        renderUserName(currentUser ? "" : i18n("common.unavailable"));
+        renderSettingsState();
+        syncSidebarState();
     }
     function hydrateState() {
         const stored = readStoredSettingsState();
@@ -186,6 +204,8 @@ var SettingsPage;
                 theme: settingsState.theme
             };
         }
+        const syncedTheme = readStoredTheme() || settingsState.theme;
+        settingsState.theme = syncedTheme;
         const storedDefaultProjectView = readStoredDefaultProjectView();
         if (storedDefaultProjectView) {
             settingsState.defaultProjectView = storedDefaultProjectView;
@@ -255,6 +275,9 @@ var SettingsPage;
             button.classList.toggle("is-active", isActive);
             button.setAttribute("aria-pressed", String(isActive));
         });
+        setPasswordVisibility(currentPasswordInput, currentPasswordInput?.type === "text" ? "app.password.hide" : "app.password.show");
+        setPasswordVisibility(newPasswordInput, newPasswordInput?.type === "text" ? "app.password.hide" : "app.password.show");
+        setPasswordVisibility(confirmNewPasswordInput, confirmNewPasswordInput?.type === "text" ? "app.password.hide" : "app.password.show");
     }
     function handleProfileSaveClick(event) {
         event.preventDefault();
@@ -294,17 +317,41 @@ var SettingsPage;
         event.preventDefault();
         const password = profileConfirmPasswordInput?.value.trim() || "";
         if (!password) {
-            showProfileConfirmMessage(i18n("settings.profileConfirmRequired"), "error");
+            showProfileConfirmMessage("", "error", "settings.profileConfirmRequired");
             return;
         }
+        applyProfileDetails();
         closeProfileConfirmModal();
-        showSettingsMessage(i18n("settings.profileSaveSuccess"), "success");
+        showSettingsMessage("", "success", "settings.profileSaveSuccess");
     }
-    function showProfileConfirmMessage(text, type = "") {
+    function applyProfileDetails() {
+        const nextName = settingsState.profileName.trim();
+        const nextEmail = settingsState.profileEmail.trim();
+        if (currentUser) {
+            currentUser.name = nextName || currentUser.name;
+            currentUser.email = nextEmail || currentUser.email;
+        }
+        else {
+            currentUser = {
+                id: "local-user",
+                name: nextName,
+                email: nextEmail
+            };
+        }
+        renderUserName(i18n("common.unavailable"));
+        updateUserAvatar(getDisplayName(i18n("common.unavailable")));
+    }
+    function showProfileConfirmMessage(text, type = "", key = "", values) {
         if (!profileConfirmMessageBox) {
             return;
         }
-        profileConfirmMessageBox.textContent = text;
+        if (key) {
+            setDynamicText(profileConfirmMessageBox, key, values);
+        }
+        else {
+            clearDynamicText(profileConfirmMessageBox);
+            profileConfirmMessageBox.textContent = text;
+        }
         profileConfirmMessageBox.className = type ? `form-message ${type}` : "form-message";
     }
     function resetProfileConfirmModal() {
@@ -391,10 +438,10 @@ var SettingsPage;
         event.preventDefault();
         const validation = validateChangePasswordForm();
         if (!validation.isValid) {
-            showChangePasswordMessage(validation.message, "error");
+            showChangePasswordMessage("", "error", validation.messageKey);
             return;
         }
-        showChangePasswordMessage(i18n("settings.passwordSuccess"), "success");
+        showChangePasswordMessage("", "success", "settings.passwordSuccess");
         clearPasswordCloseTimer();
         passwordCloseTimer = window.setTimeout(() => {
             closeChangePasswordModal();
@@ -405,21 +452,27 @@ var SettingsPage;
         const newPassword = newPasswordInput?.value || "";
         const confirmNewPassword = confirmNewPasswordInput?.value || "";
         if (!currentPassword) {
-            return { isValid: false, message: i18n("settings.passwordValidation.currentRequired") };
+            return { isValid: false, messageKey: "settings.passwordValidation.currentRequired" };
         }
         if (newPassword.length < 8) {
-            return { isValid: false, message: i18n("settings.passwordValidation.newTooShort") };
+            return { isValid: false, messageKey: "settings.passwordValidation.newTooShort" };
         }
         if (confirmNewPassword !== newPassword) {
-            return { isValid: false, message: i18n("settings.passwordValidation.confirmMismatch") };
+            return { isValid: false, messageKey: "settings.passwordValidation.confirmMismatch" };
         }
-        return { isValid: true, message: "" };
+        return { isValid: true, messageKey: "" };
     }
-    function showChangePasswordMessage(text, type = "") {
+    function showChangePasswordMessage(text, type = "", key = "", values) {
         if (!changePasswordMessageBox) {
             return;
         }
-        changePasswordMessageBox.textContent = text;
+        if (key) {
+            setDynamicText(changePasswordMessageBox, key, values);
+        }
+        else {
+            clearDynamicText(changePasswordMessageBox);
+            changePasswordMessageBox.textContent = text;
+        }
         changePasswordMessageBox.className = type ? `form-message ${type}` : "form-message";
     }
     function resetChangePasswordForm() {
@@ -434,9 +487,9 @@ var SettingsPage;
         if (confirmNewPasswordInput) {
             confirmNewPasswordInput.type = "password";
         }
-        setPasswordVisibility(currentPasswordInput, i18n("app.password.show"));
-        setPasswordVisibility(newPasswordInput, i18n("app.password.show"));
-        setPasswordVisibility(confirmNewPasswordInput, i18n("app.password.show"));
+        setPasswordVisibility(currentPasswordInput, "app.password.show");
+        setPasswordVisibility(newPasswordInput, "app.password.show");
+        setPasswordVisibility(confirmNewPasswordInput, "app.password.show");
     }
     function togglePasswordVisibility(button) {
         const inputId = button.dataset.passwordToggle;
@@ -449,15 +502,15 @@ var SettingsPage;
         }
         const shouldShow = input.type === "password";
         input.type = shouldShow ? "text" : "password";
-        setPasswordVisibility(input, shouldShow ? i18n("app.password.hide") : i18n("app.password.show"));
+        setPasswordVisibility(input, shouldShow ? "app.password.hide" : "app.password.show");
     }
-    function setPasswordVisibility(input, label) {
+    function setPasswordVisibility(input, labelKey) {
         if (!input) {
             return;
         }
         const button = document.querySelector(`[data-password-toggle="${input.id}"]`);
         if (button) {
-            button.textContent = label;
+            setDynamicText(button, labelKey);
             button.setAttribute("aria-pressed", String(input.type === "text"));
         }
     }
@@ -480,11 +533,17 @@ var SettingsPage;
         localStorage.clear();
         window.location.reload();
     }
-    function showSettingsMessage(text, type = "") {
+    function showSettingsMessage(text, type = "", key = "", values) {
         if (!settingsMessageBox) {
             return;
         }
-        settingsMessageBox.textContent = text;
+        if (key) {
+            setDynamicText(settingsMessageBox, key, values);
+        }
+        else {
+            clearDynamicText(settingsMessageBox);
+            settingsMessageBox.textContent = text;
+        }
         settingsMessageBox.className = type ? `form-message ${type}` : "form-message";
     }
     function isMobileViewport() {
@@ -558,10 +617,8 @@ var SettingsPage;
         }
         persistSettingsState();
         renderSettingsState();
-        if (userNameElement) {
-            userNameElement.textContent = currentUser.name;
-        }
-        updateUserAvatar(currentUser.name);
+        renderUserName();
+        updateUserAvatar(getDisplayName(i18n("common.unavailable")));
     }
     async function loadUserData() {
         try {
@@ -575,21 +632,27 @@ var SettingsPage;
             }
             persistSettingsState();
             renderSettingsState();
-            if (userNameElement) {
-                userNameElement.textContent = currentUser.name;
-            }
-            updateUserAvatar(currentUser.name);
+            renderUserName();
+            updateUserAvatar(getDisplayName(i18n("common.unavailable")));
         }
         catch (error) {
             console.error("Error loading user data:", error);
             if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
                 return;
             }
-            if (userNameElement) {
-                userNameElement.textContent = i18n("common.unavailable");
-            }
+            renderUserName(i18n("common.unavailable"));
             updateUserAvatar(i18n("common.unavailable"));
         }
+    }
+    function renderUserName(fallback = "") {
+        if (!userNameElement) {
+            return;
+        }
+        const name = getDisplayName(fallback);
+        userNameElement.textContent = name;
+    }
+    function getDisplayName(fallback = "") {
+        return settingsState.profileName.trim() || currentUser?.name?.trim() || fallback;
     }
     function getStoredToken() {
         return localStorage.getItem("token")?.trim() || "";
