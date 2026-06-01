@@ -1,6 +1,6 @@
 import "../css/dashboard.css";
 import "./i18n";
-import { getCurrentUser, getProjects, getProjectTasks, getTaskTimeEntries, createTask, updateTask, deleteTask, addTimeEntry, deleteTimeEntry, isSessionError, logout } from "./core/services";
+import { getCurrentUser, getProjects, getProjectTasks, createTask, updateTask, deleteTask, isSessionError, logout } from "./core/services";
 
 const THEME_STORAGE_KEY = "dashboard-theme";
 const MOBILE_SIDEBAR_BREAKPOINT = 960;
@@ -62,12 +62,7 @@ let taskEstHoursInput: HTMLInputElement | null;
 let taskFormMessage: HTMLElement | null;
 let cancelTaskBtn: HTMLButtonElement | null;
 let saveTaskBtn: HTMLButtonElement | null;
-let timeEntriesSection: HTMLElement | null;
-let timeEntriesList: HTMLElement | null;
-let timeEntryForm: HTMLFormElement | null;
-let timeEntryHours: HTMLInputElement | null;
-let timeEntryDate: HTMLInputElement | null;
-let timeEntryDesc: HTMLInputElement | null;
+
 
 const selectedTags: Set<string> = new Set();
 
@@ -121,12 +116,7 @@ function cacheElements(): void {
   taskFormMessage = document.getElementById("task-form-message");
   cancelTaskBtn = document.getElementById("cancel-task-btn") as HTMLButtonElement | null;
   saveTaskBtn = document.getElementById("save-task-btn") as HTMLButtonElement | null;
-  timeEntriesSection = document.getElementById("time-entries-section");
-  timeEntriesList = document.getElementById("time-entries-list");
-  timeEntryForm = document.getElementById("time-entry-form") as HTMLFormElement | null;
-  timeEntryHours = document.getElementById("time-entry-hours") as HTMLInputElement | null;
-  timeEntryDate = document.getElementById("time-entry-date") as HTMLInputElement | null;
-  timeEntryDesc = document.getElementById("time-entry-desc") as HTMLInputElement | null;
+
 }
 
 function setupListeners(): void {
@@ -150,7 +140,7 @@ function setupListeners(): void {
   cancelTaskBtn?.addEventListener("click", closeTaskModal);
   taskModal?.addEventListener("click", (e) => { if ((e.target as HTMLElement).dataset.closeModal === "true") closeTaskModal(); });
   taskForm?.addEventListener("submit", (e) => void handleTaskSubmit(e));
-  timeEntryForm?.addEventListener("submit", (e) => void handleTimeEntrySubmit(e));
+
   document.getElementById("clear-task-filters-btn")?.addEventListener("click", () => {
     const p = document.getElementById("task-filter-priority") as HTMLSelectElement | null;
     const s = document.getElementById("task-filter-status") as HTMLSelectElement | null;
@@ -239,10 +229,10 @@ function renderKanban(): void {
     { status: "done", title: i18n("tasks.status.done") },
   ];
 
-  let html = `<div class="kanban-board" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">`;
+  let html = `<div class="kanban-board">`;
   for (const col of columns) {
     const colTasks = filtered.filter(t => t.status === col.status || (!col.status && !t.status));
-    html += `<div class="kanban-column" style="background:var(--surface);border-radius:12px;padding:16px;">
+    html += `<div class="kanban-column" data-column-status="${col.status}" style="background:var(--surface);border-radius:12px;padding:16px;">
       <h3 style="margin:0 0 12px;font-size:15px;">${escapeHtml(col.title)} <span style="font-weight:400;color:var(--muted)">(${colTasks.length})</span></h3>
       ${colTasks.length === 0 ? `<p style="color:var(--muted);font-size:13px;">No tasks</p>` : ""}
       ${colTasks.map(t => renderTaskCard(t, memberMap)).join("")}
@@ -251,9 +241,12 @@ function renderKanban(): void {
   html += `</div>`;
   tasksBoard.innerHTML = html;
 
-  document.querySelectorAll<HTMLButtonElement>(".task-status-btn").forEach(btn => {
-    btn.addEventListener("click", () => void moveTask(btn.dataset.taskId!, btn.dataset.status!));
-  });
+  const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+  if (isTouch) {
+    attachMobilePicker();
+  } else {
+    attachDragDrop();
+  }
   document.querySelectorAll<HTMLButtonElement>(".task-edit-btn").forEach(btn => {
     btn.addEventListener("click", () => openTaskModal(btn.dataset.taskId!));
   });
@@ -268,7 +261,7 @@ function renderTaskCard(t: TaskItem, memberMap: Map<string, string>): string {
   const priorityColors: Record<string, string> = { high: "#ef4444", medium: "#f59e0b", low: "#22c55e" };
   const assigneeName = t.assigned_to ? memberMap.get(t.assigned_to) || "Unknown" : "Unassigned";
   return `
-    <article class="project-card" style="margin-bottom:12px;cursor:default;padding:14px;">
+    <article class="project-card task-card-draggable" draggable="true" data-task-id="${t.id}" style="margin-bottom:12px;cursor:grab;padding:14px;">
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
         <h4 style="margin:0;font-size:14px;flex:1;">${escapeHtml(t.title)}</h4>
         <span style="background:${priorityColors[t.priority?.toLowerCase()] || "#94a3b8"};color:#fff;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;white-space:nowrap;">${escapeHtml(t.priority || "medium")}</span>
@@ -283,14 +276,107 @@ function renderTaskCard(t: TaskItem, memberMap: Map<string, string>): string {
         ${t.estimated_hours > 0 ? `<span>⏱ ${t.estimated_hours}h</span>` : ""}
       </div>
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
-        <button class="secondary-button task-status-btn" data-task-id="${t.id}" data-status="pending" style="font-size:11px;padding:2px 8px;">To-Do</button>
-        <button class="secondary-button task-status-btn" data-task-id="${t.id}" data-status="in-progress" style="font-size:11px;padding:2px 8px;">In Progress</button>
-        <button class="secondary-button task-status-btn" data-task-id="${t.id}" data-status="done" style="font-size:11px;padding:2px 8px;">Done</button>
         <button class="secondary-button task-edit-btn" data-task-id="${t.id}" style="font-size:11px;padding:2px 8px;">Edit</button>
         <button class="secondary-button task-delete-btn" data-task-id="${t.id}" style="font-size:11px;padding:2px 8px;color:#ef4444;">Delete</button>
       </div>
     </article>
   `;
+}
+
+function attachDragDrop(): void {
+  const cards = document.querySelectorAll<HTMLElement>(".task-card-draggable");
+  const columns = document.querySelectorAll<HTMLElement>(".kanban-column");
+
+  cards.forEach(card => {
+    card.addEventListener("dragstart", (e) => {
+      const dt = e.dataTransfer;
+      if (dt) {
+        dt.effectAllowed = "move";
+        dt.setData("text/plain", card.dataset.taskId || "");
+      }
+      card.style.opacity = "0.4";
+    });
+    card.addEventListener("dragend", () => {
+      card.style.opacity = "";
+    });
+  });
+
+  columns.forEach(col => {
+    col.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      col.classList.add("kanban-column-drag-over");
+    });
+    col.addEventListener("dragleave", () => {
+      col.classList.remove("kanban-column-drag-over");
+    });
+    col.addEventListener("drop", (e) => {
+      e.preventDefault();
+      col.classList.remove("kanban-column-drag-over");
+      const taskId = e.dataTransfer?.getData("text/plain");
+      const newStatus = col.dataset.columnStatus;
+      if (taskId && newStatus) void moveTask(taskId, newStatus);
+    });
+  });
+}
+
+function attachMobilePicker(): void {
+  const cards = document.querySelectorAll<HTMLElement>(".task-card-draggable");
+  let pickerEl = document.getElementById("mobile-status-picker");
+
+  if (!pickerEl) {
+    pickerEl = document.createElement("div");
+    pickerEl.id = "mobile-status-picker";
+    pickerEl.setAttribute("role", "dialog");
+    pickerEl.style.cssText = "display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.5);align-items:flex-end;justify-content:center;";
+    document.body.appendChild(pickerEl);
+    const sheet = document.createElement("div");
+    sheet.style.cssText = "background:var(--surface,#fff);border-radius:20px 20px 0 0;padding:24px 20px;width:100%;max-width:480px;box-shadow:0 -4px 24px rgba(0,0,0,0.15);";
+    sheet.innerHTML = `<h3 style="margin:0 0 16px;font-size:18px;font-weight:600;">Change Status</h3>`;
+    const statuses = [
+      { status: "pending", label: "To-Do", color: "#6366f1" },
+      { status: "in-progress", label: "In Progress", color: "#f59e0b" },
+      { status: "in review", label: "In Review", color: "#8b5cf6" },
+      { status: "done", label: "Done", color: "#22c55e" },
+    ];
+    for (const s of statuses) {
+      const btn = document.createElement("button");
+      btn.className = "picker-status-btn";
+      btn.dataset.status = s.status;
+      btn.textContent = s.label;
+      btn.style.cssText = `display:block;width:100%;margin-bottom:8px;padding:16px;font-size:16px;font-weight:600;border:none;border-radius:12px;background:${s.color};color:#fff;cursor:pointer;`;
+      sheet.appendChild(btn);
+    }
+    const cancelBtn = document.createElement("button");
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.style.cssText = "display:block;width:100%;padding:16px;font-size:16px;border:none;border-radius:12px;background:var(--surface-border,#e5e7eb);color:var(--text,#111);cursor:pointer;";
+    sheet.appendChild(cancelBtn);
+    pickerEl.appendChild(sheet);
+
+    pickerEl.addEventListener("click", (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>(".picker-status-btn");
+      if (btn) {
+        const status = btn.dataset.status;
+        const taskId = pickerEl!.dataset.taskId;
+        if (status && taskId) void moveTask(taskId, status);
+        pickerEl!.style.display = "none";
+        pickerEl!.dataset.taskId = "";
+      } else if ((e.target as HTMLElement) === pickerEl || (e.target as HTMLElement).textContent === "Cancel") {
+        pickerEl!.style.display = "none";
+        pickerEl!.dataset.taskId = "";
+      }
+    });
+  }
+
+  cards.forEach(card => {
+    card.addEventListener("click", (e) => {
+      if ((e.target as HTMLElement).closest("button")) return;
+      if (pickerEl) {
+        pickerEl.style.display = "flex";
+        pickerEl.dataset.taskId = card.dataset.taskId || "";
+      }
+    });
+  });
 }
 
 async function moveTask(taskId: string, newStatus: string): Promise<void> {
@@ -349,8 +435,6 @@ function openTaskModal(taskId?: string): void {
       existingTags.forEach(tag => selectedTags.add(tag));
     } catch { /* ignore */ }
     renderTagCheckboxes();
-    renderTimeEntries(taskId);
-    if (timeEntriesSection) timeEntriesSection.hidden = false;
   } else {
     if (taskModalTitle) taskModalTitle.textContent = "Create Task";
     if (saveTaskBtn) saveTaskBtn.textContent = "Save Task";
@@ -358,7 +442,6 @@ function openTaskModal(taskId?: string): void {
     if (taskPrioritySelect) taskPrioritySelect.value = "medium";
     if (taskDueDateInput) taskDueDateInput.value = "";
     if (taskEstHoursInput) taskEstHoursInput.value = "0";
-    if (timeEntriesSection) timeEntriesSection.hidden = true;
   }
   taskModal.hidden = false;
   taskModal.setAttribute("aria-hidden", "false");
@@ -425,54 +508,6 @@ async function handleTaskSubmit(event: Event): Promise<void> {
   } catch (error: any) {
     showTaskFormMessage(error?.message || "Failed to save task", "error");
   }
-}
-
-async function renderTimeEntries(taskId: string): Promise<void> {
-  if (!timeEntriesList) return;
-  try {
-    const entries = await getTaskTimeEntries(taskId);
-    if (entries.length === 0) {
-      timeEntriesList.innerHTML = `<p style="color:var(--muted);font-size:13px;">No time entries yet.</p>`;
-    } else {
-      const total = entries.reduce((s, e) => s + e.hours, 0);
-      timeEntriesList.innerHTML = entries.map(e => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--surface-border);font-size:13px;">
-          <div>
-            <strong>${escapeHtml(e.date)}</strong> — ${e.hours}h
-            ${e.description ? `<br><span style="color:var(--muted)">${escapeHtml(e.description)}</span>` : ""}
-          </div>
-          <button class="secondary-button del-time-btn" data-entry-id="${e.id}" style="font-size:11px;padding:2px 8px;color:#ef4444;">Delete</button>
-        </div>
-      `).join("") + `<div style="padding:8px 0;font-weight:600;font-size:13px;">Total: ${total}h</div>`;
-    }
-    timeEntriesList.querySelectorAll<HTMLButtonElement>(".del-time-btn").forEach(btn => {
-      btn.addEventListener("click", () => void deleteTimeEntryHandler(btn.dataset.entryId!));
-    });
-  } catch { timeEntriesList.innerHTML = `<p style="color:var(--muted);font-size:13px;">Could not load time entries.</p>`; }
-}
-
-async function handleTimeEntrySubmit(event: Event): Promise<void> {
-  event.preventDefault();
-  if (!editingTaskId || !timeEntryHours || !timeEntryDate) return;
-  const hours = parseFloat(timeEntryHours.value);
-  if (!hours || hours <= 0) { showTaskFormMessage("Hours must be greater than 0", "error"); return; }
-  if (!timeEntryDate.value) { showTaskFormMessage("Date is required", "error"); return; }
-  try {
-    await addTimeEntry({ task_id: editingTaskId, hours, date: timeEntryDate.value, description: timeEntryDesc?.value?.trim() || undefined });
-    timeEntryForm?.reset();
-    await renderTimeEntries(editingTaskId);
-    showMessage("Time entry added", "success");
-  } catch (error: any) {
-    showTaskFormMessage(error?.message || "Failed to add time entry", "error");
-  }
-}
-
-async function deleteTimeEntryHandler(entryId: string): Promise<void> {
-  if (!confirm("Delete this time entry?")) return;
-  try {
-    await deleteTimeEntry(entryId);
-    if (editingTaskId) await renderTimeEntries(editingTaskId);
-  } catch { showMessage("Failed to delete time entry", "error"); }
 }
 
 function showMessage(text: string, type: "success" | "error"): void {

@@ -6,31 +6,57 @@
   <title data-i18n-document-title="app.title.tasks">SPMP | Tasks</title>
   <link rel="stylesheet" href="../css/dashboard.css">
   <style>
-    .task-board-section .kanban-list {
-      min-height: 128px;
+    .kanban-board {
+      display: list-item;
+      width: 100%;
     }
-
-    .task-board-section .task-card-sortable-chosen,
-    .task-board-section .task-card-sortable-drag {
-      opacity: 0.5 !important;
+    .kanban-board thead,
+    .kanban-board tbody,
+    .kanban-board tr {
+      display: block;
     }
-
-    .task-board-section .task-card-sortable-ghost {
-      opacity: 0.34 !important;
-      border: 1px dashed rgba(79, 70, 229, 0.55) !important;
-      background: rgba(79, 70, 229, 0.08) !important;
-      box-shadow: none !important;
+    .kanban-board thead tr,
+    .kanban-board tbody tr {
+      display: flex;
+      gap: 16px;
     }
-
-    .task-board-section .task-card-sortable-ghost .task-card-header,
-    .task-board-section .task-card-sortable-ghost .task-card-description,
-    .task-board-section .task-card-sortable-ghost .task-meta-list {
-      visibility: hidden;
+    .kanban-board th,
+    .kanban-board td {
+      flex: 1;
+      display: block;
     }
-
-    body[data-theme="dark"] .task-board-section .task-card-sortable-ghost {
-      border-color: rgba(129, 140, 248, 0.62) !important;
-      background: rgba(99, 102, 241, 0.16) !important;
+    .kanban-board thead th {
+      font-size: 15px;
+      font-weight: 600;
+      text-align: left;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-radius: 12px 12px 0 0;
+      border-bottom: 2px solid var(--surface-border);
+    }
+    .kanban-board tbody td {
+      background: var(--surface);
+      border-radius: 0 0 12px 12px;
+      padding: 12px 16px;
+      transition: background 0.15s;
+      vertical-align: top;
+    }
+    .kanban-board tbody td.kanban-column-drag-over {
+      background: var(--accent-glass, rgba(99, 102, 241, 0.08)) !important;
+      outline: 2px dashed var(--accent, #6366f1);
+      outline-offset: -2px;
+    }
+    .task-card-draggable:active {
+      cursor: grabbing !important;
+    }
+    #mobile-status-picker .picker-status-btn:active {
+      transform: scale(0.97);
+    }
+    @media (max-width: 960px) {
+      .kanban-board thead tr,
+      .kanban-board tbody tr {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -258,17 +284,6 @@
         </div>
       </form>
 
-      <div id="time-entries-section" hidden>
-        <hr style="margin:16px 0;border-color:var(--surface-border);">
-        <h3 style="font-size:15px;margin:0 0 8px;">Time Entries</h3>
-        <div id="time-entries-list"></div>
-        <form id="time-entry-form" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-          <input id="time-entry-hours" type="number" min="0.1" step="0.5" placeholder="Hours" style="width:80px;" required>
-          <input id="time-entry-date" type="date" required>
-          <input id="time-entry-desc" type="text" placeholder="Description (optional)" style="flex:1;min-width:140px;">
-          <button type="submit" class="submit-button" style="font-size:13px;padding:0 12px;">Add</button>
-        </form>
-      </div>
     </section>
   </div>
 
