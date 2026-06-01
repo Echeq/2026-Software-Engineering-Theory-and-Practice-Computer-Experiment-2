@@ -10,6 +10,8 @@ export interface Task {
   status: string;
   priority: string;
   due_date: string | null;
+  tags: string;
+  estimated_hours: number;
   created_at: string;
   updated_at: string;
 }
@@ -21,6 +23,8 @@ export interface CreateTaskInput {
   assigned_to?: string;
   priority?: string;
   due_date?: string;
+  tags?: string;
+  estimated_hours?: number;
 }
 
 export class TaskModel {
@@ -28,7 +32,7 @@ export class TaskModel {
     const id = uuidv4();
 
     run(
-      'INSERT INTO tasks (id, title, description, project_id, assigned_to, priority, due_date) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO tasks (id, title, description, project_id, assigned_to, priority, due_date, tags, estimated_hours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         id,
         input.title,
@@ -36,7 +40,9 @@ export class TaskModel {
         input.project_id,
         input.assigned_to || null,
         input.priority || 'medium',
-        input.due_date || null
+        input.due_date || null,
+        input.tags || '[]',
+        input.estimated_hours || 0
       ]
     );
 
@@ -55,34 +61,18 @@ export class TaskModel {
     return query('SELECT * FROM tasks WHERE assigned_to = ? ORDER BY created_at DESC', [userId]) as Task[];
   }
 
-  static update(id: string, updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'due_date' | 'assigned_to'>>): Task | null {
+  static update(id: string, updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'due_date' | 'assigned_to' | 'tags' | 'estimated_hours'>>): Task | null {
     const fields: string[] = [];
     const values: any[] = [];
 
-    if (updates.title !== undefined) {
-      fields.push('title = ?');
-      values.push(updates.title);
-    }
-    if (updates.description !== undefined) {
-      fields.push('description = ?');
-      values.push(updates.description);
-    }
-    if (updates.status !== undefined) {
-      fields.push('status = ?');
-      values.push(updates.status);
-    }
-    if (updates.priority !== undefined) {
-      fields.push('priority = ?');
-      values.push(updates.priority);
-    }
-    if (updates.due_date !== undefined) {
-      fields.push('due_date = ?');
-      values.push(updates.due_date);
-    }
-    if (updates.assigned_to !== undefined) {
-      fields.push('assigned_to = ?');
-      values.push(updates.assigned_to);
-    }
+    if (updates.title !== undefined) { fields.push('title = ?'); values.push(updates.title); }
+    if (updates.description !== undefined) { fields.push('description = ?'); values.push(updates.description); }
+    if (updates.status !== undefined) { fields.push('status = ?'); values.push(updates.status); }
+    if (updates.priority !== undefined) { fields.push('priority = ?'); values.push(updates.priority); }
+    if (updates.due_date !== undefined) { fields.push('due_date = ?'); values.push(updates.due_date); }
+    if (updates.assigned_to !== undefined) { fields.push('assigned_to = ?'); values.push(updates.assigned_to); }
+    if (updates.tags !== undefined) { fields.push('tags = ?'); values.push(updates.tags); }
+    if (updates.estimated_hours !== undefined) { fields.push('estimated_hours = ?'); values.push(updates.estimated_hours); }
 
     if (fields.length === 0) return this.findById(id);
 
@@ -95,6 +85,7 @@ export class TaskModel {
   }
 
   static delete(id: string): boolean {
+    run('DELETE FROM time_entries WHERE task_id = ?', [id]);
     run('DELETE FROM tasks WHERE id = ?', [id]);
     const task = this.findById(id);
     return task === null;

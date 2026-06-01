@@ -85,10 +85,31 @@ function initializeDatabase(): void {
       status TEXT DEFAULT 'pending',
       priority TEXT DEFAULT 'medium',
       due_date DATETIME,
+      tags TEXT DEFAULT '[]',
+      estimated_hours REAL DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
       FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL
+    )
+  `);
+
+  // Add tags and estimated_hours for older DB files
+  ensureColumnExists('tasks', 'tags', "ALTER TABLE tasks ADD COLUMN tags TEXT DEFAULT '[]'");
+  ensureColumnExists('tasks', 'estimated_hours', "ALTER TABLE tasks ADD COLUMN estimated_hours REAL DEFAULT 0");
+
+  // Create time_entries table
+  database.run(`
+    CREATE TABLE IF NOT EXISTS time_entries (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      description TEXT,
+      hours REAL NOT NULL,
+      date TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
 

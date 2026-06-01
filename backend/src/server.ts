@@ -7,6 +7,7 @@ import { closeDatabase, getDatabase } from './database';
 import authRoutes from './routes/auth';
 import projectRoutes from './routes/projects';
 import taskRoutes from './routes/tasks';
+import timeEntryRoutes from './routes/timeEntries';
 import { authenticateToken, readCsrfToken } from './middleware/readSession';
 import userRoutes from './routes/users';
 import pageRoutes from './routes/pages';
@@ -31,6 +32,7 @@ app.use(readCsrfToken);
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', authenticateToken, projectRoutes);
 app.use('/api/tasks', authenticateToken, taskRoutes);
+app.use('/api/time-entries', authenticateToken, timeEntryRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
 app.use(pageRoutes);
 

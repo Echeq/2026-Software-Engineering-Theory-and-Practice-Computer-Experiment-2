@@ -1,6 +1,7 @@
 import "../css/dashboard.css";
 import "./i18n";
-import { createProject, getCurrentUser, isSessionError, logout } from "./core/services";
+import { Project } from "./core/app";
+import { createProject, getCurrentUser, getProjectTasks, getProjects, isSessionError, logout } from "./core/services";
 
 /* Original pre-sidebar layout backed up in ./dashboard.layout-backup.ts */
 const THEME_STORAGE_KEY = "dashboard-theme";
@@ -56,6 +57,7 @@ async function initializeDashboard(): Promise<void> {
 
   renderProjectsLoading();
   await loadUserData();
+  void renderCharts();
   refreshProjectsList();
 }
 
@@ -638,4 +640,69 @@ function escapeHtml(text: string): string {
   const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
+}
+
+async function renderCharts(): Promise<void> {
+  const Chart = (window as any).Chart;
+  if (!Chart) return;
+
+  try {
+    const projects = await getProjects();
+    const statusCounts: Record<string, number> = {};
+    for (const p of projects) {
+      const s = p.status || "planning";
+      statusCounts[s] = (statusCounts[s] || 0) + 1;
+    }
+    const statusLabels: Record<string, string> = {
+      planning: i18n("status.planning"),
+      active: i18n("status.active"),
+      "in-review": i18n("status.inReview"),
+      done: i18n("status.done"),
+    };
+    const labels = Object.keys(statusCounts).map(k => statusLabels[k] || k);
+    const data = Object.values(statusCounts);
+
+    const statusCanvas = document.getElementById("project-status-chart") as HTMLCanvasElement | null;
+    if (statusCanvas && labels.length > 0) {
+      new Chart(statusCanvas, {
+        type: "doughnut",
+        data: {
+          labels,
+          datasets: [{ data, backgroundColor: ["#6366f1", "#22c55e", "#f59e0b", "#94a3b8"] }],
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } },
+      });
+    }
+
+    let taskAll: { status: string }[] = [];
+    for (const p of projects) {
+      try { taskAll = taskAll.concat(await getProjectTasks(p.id)); } catch { /* skip */ }
+    }
+
+    const taskStatusLabels: Record<string, string> = {
+      pending: i18n("tasks.status.todo"),
+      "in-progress": i18n("tasks.status.inProgress"),
+      "in review": i18n("tasks.status.inProgress"),
+      done: i18n("tasks.status.done"),
+    };
+    const taskCounts: Record<string, number> = {};
+    for (const t of taskAll) {
+      const s = t.status || "pending";
+      taskCounts[s] = (taskCounts[s] || 0) + 1;
+    }
+    const tLabels = Object.keys(taskCounts).map(k => taskStatusLabels[k] || k);
+    const tData = Object.values(taskCounts);
+
+    const taskCanvas = document.getElementById("task-overview-chart") as HTMLCanvasElement | null;
+    if (taskCanvas && tLabels.length > 0) {
+      new Chart(taskCanvas, {
+        type: "bar",
+        data: {
+          labels: tLabels,
+          datasets: [{ label: i18n("tasks.pageTag"), data: tData, backgroundColor: "#6366f1" }],
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } },
+      });
+    }
+  } catch { /* charts unavailable */ }
 }

@@ -118,20 +118,22 @@
         </div>
       </section>
 
-      <div hidden aria-hidden="true">
-        <strong id="selected-project-name" data-i18n="tasks.noProject">No project selected</strong>
-        <p id="selected-project-meta" data-i18n="tasks.noProjectMeta">Choose a project card from the projects board to view task context.</p>
-      </div>
-
       <section class="projects-section task-board-section" aria-labelledby="task-board-title">
         <div class="section-header">
           <div class="section-copy">
-            <span class="section-tag" data-i18n="tasks.localStorageTag">Local Tasks</span>
-            <h2 id="task-board-title" data-i18n="tasks.localBoardTitle">Local Task Board</h2>
-            <p class="section-subtitle" data-i18n="tasks.localBoardSubtitle">Your local task board powered by IndexedDB.</p>
+            <span class="section-tag" data-i18n="tasks.pageTag">Tasks</span>
+            <h2 id="task-board-title">Task Board</h2>
+            <p class="section-subtitle">Select a project and manage your tasks.</p>
           </div>
 
-          <button id="open-task-modal-btn" type="button" class="submit-button" data-i18n="tasks.addTask">Add Task</button>
+          <label class="sort-field" style="margin-right:12px;">
+            <span class="search-label">Project</span>
+            <select id="project-select" class="sort-select">
+              <option value="">-- Select Project --</option>
+            </select>
+          </label>
+
+          <button id="open-task-modal-btn" type="button" class="submit-button">Add Task</button>
         </div>
 
         <p class="form-message" id="tasks-message" aria-live="polite"></p>
@@ -193,6 +195,7 @@
 
         <button
           id="close-task-modal"
+          data-close-modal="true"
           type="button"
           class="close-btn"
           data-i18n-aria-label="tasks.closeTaskDialog"
@@ -202,76 +205,70 @@
 
       <form id="task-form" class="project-form task-form" novalidate>
         <div class="task-form-grid">
-          <label class="form-group task-form-span-full" for="task-title">
-            <span data-i18n="tasks.form.title">Title</span>
-            <input
-              id="task-title"
-              name="title"
-              type="text"
-              autocomplete="off"
-              placeholder="Add a clear task title"
-              data-i18n-placeholder="tasks.form.titlePlaceholder"
-              required
-            >
+          <label class="form-group task-form-span-full" for="task-title-input">
+            <span>Title</span>
+            <input id="task-title-input" name="title" type="text" autocomplete="off" placeholder="Task title" required>
           </label>
 
-          <label class="form-group task-form-span-full" for="task-description">
-            <span data-i18n="tasks.form.description">Description</span>
-            <textarea
-              id="task-description"
-              name="description"
-              rows="4"
-              placeholder="Optional notes, links, or acceptance criteria"
-              data-i18n-placeholder="tasks.form.descriptionPlaceholder"
-            ></textarea>
+          <label class="form-group task-form-span-full" for="task-desc-input">
+            <span>Description</span>
+            <textarea id="task-desc-input" name="description" rows="3" placeholder="Optional description"></textarea>
           </label>
 
-          <label class="form-group" for="task-status">
-            <span data-i18n="tasks.form.status">Status</span>
-            <select id="task-status" name="status" class="sort-select">
-              <option value="Todo" data-i18n="tasks.status.todo">To-Do</option>
-              <option value="In Progress" data-i18n="tasks.status.inProgress">In Progress</option>
-              <option value="Done" data-i18n="tasks.status.done">Done</option>
+          <label class="form-group" for="task-project-select">
+            <span>Project</span>
+            <select id="task-project-select" class="sort-select"></select>
+          </label>
+
+          <label class="form-group" for="task-assignee-select">
+            <span>Assignee</span>
+            <select id="task-assignee-select" class="sort-select"></select>
+          </label>
+
+          <label class="form-group" for="task-priority-select">
+            <span>Priority</span>
+            <select id="task-priority-select" class="sort-select">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
             </select>
           </label>
 
-          <label class="form-group" for="task-priority">
-            <span data-i18n="tasks.form.priority">Priority</span>
-            <select id="task-priority" name="priority" class="sort-select">
-              <option value="Low" data-i18n="tasks.priority.low">Low</option>
-              <option value="Medium" selected data-i18n="tasks.priority.medium">Medium</option>
-              <option value="High" data-i18n="tasks.priority.high">High</option>
-            </select>
+          <label class="form-group" for="task-due-date-input">
+            <span>Due Date</span>
+            <input id="task-due-date-input" type="date">
           </label>
 
-          <label class="form-group" for="task-due-date">
-            <span data-i18n="tasks.form.dueDate">Due Date</span>
-            <input
-              id="task-due-date"
-              name="dueDate"
-              type="text"
-              inputmode="numeric"
-              autocomplete="off"
-              placeholder="YYYY-MM-DD"
-              data-i18n-placeholder="tasks.form.dueDatePlaceholder"
-              maxlength="10"
-              lang="en-US"
-            >
+          <label class="form-group" for="task-est-hours-input">
+            <span>Est. Hours</span>
+            <input id="task-est-hours-input" type="number" min="0" step="0.5" value="0">
           </label>
 
-          <label class="form-group" for="task-project">
-            <span data-i18n="tasks.form.project">Project</span>
-            <select id="task-project" name="projectId" class="sort-select"></select>
-          </label>
+          <div class="form-group task-form-span-full">
+            <span>Categories</span>
+            <div id="task-tags-container" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;"></div>
+          </div>
         </div>
 
         <p class="form-message" id="task-form-message" aria-live="polite"></p>
 
         <div class="modal-actions">
-          <button id="cancel-task-modal" type="button" class="secondary-button" data-i18n="dashboard.cancel">Cancel</button>
-          <button id="save-task-btn" type="submit" class="submit-button" data-i18n="tasks.saveTask">Save Task</button>
+          <button id="cancel-task-btn" type="button" class="secondary-button">Cancel</button>
+          <button id="save-task-btn" type="submit" class="submit-button">Save Task</button>
         </div>
       </form>
+
+      <div id="time-entries-section" hidden>
+        <hr style="margin:16px 0;border-color:var(--surface-border);">
+        <h3 style="font-size:15px;margin:0 0 8px;">Time Entries</h3>
+        <div id="time-entries-list"></div>
+        <form id="time-entry-form" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+          <input id="time-entry-hours" type="number" min="0.1" step="0.5" placeholder="Hours" style="width:80px;" required>
+          <input id="time-entry-date" type="date" required>
+          <input id="time-entry-desc" type="text" placeholder="Description (optional)" style="flex:1;min-width:140px;">
+          <button type="submit" class="submit-button" style="font-size:13px;padding:0 12px;">Add</button>
+        </form>
+      </div>
     </section>
   </div>
 

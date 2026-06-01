@@ -119,16 +119,19 @@
 
         <p class="form-message" id="projects-message" aria-live="polite"></p>
 
-        <div id="projects-board" class="projects-grid projects-view-grid">
-          <article class="state-card">
-            <h3 data-i18n="dashboard.loadingTitle">Loading projects...</h3>
-            <p data-i18n="projects.loadingText">Preparing your kanban board.</p>
-          </article>
-        </div>
+        <div
+          id="projects-board"
+          class="projects-grid projects-view-grid"
+          hx-get="/api/projects/fragment/cards"
+          hx-trigger="load, projects:refresh from:body"
+          hx-include="#projects-language-input"
+          hx-swap="innerHTML"
+        ></div>
       </section>
     </section>
   </main>
 
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <script type="module" src="/src/projects.ts"></script>
 </body>
 </html>

@@ -651,13 +651,8 @@ namespace SettingsPage {
     try {
       currentUser = await getCurrentUser();
 
-      if (!settingsState.profileName) {
-        settingsState.profileName = currentUser.name;
-      }
-
-      if (!settingsState.profileEmail) {
-        settingsState.profileEmail = currentUser.email;
-      }
+      settingsState.profileName = currentUser.name;
+      settingsState.profileEmail = currentUser.email;
 
       persistSettingsState();
       renderSettingsState();

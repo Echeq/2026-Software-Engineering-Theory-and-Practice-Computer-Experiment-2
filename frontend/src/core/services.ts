@@ -1,4 +1,4 @@
-import { clearSessionStorage, getAppContext, getAuthErrorMessage, readCsrfToken, storeCsrfToken, type Project, type Task, type User } from "./app";
+import { clearSessionStorage, getAppContext, getAuthErrorMessage, readCsrfToken, storeCsrfToken, type Project, type Task, type TimeEntry, type User } from "./app";
 
 interface LoginResponse {
   message: string;
@@ -155,6 +155,43 @@ export async function createTask(input: {
     body: JSON.stringify(input)
   });
   return data.task;
+}
+
+export async function updateTask(id: string, updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'due_date' | 'assigned_to' | 'tags' | 'estimated_hours'>>): Promise<Task> {
+  const data = await request<TaskResponse>(`/tasks/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    body: JSON.stringify(updates)
+  });
+  return data.task;
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  await request(`/tasks/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+interface TimeEntriesResponse {
+  entries: TimeEntry[];
+}
+
+interface TimeEntryResponse {
+  entry: TimeEntry;
+}
+
+export async function getTaskTimeEntries(taskId: string): Promise<TimeEntry[]> {
+  const data = await request<TimeEntriesResponse>(`/time-entries/task/${encodeURIComponent(taskId)}`);
+  return data.entries;
+}
+
+export async function addTimeEntry(input: { task_id: string; description?: string; hours: number; date: string }): Promise<TimeEntry> {
+  const data = await request<TimeEntryResponse>("/time-entries", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+  return data.entry;
+}
+
+export async function deleteTimeEntry(id: string): Promise<void> {
+  await request(`/time-entries/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 export function isSessionError(error: unknown): boolean {

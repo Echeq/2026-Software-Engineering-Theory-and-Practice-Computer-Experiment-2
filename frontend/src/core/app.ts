@@ -26,8 +26,20 @@ export interface Task {
   status: string;
   priority: string;
   due_date: string | null;
+  tags: string;
+  estimated_hours: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface TimeEntry {
+  id: string;
+  task_id: string;
+  user_id: string;
+  description: string | null;
+  hours: number;
+  date: string;
+  created_at: string;
 }
 
 export interface SettingState {

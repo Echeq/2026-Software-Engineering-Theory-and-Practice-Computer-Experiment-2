@@ -83,8 +83,8 @@
       </header>
 
       <section class="greeting-banner" data-i18n-aria-label="app.aria.dailyGreeting" aria-label="Daily greeting">
-        <p id="local-greeting-title" class="greeting-title" aria-live="polite">Good morning</p>
-        <time id="local-greeting-date" class="greeting-date" aria-live="polite"></time>
+        <p id="greeting-banner-title" class="greeting-title" aria-live="polite">Good morning</p>
+        <time id="greeting-banner-date" class="greeting-date" aria-live="polite"></time>
       </section>
 
       <section class="overview-panel" aria-labelledby="dashboard-title">
@@ -206,12 +206,16 @@
 
         <p class="form-message" id="projects-message" aria-live="polite"></p>
 
-        <div id="projects-list" class="projects-grid">
-          <article class="state-card">
-            <h3 data-i18n="dashboard.loadingTitle">Loading projects...</h3>
-            <p data-i18n="dashboard.loadingText">Fetching your workspace.</p>
-          </article>
-        </div>
+        <input id="project-status-input" type="hidden" name="status" value="all">
+        <input id="project-language-input" type="hidden" name="lang" value="en">
+        <div
+          id="projects-list"
+          class="projects-grid"
+          hx-get="/api/projects/fragment/cards"
+          hx-trigger="load, input delay:250ms from:#project-search-input, projects:refresh from:body"
+          hx-include="#project-search-input, #project-status-input, #project-language-input"
+          hx-swap="innerHTML"
+        ></div>
       </section>
     </section>
   </main>
@@ -265,6 +269,7 @@
     </section>
   </div>
 
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <script type="module" src="/src/dashboard.ts"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
