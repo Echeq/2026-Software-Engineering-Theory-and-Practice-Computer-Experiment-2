@@ -512,9 +512,19 @@ async function handleTaskSubmit(event: Event): Promise<void> {
 
 function showMessage(text: string, type: "success" | "error"): void {
   if (!tasksMessage) return;
-  tasksMessage.textContent = text;
-  tasksMessage.className = `form-message ${type === "error" ? "is-error" : "is-success"}`;
-  setTimeout(() => { tasksMessage!.textContent = ""; tasksMessage!.className = "form-message"; }, 4000);
+  const item = document.createElement("div");
+  item.className = `notification-item ${type === "error" ? "is-error" : "is-success"}`;
+  const span = document.createElement("span");
+  span.textContent = text;
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "notification-close";
+  closeBtn.textContent = "\u00d7";
+  closeBtn.setAttribute("aria-label", "Dismiss notification");
+  item.appendChild(span);
+  item.appendChild(closeBtn);
+  tasksMessage.appendChild(item);
+  const timer = setTimeout(() => { if (item.parentNode) item.remove(); }, 4000);
+  closeBtn.addEventListener("click", () => { clearTimeout(timer); item.remove(); });
 }
 
 function showTaskFormMessage(text: string, type: "success" | "error" | "" = ""): void {

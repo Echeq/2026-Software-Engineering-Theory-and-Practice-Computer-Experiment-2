@@ -40,7 +40,20 @@ const LANGUAGE_OPTIONS: Record<Language, { label: string; flag: string }> = {
 
 let languageMenuEventsBound = false;
 let notificationCenterEventsBound = false;
-const NOTIFICATION_COUNT = 3;
+const NOTIF_ITEMS = ["item1", "item2", "item3"];
+
+function getDismissedNotifications(): string[] {
+  try { return JSON.parse(localStorage.getItem("dashboard-notifications-dismissed") || "[]"); } catch { return []; }
+}
+
+function setDismissedNotifications(ids: string[]): void {
+  localStorage.setItem("dashboard-notifications-dismissed", JSON.stringify(ids));
+}
+
+function getActiveNotificationCount(): number {
+  const dismissed = getDismissedNotifications();
+  return NOTIF_ITEMS.filter(id => !dismissed.includes(id)).length;
+}
 
 const translations: Record<Language, TranslationDictionary> = {
   en: {
@@ -959,6 +972,43 @@ function bindNotificationCenterEvents(): void {
   notificationCenterEventsBound = true;
 }
 
+function updateNotificationCount(center: HTMLElement): void {
+  const items = center.querySelectorAll<HTMLElement>(".notification-item");
+  const count = items.length;
+  const badge = center.querySelector<HTMLElement>(".notification-badge");
+  const countLabel = center.querySelector<HTMLElement>(".notification-center-count");
+  const list = center.querySelector<HTMLElement>(".notification-center-list");
+  if (badge) badge.textContent = String(count);
+  if (countLabel) countLabel.textContent = String(count);
+  if (count === 0 && list && !list.querySelector(".notif-empty")) {
+    const empty = document.createElement("p");
+    empty.className = "notif-empty";
+    empty.style.cssText = "padding:16px;color:var(--muted);font-size:13px;";
+    empty.textContent = "No notifications";
+    list.appendChild(empty);
+  }
+}
+
+function bindDismissButtons(center: HTMLElement): void {
+  center.querySelectorAll<HTMLButtonElement>(".notification-item-dismiss").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const item = btn.closest<HTMLElement>(".notification-item");
+      if (!item) return;
+      const id = item.dataset.notifId;
+      if (id) {
+        const dismissed = getDismissedNotifications();
+        if (!dismissed.includes(id)) {
+          dismissed.push(id);
+          setDismissedNotifications(dismissed);
+        }
+      }
+      item.remove();
+      updateNotificationCount(center);
+    });
+  });
+}
+
 function upgradeNotificationCenter(center: HTMLElement | null): void {
   if (!center || center.dataset.upgraded === "true") {
     return;
@@ -972,6 +1022,8 @@ function upgradeNotificationCenter(center: HTMLElement | null): void {
     setNotificationCenterOpen(center, shouldOpen);
   });
 
+  bindDismissButtons(center);
+
   bindNotificationCenterEvents();
 }
 
@@ -979,6 +1031,17 @@ function injectNotificationCenter(): void {
   const dashboardTopbarActions = document.querySelector(".topbar-actions");
   if (!dashboardTopbarActions || dashboardTopbarActions.querySelector(".notification-center")) {
     return;
+  }
+
+  const dismissed = getDismissedNotifications();
+  const count = getActiveNotificationCount();
+  const activeItems = NOTIF_ITEMS.filter(id => !dismissed.includes(id));
+  let itemsHtml = "";
+  for (const id of activeItems) {
+    itemsHtml += `<article class="notification-item" data-notif-id="${id}">
+      <p>${t("notifications." + id)}</p>
+      <button type="button" class="notification-item-dismiss" aria-label="Dismiss">×</button>
+    </article>`;
   }
 
   const wrapper = document.createElement("div");
@@ -997,25 +1060,17 @@ function injectNotificationCenter(): void {
           <path d="M8.2 15.2a2 2 0 0 0 3.6 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
         </svg>
       </span>
-      <span class="notification-badge" aria-hidden="true">${NOTIFICATION_COUNT}</span>
+      <span class="notification-badge" aria-hidden="true">${count}</span>
       <span class="notification-center-label">${t("notifications.buttonLabel")}</span>
     </button>
 
     <section class="notification-center-panel" role="dialog" aria-label="${t("notifications.title")}" hidden>
       <div class="notification-center-header">
         <strong>${t("notifications.title")}</strong>
-        <span class="notification-center-count">${NOTIFICATION_COUNT}</span>
+        <span class="notification-center-count">${count}</span>
       </div>
       <div class="notification-center-list">
-        <article class="notification-item">
-          <p>${t("notifications.item1")}</p>
-        </article>
-        <article class="notification-item">
-          <p>${t("notifications.item2")}</p>
-        </article>
-        <article class="notification-item">
-          <p>${t("notifications.item3")}</p>
-        </article>
+        ${itemsHtml || `<p style="padding:16px;color:var(--muted);font-size:13px;">No notifications</p>`}
       </div>
     </section>
   `;

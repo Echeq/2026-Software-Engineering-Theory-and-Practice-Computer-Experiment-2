@@ -1,4 +1,5 @@
 export {};
+import "./i18n";
 const API_BASE_URL = `${window.location.origin}/api`;
 const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
 const THEME_STORAGE_KEY = "dashboard-theme";

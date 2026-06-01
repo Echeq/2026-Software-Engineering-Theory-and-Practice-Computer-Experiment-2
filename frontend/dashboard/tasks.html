@@ -52,10 +52,63 @@
     #mobile-status-picker .picker-status-btn:active {
       transform: scale(0.97);
     }
+    #tasks-message {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .notification-item {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      animation: notif-in 0.25s ease-out;
+      background: var(--surface,#fff);
+      color: var(--text,#111);
+      border-left: 4px solid var(--accent,#6366f1);
+    }
+    .notification-item.is-error {
+      border-left-color: #ef4444;
+    }
+    .notification-item.is-success {
+      border-left-color: #22c55e;
+    }
+    .notification-close {
+      background: none;
+      border: none;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      color: var(--muted,#94a3b8);
+      padding: 0 2px;
+    }
+    .notification-close:hover {
+      color: var(--text,#111);
+    }
+    @keyframes notif-in {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
     @media (max-width: 960px) {
       .kanban-board thead tr,
       .kanban-board tbody tr {
         flex-direction: column;
+      }
+      #tasks-message {
+        left: 16px;
+        right: 16px;
+        top: auto;
+        bottom: 16px;
       }
     }
   </style>
@@ -130,7 +183,7 @@
             <p class="topbar-label">Manage tasks for the selected project.</p>
           </div>
         </div>
-        <button id="theme-toggle-btn" type="button" class="theme-toggle" aria-pressed="false">Dark Mode</button>
+        <div class="topbar-actions"></div>
       </header>
 
       <section class="overview-panel" aria-labelledby="tasks-page-title">
@@ -162,7 +215,7 @@
           <button id="open-task-modal-btn" type="button" class="submit-button">Add Task</button>
         </div>
 
-        <p class="form-message" id="tasks-message" aria-live="polite"></p>
+        <div id="tasks-message"></div>
 
         <div class="tasks-filters" aria-label="Task filters">
           <label class="sort-field" for="task-filter-priority">
