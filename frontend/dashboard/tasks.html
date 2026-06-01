@@ -144,7 +144,7 @@
           </a>
           <a href="./team.html" class="sidebar-link">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="6.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2 17c0-3.04 2.46-5.5 5.5-5.5S13 13.96 13 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14.5" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M18 17c0-2.49-1.79-4.56-4.17-4.97" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            <span>Team</span>
+            <span data-i18n="sidebar.team">Team</span>
           </a>
           <a href="./settings.html" class="sidebar-link">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 10h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 14.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="13.5" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
@@ -179,8 +179,8 @@
             <span></span>
           </button>
           <div class="topbar-copy">
-            <span class="section-tag">Tasks</span>
-            <p class="topbar-label">Manage tasks for the selected project.</p>
+            <span class="section-tag" data-i18n="tasks.pageTag">Tasks</span>
+            <p class="topbar-label" data-i18n="tasks.topbarLabel">Manage tasks for the selected project.</p>
           </div>
         </div>
         <div class="topbar-actions"></div>
@@ -201,18 +201,18 @@
         <div class="section-header">
           <div class="section-copy">
             <span class="section-tag" data-i18n="tasks.pageTag">Tasks</span>
-            <h2 id="task-board-title">Task Board</h2>
-            <p class="section-subtitle">Select a project and manage your tasks.</p>
+            <h2 id="task-board-title" data-i18n="tasks.title">Task Board</h2>
+            <p class="section-subtitle" data-i18n="tasks.subtitleDefault">Select a project and manage your tasks.</p>
           </div>
 
           <label class="sort-field" style="margin-right:12px;">
-            <span class="search-label">Project</span>
+            <span class="search-label" data-i18n="tasks.formProject">Project</span>
             <select id="project-select" class="sort-select">
-              <option value="">-- Select Project --</option>
+              <option value="" data-i18n="tasks.selectProject">-- Select Project --</option>
             </select>
           </label>
 
-          <button id="open-task-modal-btn" type="button" class="submit-button">Add Task</button>
+          <button id="open-task-modal-btn" type="button" class="submit-button" data-i18n="tasks.addTask">Add Task</button>
         </div>
 
         <div id="tasks-message"></div>
@@ -285,46 +285,46 @@
       <form id="task-form" class="project-form task-form" novalidate>
         <div class="task-form-grid">
           <label class="form-group task-form-span-full" for="task-title-input">
-            <span>Title</span>
+            <span data-i18n="tasks.formTitle">Title</span>
             <input id="task-title-input" name="title" type="text" autocomplete="off" placeholder="Task title" required>
           </label>
 
           <label class="form-group task-form-span-full" for="task-desc-input">
-            <span>Description</span>
+            <span data-i18n="tasks.formDescription">Description</span>
             <textarea id="task-desc-input" name="description" rows="3" placeholder="Optional description"></textarea>
           </label>
 
           <label class="form-group" for="task-project-select">
-            <span>Project</span>
+            <span data-i18n="tasks.formProject">Project</span>
             <select id="task-project-select" class="sort-select"></select>
           </label>
 
           <label class="form-group" for="task-assignee-select">
-            <span>Assignee</span>
+            <span data-i18n="tasks.formAssignee">Assignee</span>
             <select id="task-assignee-select" class="sort-select"></select>
           </label>
 
           <label class="form-group" for="task-priority-select">
-            <span>Priority</span>
+            <span data-i18n="tasks.formPriority">Priority</span>
             <select id="task-priority-select" class="sort-select">
-              <option value="low">Low</option>
-              <option value="medium" selected>Medium</option>
-              <option value="high">High</option>
+              <option value="low" data-i18n="tasks.priority.low">Low</option>
+              <option value="medium" selected data-i18n="tasks.priority.medium">Medium</option>
+              <option value="high" data-i18n="tasks.priority.high">High</option>
             </select>
           </label>
 
           <label class="form-group" for="task-due-date-input">
-            <span>Due Date</span>
+            <span data-i18n="tasks.formDueDate">Due Date</span>
             <input id="task-due-date-input" type="date">
           </label>
 
           <label class="form-group" for="task-est-hours-input">
-            <span>Est. Hours</span>
+            <span data-i18n="tasks.formEstHours">Est. Hours</span>
             <input id="task-est-hours-input" type="number" min="0" step="0.5" value="0">
           </label>
 
           <div class="form-group task-form-span-full">
-            <span>Categories</span>
+            <span data-i18n="tasks.formCategories">Categories</span>
             <div id="task-tags-container" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;"></div>
           </div>
         </div>
@@ -332,8 +332,8 @@
         <p class="form-message" id="task-form-message" aria-live="polite"></p>
 
         <div class="modal-actions">
-          <button id="cancel-task-btn" type="button" class="secondary-button">Cancel</button>
-          <button id="save-task-btn" type="submit" class="submit-button">Save Task</button>
+          <button id="cancel-task-btn" type="button" class="secondary-button" data-i18n="tasks.cancel">Cancel</button>
+          <button id="save-task-btn" type="submit" class="submit-button" data-i18n="tasks.saveTask">Save Task</button>
         </div>
       </form>
 

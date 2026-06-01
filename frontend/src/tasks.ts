@@ -87,7 +87,7 @@ async function initializeTasksPage(): Promise<void> {
     renderKanban();
   } catch (error) {
     if (isSessionError(error)) { redirectToLogin(); return; }
-    showMessage("Failed to load page data", "error");
+    showMessage(i18n("tasks.failedLoadPage"), "error");
   }
 }
 
@@ -168,7 +168,7 @@ async function fetchMembers(): Promise<TeamMember[]> {
 
 function populateProjectSelect(): void {
   if (!projectSelect) return;
-  projectSelect.innerHTML = `<option value="">-- Select Project --</option>`;
+  projectSelect.innerHTML = `<option value="">${i18n("tasks.selectProject")}</option>`;
   for (const p of projects) {
     projectSelect.innerHTML += `<option value="${p.id}">${escapeHtml(p.name)}</option>`;
   }
@@ -190,7 +190,7 @@ async function loadTasks(): Promise<void> {
   if (!currentProjectId) { tasks = []; return; }
   try {
     tasks = await getProjectTasks(currentProjectId) as TaskItem[];
-  } catch { tasks = []; showMessage("Failed to load tasks", "error"); }
+  } catch { tasks = []; showMessage(i18n("tasks.failedLoadTasks"), "error"); }
 }
 
 function renderKanban(): void {
@@ -225,7 +225,7 @@ function renderKanban(): void {
   const columns = [
     { status: "pending", title: i18n("tasks.status.todo") },
     { status: "in-progress", title: i18n("tasks.status.inProgress") },
-    { status: "in review", title: "In Review" },
+    { status: "in review", title: i18n("tasks.status.inReview") },
     { status: "done", title: i18n("tasks.status.done") },
   ];
 
@@ -234,7 +234,7 @@ function renderKanban(): void {
     const colTasks = filtered.filter(t => t.status === col.status || (!col.status && !t.status));
     html += `<div class="kanban-column" data-column-status="${col.status}" style="background:var(--surface);border-radius:12px;padding:16px;">
       <h3 style="margin:0 0 12px;font-size:15px;">${escapeHtml(col.title)} <span style="font-weight:400;color:var(--muted)">(${colTasks.length})</span></h3>
-      ${colTasks.length === 0 ? `<p style="color:var(--muted);font-size:13px;">No tasks</p>` : ""}
+      ${colTasks.length === 0 ? `<p style="color:var(--muted);font-size:13px;">${i18n("tasks.noTasks")}</p>` : ""}
       ${colTasks.map(t => renderTaskCard(t, memberMap)).join("")}
     </div>`;
   }
@@ -259,7 +259,7 @@ function renderTaskCard(t: TaskItem, memberMap: Map<string, string>): string {
   let tags: string[] = [];
   try { tags = JSON.parse(t.tags || "[]"); } catch { tags = []; }
   const priorityColors: Record<string, string> = { high: "#ef4444", medium: "#f59e0b", low: "#22c55e" };
-  const assigneeName = t.assigned_to ? memberMap.get(t.assigned_to) || "Unknown" : "Unassigned";
+  const assigneeName = t.assigned_to ? memberMap.get(t.assigned_to) || i18n("tasks.unknown") : i18n("tasks.unassigned");
   return `
     <article class="project-card task-card-draggable" draggable="true" data-task-id="${t.id}" style="margin-bottom:12px;cursor:grab;padding:14px;">
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
@@ -276,8 +276,8 @@ function renderTaskCard(t: TaskItem, memberMap: Map<string, string>): string {
         ${t.estimated_hours > 0 ? `<span>⏱ ${t.estimated_hours}h</span>` : ""}
       </div>
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
-        <button class="secondary-button task-edit-btn" data-task-id="${t.id}" style="font-size:11px;padding:2px 8px;">Edit</button>
-        <button class="secondary-button task-delete-btn" data-task-id="${t.id}" style="font-size:11px;padding:2px 8px;color:#ef4444;">Delete</button>
+        <button class="secondary-button task-edit-btn" data-task-id="${t.id}" style="font-size:11px;padding:2px 8px;">${i18n("tasks.edit")}</button>
+        <button class="secondary-button task-delete-btn" data-task-id="${t.id}" style="font-size:11px;padding:2px 8px;color:#ef4444;">${i18n("tasks.delete")}</button>
       </div>
     </article>
   `;
@@ -332,12 +332,12 @@ function attachMobilePicker(): void {
     document.body.appendChild(pickerEl);
     const sheet = document.createElement("div");
     sheet.style.cssText = "background:var(--surface,#fff);border-radius:20px 20px 0 0;padding:24px 20px;width:100%;max-width:480px;box-shadow:0 -4px 24px rgba(0,0,0,0.15);";
-    sheet.innerHTML = `<h3 style="margin:0 0 16px;font-size:18px;font-weight:600;">Change Status</h3>`;
+    sheet.innerHTML = `<h3 style="margin:0 0 16px;font-size:18px;font-weight:600;">${i18n("tasks.changeStatus")}</h3>`;
     const statuses = [
-      { status: "pending", label: "To-Do", color: "#6366f1" },
-      { status: "in-progress", label: "In Progress", color: "#f59e0b" },
-      { status: "in review", label: "In Review", color: "#8b5cf6" },
-      { status: "done", label: "Done", color: "#22c55e" },
+      { status: "pending", label: i18n("tasks.status.todo"), color: "#6366f1" },
+      { status: "in-progress", label: i18n("tasks.status.inProgress"), color: "#f59e0b" },
+      { status: "in review", label: i18n("tasks.status.inReview"), color: "#8b5cf6" },
+      { status: "done", label: i18n("tasks.status.done"), color: "#22c55e" },
     ];
     for (const s of statuses) {
       const btn = document.createElement("button");
@@ -348,7 +348,7 @@ function attachMobilePicker(): void {
       sheet.appendChild(btn);
     }
     const cancelBtn = document.createElement("button");
-    cancelBtn.textContent = "Cancel";
+    cancelBtn.textContent = i18n("tasks.cancel");
     cancelBtn.style.cssText = "display:block;width:100%;padding:16px;font-size:16px;border:none;border-radius:12px;background:var(--surface-border,#e5e7eb);color:var(--text,#111);cursor:pointer;";
     sheet.appendChild(cancelBtn);
     pickerEl.appendChild(sheet);
@@ -384,17 +384,17 @@ async function moveTask(taskId: string, newStatus: string): Promise<void> {
     await updateTask(taskId, { status: newStatus });
     await loadTasks();
     renderKanban();
-  } catch { showMessage("Failed to update task status", "error"); }
+  } catch { showMessage(i18n("tasks.failedUpdateStatus"), "error"); }
 }
 
 async function deleteTaskHandler(taskId: string): Promise<void> {
-  if (!confirm("Delete this task?")) return;
+  if (!confirm(i18n("tasks.confirmDelete"))) return;
   try {
     await deleteTask(taskId);
     await loadTasks();
     renderKanban();
-    showMessage("Task deleted", "success");
-  } catch { showMessage("Failed to delete task", "error"); }
+    showMessage(i18n("tasks.taskDeleted"), "success");
+  } catch { showMessage(i18n("tasks.failedDeleteTask"), "error"); }
 }
 
 function openTaskModal(taskId?: string): void {
@@ -404,14 +404,14 @@ function openTaskModal(taskId?: string): void {
   resetTaskForm();
 
   if (taskProjectSelect) {
-    taskProjectSelect.innerHTML = `<option value="">-- Select Project --</option>`;
+    taskProjectSelect.innerHTML = `<option value="">${i18n("tasks.selectProject")}</option>`;
     for (const p of projects) {
       taskProjectSelect.innerHTML += `<option value="${p.id}">${escapeHtml(p.name)}</option>`;
     }
   }
   if (taskAssigneeSelect) {
-    taskAssigneeSelect.innerHTML = `<option value="">Unassigned</option>`;
-    if (currentUser) taskAssigneeSelect.innerHTML += `<option value="${currentUser.id}">${escapeHtml(currentUser.name)} (me)</option>`;
+    taskAssigneeSelect.innerHTML = `<option value="">${i18n("tasks.unassigned")}</option>`;
+    if (currentUser) taskAssigneeSelect.innerHTML += `<option value="${currentUser.id}">${escapeHtml(currentUser.name)} ${i18n("tasks.me")}</option>`;
     for (const m of members) {
       if (m.id !== currentUser?.id) taskAssigneeSelect.innerHTML += `<option value="${m.id}">${escapeHtml(m.name)}</option>`;
     }
@@ -421,8 +421,8 @@ function openTaskModal(taskId?: string): void {
   if (taskId) {
     const t = tasks.find(x => x.id === taskId);
     if (!t) return;
-    if (taskModalTitle) taskModalTitle.textContent = "Edit Task";
-    if (saveTaskBtn) saveTaskBtn.textContent = "Update Task";
+    if (taskModalTitle) taskModalTitle.textContent = i18n("tasks.editTask");
+    if (saveTaskBtn) saveTaskBtn.textContent = i18n("tasks.updateTask");
     if (taskTitleInput) taskTitleInput.value = t.title;
     if (taskDescInput) taskDescInput.value = t.description || "";
     if (taskProjectSelect) taskProjectSelect.value = t.project_id;
@@ -436,8 +436,8 @@ function openTaskModal(taskId?: string): void {
     } catch { /* ignore */ }
     renderTagCheckboxes();
   } else {
-    if (taskModalTitle) taskModalTitle.textContent = "Create Task";
-    if (saveTaskBtn) saveTaskBtn.textContent = "Save Task";
+    if (taskModalTitle) taskModalTitle.textContent = i18n("tasks.createTask");
+    if (saveTaskBtn) saveTaskBtn.textContent = i18n("tasks.saveTask");
     if (taskProjectSelect) taskProjectSelect.value = currentProjectId;
     if (taskPrioritySelect) taskPrioritySelect.value = "medium";
     if (taskDueDateInput) taskDueDateInput.value = "";
@@ -481,9 +481,9 @@ function renderTagCheckboxes(): void {
 async function handleTaskSubmit(event: Event): Promise<void> {
   event.preventDefault();
   const title = taskTitleInput?.value.trim();
-  if (!title) { showTaskFormMessage("Title is required", "error"); return; }
+  if (!title) { showTaskFormMessage(i18n("tasks.validation.titleRequired"), "error"); return; }
   const projectId = taskProjectSelect?.value;
-  if (!projectId) { showTaskFormMessage("Project is required", "error"); return; }
+  if (!projectId) { showTaskFormMessage(i18n("tasks.validation.projectRequired"), "error"); return; }
 
   const body: any = { title };
   if (taskDescInput?.value.trim()) body.description = taskDescInput.value.trim();
@@ -497,16 +497,16 @@ async function handleTaskSubmit(event: Event): Promise<void> {
   try {
     if (editingTaskId) {
       await updateTask(editingTaskId, body);
-      showMessage("Task updated", "success");
+      showMessage(i18n("tasks.taskUpdated"), "success");
     } else {
       await createTask(body);
-      showMessage("Task created", "success");
+      showMessage(i18n("tasks.taskCreated"), "success");
     }
     closeTaskModal();
     await loadTasks();
     renderKanban();
   } catch (error: any) {
-    showTaskFormMessage(error?.message || "Failed to save task", "error");
+    showTaskFormMessage(error?.message || i18n("tasks.failedSaveTask"), "error");
   }
 }
 

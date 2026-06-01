@@ -37,7 +37,7 @@
           </a>
           <a href="./team.html" class="sidebar-link">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="6.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2 17c0-3.04 2.46-5.5 5.5-5.5S13 13.96 13 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14.5" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M18 17c0-2.49-1.79-4.56-4.17-4.97" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            <span>Team</span>
+            <span data-i18n="sidebar.team">Team</span>
           </a>
           <a href="./settings.html" class="sidebar-link is-active">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 10h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 14.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="13.5" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
@@ -105,27 +105,29 @@
         <form id="settings-form" class="settings-form" novalidate>
           <article class="settings-card">
             <div class="settings-card-header">
-              <h3>Profile</h3>
-              <p>Update your display name. Email is read-only.</p>
+              <h3 data-i18n="settings.profileTitle">Profile</h3>
+              <p data-i18n="settings.profileText">Update your display name. Email is read-only.</p>
             </div>
 
             <div class="settings-field-grid">
               <label class="form-group" for="settings-name">
-                <span>Name</span>
+                <span data-i18n="settings.nameLabel">Name</span>
                 <input
                   id="settings-name"
                   type="text"
                   autocomplete="name"
+                  data-i18n-placeholder="settings.namePlaceholder"
                   placeholder="Your name"
                 >
               </label>
 
               <label class="form-group" for="settings-email">
-                <span>Email</span>
+                <span data-i18n="settings.emailLabel">Email</span>
                 <input
                   id="settings-email"
                   type="email"
                   autocomplete="email"
+                  data-i18n-placeholder="settings.emailPlaceholder"
                   placeholder="you@example.com"
                   readonly
                   style="opacity:0.7;cursor:default"
@@ -140,12 +142,12 @@
 
           <article class="settings-card">
             <div class="settings-card-header">
-              <h3>Account</h3>
-              <p>Change your password. You will need your current password to confirm.</p>
+              <h3 data-i18n="settings.accountTitle">Account</h3>
+              <p data-i18n="settings.accountText">Change your password. You will need your current password to confirm.</p>
             </div>
 
             <div class="settings-actions">
-              <button id="change-password-btn" type="button" class="secondary-button">Change Password</button>
+              <button id="change-password-btn" type="button" class="secondary-button" data-i18n="settings.changePassword">Change Password</button>
             </div>
           </article>
 
