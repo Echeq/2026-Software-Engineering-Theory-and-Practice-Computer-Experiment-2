@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 var TasksPage;
 (function (TasksPage) {
     const API_BASE_URL = `${window.location.origin}/api`;
@@ -102,7 +102,7 @@ var TasksPage;
         }
         const token = getStoredToken();
         if (!token) {
-            loadPreviewUser();
+            redirectToLogin();
             return;
         }
         await loadUserData();
@@ -379,7 +379,7 @@ var TasksPage;
         }
         if (selectedProjectMetaElement) {
             if (selectedProjectContext) {
-                selectedProjectMetaElement.textContent = `${status} • ${creator} • ${createdAt}`;
+                selectedProjectMetaElement.textContent = `${status} â€¢ ${creator} â€¢ ${createdAt}`;
             }
             else {
                 selectedProjectMetaElement.textContent = i18n("tasks.noProjectContextSaved");
@@ -982,7 +982,7 @@ function showTasksMessage(text, type = "", key = "", values) {
           </div>
           <div class="task-card-actions">
             <button type="button" class="task-edit-button" data-edit-task-id="${task.id}">
-              <span class="task-edit-button-icon" aria-hidden="true">✏️</span>
+              <span class="task-edit-button-icon" aria-hidden="true">âœï¸</span>
               <span>${escapeHtml(editLabel)}</span>
             </button>
             <button type="button" class="danger-button task-delete-button" data-delete-task-id="${task.id}">${escapeHtml(i18n("tasks.card.delete"))}</button>
@@ -1010,14 +1010,14 @@ function showTasksMessage(text, type = "", key = "", values) {
             return {
                 label,
                 className: "is-overdue",
-                icon: '<span class="task-due-date-icon" aria-hidden="true">⚠️</span>'
+                icon: '<span class="task-due-date-icon" aria-hidden="true">âš ï¸</span>'
             };
         }
         if (urgency === "warning") {
             return {
                 label,
                 className: "is-warning",
-                icon: '<span class="task-due-date-icon" aria-hidden="true">⚠️</span>'
+                icon: '<span class="task-due-date-icon" aria-hidden="true">âš ï¸</span>'
             };
         }
         return {
@@ -1143,22 +1143,22 @@ function showTasksMessage(text, type = "", key = "", values) {
         if (!normalized) {
             return "";
         }
-        if (["planning", "规划中", "planificación"].includes(normalized)) {
+        if (["planning", "è§„åˆ’ä¸­", "planificaciÃ³n"].includes(normalized)) {
             return "status.planning";
         }
         if (["active", "activo"].includes(normalized)) {
             return "status.active";
         }
-        if (["in review", "in-review", "评审中", "en revisión"].includes(normalized)) {
+        if (["in review", "in-review", "è¯„å®¡ä¸­", "en revisiÃ³n"].includes(normalized)) {
             return "status.inReview";
         }
-        if (["done", "已完成", "hecho"].includes(normalized)) {
+        if (["done", "å·²å®Œæˆ", "hecho"].includes(normalized)) {
             return "status.done";
         }
-        if (["start next", "start-next", "接下来开始", "empezar después"].includes(normalized)) {
+        if (["start next", "start-next", "æŽ¥ä¸‹æ¥å¼€å§‹", "empezar despuÃ©s"].includes(normalized)) {
             return "projects.startNext";
         }
-        if (["in progress", "in-progress", "进行中", "en progreso"].includes(normalized)) {
+        if (["in progress", "in-progress", "è¿›è¡Œä¸­", "en progreso"].includes(normalized)) {
             return "projects.inProgress";
         }
         return "";
@@ -1309,8 +1309,8 @@ function showTasksMessage(text, type = "", key = "", values) {
     function loadPreviewUser() {
         currentUser = {
             id: "preview-user",
-            name: "Anna Ivanova",
-            email: "anna.ivanova@example.com"
+            name: "Regular User",
+            email: "user@email.com"
         };
         renderUserName();
     }
@@ -1323,9 +1323,11 @@ function showTasksMessage(text, type = "", key = "", values) {
         catch (error) {
             console.error("Error loading user data:", error);
             if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
+                redirectToLogin();
                 return;
             }
             renderUserName(i18n("common.unavailable"));
+            updateUserAvatar(i18n("common.unavailable"));
         }
     }
     function renderUserName(fallback = "") {
@@ -1338,7 +1340,7 @@ function showTasksMessage(text, type = "", key = "", values) {
     }
     function getDisplayName(fallback = "") {
         const storedName = readStoredProfileName();
-        return storedName || currentUser?.name?.trim() || fallback;
+        return storedName || (currentUser ? currentUser.name.trim() : "") || fallback;
     }
     function readStoredProfileName() {
         try {
@@ -1355,7 +1357,7 @@ function showTasksMessage(text, type = "", key = "", values) {
         }
     }
     function getStoredToken() {
-        return localStorage.getItem("token")?.trim() || "";
+        return localStorage.getItem("spmp-csrf-token")?.trim() || "";
     }
     function redirectToLogin() {
         window.location.href = "../index.html";
@@ -1392,7 +1394,7 @@ function showTasksMessage(text, type = "", key = "", values) {
         const token = getStoredToken();
         const headers = new Headers(init.headers);
         if (token) {
-            headers.set("Authorization", `Bearer ${token}`);
+            headers.set("X-CSRF-Token", token);
         }
         const response = await fetch(`${API_BASE_URL}${path}`, {
             ...init,

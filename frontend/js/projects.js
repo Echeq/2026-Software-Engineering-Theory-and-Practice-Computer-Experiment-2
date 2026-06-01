@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 var ProjectsPage;
 (function (ProjectsPage) {
     const API_BASE_URL = `${window.location.origin}/api`;
@@ -93,7 +93,7 @@ var ProjectsPage;
         applyStoredProjectView();
         const token = getStoredToken();
         if (!token) {
-            await loadPreviewProjectsBoard();
+            redirectToLogin();
             return;
         }
         renderBoardLoading();
@@ -265,8 +265,8 @@ var ProjectsPage;
         isPreviewMode = true;
         currentUser = {
             id: "preview-user",
-            name: "Anna Ivanova",
-            email: "anna.ivanova@example.com"
+            name: "Regular User",
+            email: "user@email.com"
         };
         renderUserName();
         updateUserAvatar(getDisplayName(i18n("common.unavailable")));
@@ -285,6 +285,7 @@ var ProjectsPage;
         catch (error) {
             console.error("Error loading user data:", error);
             if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
+                redirectToLogin();
                 return;
             }
             renderUserName(i18n("common.unavailable"));
@@ -633,7 +634,7 @@ function formatProjectCompletionCounter(completedTasks, totalTasks) {
         return typeof status === "string" && status.trim().toLowerCase() === "done";
     }
     function getStoredToken() {
-        return localStorage.getItem("token")?.trim() || "";
+        return localStorage.getItem("spmp-csrf-token")?.trim() || "";
     }
     function redirectToLogin() {
         window.location.href = "../index.html";
@@ -682,7 +683,7 @@ function formatProjectCompletionCounter(completedTasks, totalTasks) {
         const token = getStoredToken();
         const headers = new Headers(init.headers);
         if (token) {
-            headers.set("Authorization", `Bearer ${token}`);
+            headers.set("X-CSRF-Token", token);
         }
         const response = await fetch(`${API_BASE_URL}${path}`, {
             ...init,

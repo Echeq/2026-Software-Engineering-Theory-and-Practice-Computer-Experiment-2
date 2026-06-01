@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 const API_BASE_URL = `${window.location.origin}/api`;
 const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
 const THEME_STORAGE_KEY = "dashboard-theme";
@@ -113,7 +113,7 @@ async function initializeDashboard() {
     await initializeDashboardCharts();
     const token = getStoredToken();
     if (!token) {
-        await loadPreviewDashboard();
+        redirectToLogin();
         return;
     }
     renderProjectsLoading();
@@ -281,8 +281,8 @@ async function loadPreviewDashboard() {
     isPreviewMode = true;
     currentUser = {
         id: "preview-user",
-        name: "Anna Ivanova",
-        email: "anna.ivanova@example.com"
+        name: "Regular User",
+        email: "user@email.com"
     };
     renderUserName();
     refreshGreetingBanner();
@@ -301,6 +301,7 @@ async function loadUserData() {
     catch (error) {
         console.error("Error loading user data:", error);
         if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
+            redirectToLogin();
             return;
         }
         renderUserName(i18n("common.unavailable"));
@@ -722,7 +723,7 @@ function getInitials(name) {
     return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 function getStoredToken() {
-    return localStorage.getItem("token")?.trim() || "";
+    return localStorage.getItem("spmp-csrf-token")?.trim() || "";
 }
 function redirectToLogin() {
     window.location.href = "../index.html";
@@ -1184,7 +1185,7 @@ async function requestWithAuth(path, init = {}) {
     const token = getStoredToken();
     const headers = new Headers(init.headers);
     if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
+        headers.set("X-CSRF-Token", token);
     }
     const response = await fetch(`${API_BASE_URL}${path}`, {
         ...init,

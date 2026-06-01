@@ -43,7 +43,7 @@ async function initTeamPage(): Promise<void> {
 // ── Auth ────────────────────────────────────────────────────────────────────
 
 function getStoredToken(): string {
-  return localStorage.getItem("token")?.trim() || "";
+  return localStorage.getItem("spmp-csrf-token")?.trim() || "";
 }
 
 function redirectToLogin(): void {
