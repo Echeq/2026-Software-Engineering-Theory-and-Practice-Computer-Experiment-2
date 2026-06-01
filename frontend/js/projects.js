@@ -295,7 +295,9 @@ var ProjectsPage;
         if (!userNameElement) {
             return;
         }
-        userNameElement.textContent = getDisplayName(fallback);
+        const name = getDisplayName(fallback);
+        userNameElement.textContent = name;
+        updateUserAvatar(name);
     }
     function getDisplayName(fallback = "") {
         const storedName = readStoredProfileName();

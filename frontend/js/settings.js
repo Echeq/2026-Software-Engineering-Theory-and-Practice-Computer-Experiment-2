@@ -320,9 +320,38 @@ var SettingsPage;
             showProfileConfirmMessage("", "error", "settings.profileConfirmRequired");
             return;
         }
-        applyProfileDetails();
-        closeProfileConfirmModal();
-        showSettingsMessage("", "success", "settings.profileSaveSuccess");
+        void verifyAndApplyProfileDetails(password);
+    }
+    async function verifyAndApplyProfileDetails(password) {
+        try {
+            const isPasswordValid = await verifyProfilePassword(password);
+            if (!isPasswordValid) {
+                showProfileConfirmMessage("", "error", "settings.profileConfirmIncorrectPassword");
+                return;
+            }
+            applyProfileDetails();
+            closeProfileConfirmModal();
+            showSettingsMessage("", "success", "settings.profileSaveSuccess");
+        }
+        catch (error) {
+            console.error("Error verifying profile password:", error);
+            showProfileConfirmMessage("", "error", "settings.profileConfirmIncorrectPassword");
+        }
+    }
+    async function verifyProfilePassword(password) {
+        const email = currentUser?.email?.trim() || "";
+        if (!email || !password) {
+            return false;
+        }
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: "same-origin",
+            body: JSON.stringify({ email, password })
+        });
+        return response.ok;
     }
     function applyProfileDetails() {
         const nextName = settingsState.profileName.trim();
@@ -650,6 +679,7 @@ var SettingsPage;
         }
         const name = getDisplayName(fallback);
         userNameElement.textContent = name;
+        updateUserAvatar(name);
     }
     function getDisplayName(fallback = "") {
         return settingsState.profileName.trim() || currentUser?.name?.trim() || fallback;

@@ -285,7 +285,6 @@ async function loadPreviewDashboard() {
         email: "anna.ivanova@example.com"
     };
     renderUserName();
-    updateUserAvatar(currentUser.name);
     refreshGreetingBanner();
     showProjectsMessage("", "success", "dashboard.preview");
     allProjects = getPreviewProjects();
@@ -297,7 +296,6 @@ async function loadUserData() {
         const data = await requestWithAuth("/auth/me");
         currentUser = data.user;
         renderUserName();
-        updateUserAvatar(currentUser.name);
         refreshGreetingBanner();
     }
     catch (error) {
@@ -306,7 +304,6 @@ async function loadUserData() {
             return;
         }
         renderUserName(i18n("common.unavailable"));
-        updateUserAvatar(i18n("common.unavailable"));
         refreshGreetingBanner();
     }
 }
@@ -316,6 +313,7 @@ function renderUserName(fallback = "") {
     }
     const name = getDisplayName(fallback);
     userNameElement.textContent = name;
+    updateUserAvatar(name);
 }
 function getDisplayName(fallback = "") {
     const storedName = readStoredProfileName();

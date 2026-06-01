@@ -1313,14 +1313,12 @@ function showTasksMessage(text, type = "", key = "", values) {
             email: "anna.ivanova@example.com"
         };
         renderUserName();
-        updateUserAvatar(currentUser.name);
     }
     async function loadUserData() {
         try {
             const data = await requestWithAuth("/auth/me");
             currentUser = data.user;
             renderUserName();
-            updateUserAvatar(currentUser.name);
         }
         catch (error) {
             console.error("Error loading user data:", error);
@@ -1328,7 +1326,6 @@ function showTasksMessage(text, type = "", key = "", values) {
                 return;
             }
             renderUserName(i18n("common.unavailable"));
-            updateUserAvatar(i18n("common.unavailable"));
         }
     }
     function renderUserName(fallback = "") {
@@ -1337,6 +1334,7 @@ function showTasksMessage(text, type = "", key = "", values) {
         }
         const name = getDisplayName(fallback);
         userNameElement.textContent = name;
+        updateUserAvatar(name);
     }
     function getDisplayName(fallback = "") {
         const storedName = readStoredProfileName();

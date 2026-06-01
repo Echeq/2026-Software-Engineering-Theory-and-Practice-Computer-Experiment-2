@@ -1093,19 +1093,22 @@ Object.assign(translations.en, {
     "tasks.editTask": "Edit Task",
     "tasks.saveEdit": "Save Changes",
     "tasks.message.updated": "Task updated locally.",
-    "tasks.card.edit": "Edit"
+    "tasks.card.edit": "Edit",
+    "settings.profileConfirmIncorrectPassword": "Incorrect password"
 });
 Object.assign(translations.zh, {
     "tasks.editTask": "编辑任务",
     "tasks.saveEdit": "保存更改",
     "tasks.message.updated": "任务已在本地更新。",
-    "tasks.card.edit": "编辑"
+    "tasks.card.edit": "编辑",
+    "settings.profileConfirmIncorrectPassword": "密码错误"
 });
 Object.assign(translations.es, {
     "tasks.editTask": "Editar tarea",
     "tasks.saveEdit": "Guardar cambios",
     "tasks.message.updated": "Tarea actualizada localmente.",
-    "tasks.card.edit": "Editar"
+    "tasks.card.edit": "Editar",
+    "settings.profileConfirmIncorrectPassword": "Contraseña incorrecta"
 });
 Object.assign(translations.zh, {
     "tasks.editTask": "\u7f16\u8f91\u4efb\u52a1",
@@ -1164,7 +1167,7 @@ function saveNotificationState(notifications) {
     localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
 }
 function getUnreadNotificationCount(notifications) {
-    return notifications.reduce((count, notification) => count + (notification.read ? 0 : 1), 0);
+    return Array.isArray(notifications) ? notifications.length : 0;
 }
 function escapeHtml(text) {
     return String(text)
@@ -1194,15 +1197,6 @@ function buildNotificationItemsMarkup(notifications) {
         >&times;</button>
       </article>
     `).join("");
-}
-function markNotificationsRead(notificationIds) {
-    if (!notificationIds.length) {
-        return;
-    }
-    const notifications = loadNotificationState().map((notification) => notificationIds.includes(notification.id)
-        ? { ...notification, read: true }
-        : notification);
-    saveNotificationState(notifications);
 }
 function dismissNotification(notificationId) {
     saveNotificationState(loadNotificationState().filter((notification) => notification.id !== notificationId));
@@ -1519,8 +1513,23 @@ function renderNotificationCenter(center) {
 }
 function closeNotificationCenters() {
     document.querySelectorAll(".notification-center.is-open").forEach((center) => {
+        closeNotificationCenter(center, false);
+    });
+}
+function closeNotificationCentersSilently() {
+    document.querySelectorAll(".notification-center.is-open").forEach((center) => {
         setNotificationCenterOpen(center, false);
     });
+}
+function closeNotificationCenter(center, shouldRestoreFocus = false) {
+    if (!center) {
+        return;
+    }
+    setNotificationCenterOpen(center, false);
+    renderNotificationCenter(center);
+    if (shouldRestoreFocus) {
+        center.querySelector(".notification-center-trigger")?.focus();
+    }
 }
 function bindNotificationCenterEvents() {
     if (notificationCenterEventsBound) {
@@ -1550,19 +1559,12 @@ function upgradeNotificationCenter(center) {
     center.dataset.upgraded = "true";
     center.querySelector(".notification-center-trigger")?.addEventListener("click", () => {
         const shouldOpen = !center.classList.contains("is-open");
-        closeNotificationCenters();
+        closeNotificationCentersSilently();
         setNotificationCenterOpen(center, shouldOpen);
-        if (shouldOpen) {
-            const unreadIds = loadNotificationState()
-                .filter((notification) => !notification.read)
-                .map((notification) => notification.id);
-            markNotificationsRead(unreadIds);
-            renderNotificationCenter(center);
-        }
+        renderNotificationCenter(center);
     });
     center.querySelector(".notification-center-close")?.addEventListener("click", () => {
-        setNotificationCenterOpen(center, false);
-        center.querySelector(".notification-center-trigger")?.focus();
+        closeNotificationCenter(center, true);
     });
     center.querySelector(".notification-center-list")?.addEventListener("click", (event) => {
         const target = event.target;
