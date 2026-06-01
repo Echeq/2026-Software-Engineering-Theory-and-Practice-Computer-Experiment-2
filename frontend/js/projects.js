@@ -3,63 +3,85 @@ var ProjectsPage;
 (function (ProjectsPage) {
     const API_BASE_URL = `${window.location.origin}/api`;
     const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
+    const SETTINGS_STORAGE_KEY = "dashboard-settings-state";
     const THEME_STORAGE_KEY = "dashboard-theme";
+    const DEFAULT_PROJECT_VIEW_STORAGE_KEY = "defaultProjectView";
+    const SELECTED_PROJECT_STORAGE_KEY = "selectedProjectContext";
+    const KNOWN_PROJECTS_STORAGE_KEY = "knownProjectsList";
     const MOBILE_SIDEBAR_BREAKPOINT = 960;
+    const DB_NAME = "SPMP_DB";
+    const DB_VERSION = 1;
+    const TASKS_STORE_NAME = "tasks";
     const i18n = (key, values) => window.I18n?.t(key, values) || key;
-    const KANBAN_COLUMNS = [
-        {
-            id: "start-next",
-            title: "Start Next",
-            caption: "Queued, planning, and next-up work."
-        },
-        {
-            id: "in-progress",
-            title: "In Progress",
-            caption: "Active delivery and review right now."
-        },
-        {
-            id: "done",
-            title: "Done",
-            caption: "Completed work ready for reference."
+    const setDynamicText = (element, key, values) => {
+        if (!element) {
+            return;
         }
-    ];
-    const PREVIEW_PROJECTS = [
+        if (typeof window.I18n?.setDynamicTranslation === "function") {
+            window.I18n.setDynamicTranslation(element, key, values);
+            return;
+        }
+        element.textContent = i18n(key, values);
+    };
+    const clearDynamicText = (element) => {
+        if (!element) {
+            return;
+        }
+        window.I18n?.clearDynamicTranslation?.(element);
+    };
+    const PREVIEW_PROJECT_BLUEPRINTS = [
         {
             id: "preview-start-next",
-            name: "Semester Project Planner",
-            description: "Plan milestones, deadlines, and release order before implementation begins.",
+            nameKey: "projects.previewProject1Name",
+            descriptionKey: "projects.previewProject1Description",
             owner_id: "preview-user",
             status: "planning",
             created_at: new Date("2026-03-12").toISOString()
         },
         {
             id: "preview-in-progress",
-            name: "Research Collaboration Hub",
-            description: "Coordinate active project updates, meeting notes, and shared feedback across the team.",
+            nameKey: "projects.previewProject2Name",
+            descriptionKey: "projects.previewProject2Description",
             owner_id: "preview-user",
             status: "active",
             created_at: new Date("2026-04-02").toISOString()
         },
         {
             id: "preview-done",
-            name: "Frontend Showcase",
-            description: "Completed presentation-ready project used to review the latest interface iteration.",
+            nameKey: "projects.previewProject3Name",
+            descriptionKey: "projects.previewProject3Description",
             owner_id: "preview-user",
             status: "done",
             created_at: new Date("2026-04-18").toISOString()
         }
     ];
+    function getPreviewProjects() {
+        return PREVIEW_PROJECT_BLUEPRINTS.map((project) => ({
+            id: project.id,
+            name: i18n(project.nameKey),
+            description: i18n(project.descriptionKey),
+            owner_id: project.owner_id,
+            status: project.status,
+            created_at: project.created_at
+        }));
+    }
     let currentUser = null;
     let isPreviewMode = false;
     let userNameElement = null;
     let userAvatarElement = null;
     let projectsMessageBox = null;
     let projectsBoardElement = null;
+    let allProjects = [];
+    let currentProjectView = "grid";
+    let boardRenderState = "loading";
+    let lastBoardErrorText = "";
+    let projectViewButtons;
     let logoutButton = null;
     let themeToggleButton = null;
     let sidebarToggleButton = null;
     let sidebarElement = null;
     let sidebarBackdropElement = null;
+    let projectCompletionLookup = new Map();
     document.addEventListener("DOMContentLoaded", () => {
         void initializeProjectsPage();
     });
@@ -68,9 +90,10 @@ var ProjectsPage;
         initializeTheme();
         syncSidebarState();
         setupEventListeners();
+        applyStoredProjectView();
         const token = getStoredToken();
         if (!token) {
-            loadPreviewProjectsBoard();
+            await loadPreviewProjectsBoard();
             return;
         }
         renderBoardLoading();
@@ -82,11 +105,15 @@ var ProjectsPage;
         userAvatarElement = document.getElementById("user-avatar");
         projectsMessageBox = document.getElementById("projects-message");
         projectsBoardElement = document.getElementById("projects-board");
+        projectViewButtons = document.querySelectorAll("[data-project-view]");
         logoutButton = document.getElementById("logout-btn");
         themeToggleButton = document.getElementById("theme-toggle-btn");
         sidebarToggleButton = document.getElementById("sidebar-toggle-btn");
         sidebarElement = document.getElementById("dashboard-sidebar");
         sidebarBackdropElement = document.getElementById("sidebar-backdrop");
+        if (userNameElement) {
+            userNameElement.textContent = "";
+        }
     }
     function setupEventListeners() {
         logoutButton?.addEventListener("click", logout);
@@ -95,6 +122,16 @@ var ProjectsPage;
         sidebarBackdropElement?.addEventListener("click", handleSidebarBackdropClick);
         window.addEventListener("resize", syncSidebarState);
         document.addEventListener("keydown", handleEscapeKey);
+        projectsBoardElement?.addEventListener("click", handleProjectCardClick);
+        projectViewButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                const view = button.dataset.projectView;
+                if (view === "grid" || view === "list") {
+                    setProjectView(view);
+                }
+            });
+        });
+        document.addEventListener("app-language-change", handleLanguageChange);
         document.querySelectorAll(".sidebar-link").forEach((link) => {
             link.addEventListener("click", () => {
                 if (isMobileViewport()) {
@@ -112,6 +149,58 @@ var ProjectsPage;
         const value = localStorage.getItem(THEME_STORAGE_KEY);
         return value === "light" || value === "dark" ? value : "";
     }
+    function readStoredProjectView() {
+        const value = localStorage.getItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY);
+        return value === "list" ? "list" : "grid";
+    }
+    function applyStoredProjectView() {
+        currentProjectView = readStoredProjectView();
+        renderProjectViewButtons();
+        if (!projectsBoardElement) {
+            return;
+        }
+        projectsBoardElement.className = currentProjectView === "list"
+            ? "projects-grid projects-view-list"
+            : "projects-grid projects-view-grid";
+    }
+    function setProjectView(view) {
+        currentProjectView = view;
+        localStorage.setItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY, view);
+        applyStoredProjectView();
+    }
+    function renderProjectViewButtons() {
+        projectViewButtons.forEach((button) => {
+            const isActive = button.dataset.projectView === currentProjectView;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-pressed", String(isActive));
+            button.setAttribute("aria-label", button.dataset.projectView === "list" ? i18n("projects.viewListAria") : i18n("projects.viewGridAria"));
+        });
+    }
+    function handleLanguageChange() {
+        renderProjectViewButtons();
+        syncSidebarState();
+        refreshProjectCompletionLookupLabels();
+        if (boardRenderState === "ready") {
+            renderProjectsBoard(allProjects);
+            return;
+        }
+        if (boardRenderState === "error") {
+            renderBoardError(lastBoardErrorText);
+            return;
+        }
+        renderBoardLoading();
+    }
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+            void refreshProjectCardsFromIndexedDb();
+        }
+    });
+    window.addEventListener("focus", () => {
+        void refreshProjectCardsFromIndexedDb();
+    });
+    window.addEventListener("pageshow", () => {
+        void refreshProjectCardsFromIndexedDb();
+    });
     function toggleTheme() {
         const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
         applyTheme(nextTheme);
@@ -140,7 +229,7 @@ var ProjectsPage;
         const isSidebarOpen = !isMobileViewport() || document.body.classList.contains("sidebar-open");
         sidebarElement.setAttribute("aria-hidden", String(!isSidebarOpen));
         sidebarToggleButton.setAttribute("aria-expanded", String(isMobileViewport() && document.body.classList.contains("sidebar-open")));
-        sidebarToggleButton.setAttribute("aria-label", document.body.classList.contains("sidebar-open") ? "Close navigation menu" : "Open navigation menu");
+        sidebarToggleButton.setAttribute("aria-label", document.body.classList.contains("sidebar-open") ? i18n("app.aria.closeNavigationMenu") : i18n("app.aria.openNavigationMenu"));
         sidebarBackdropElement.hidden = !(isMobileViewport() && document.body.classList.contains("sidebar-open"));
     }
     function openSidebar() {
@@ -172,38 +261,60 @@ var ProjectsPage;
             closeSidebar();
         }
     }
-    function loadPreviewProjectsBoard() {
+    async function loadPreviewProjectsBoard() {
         isPreviewMode = true;
         currentUser = {
             id: "preview-user",
             name: "Anna Ivanova",
             email: "anna.ivanova@example.com"
         };
-        if (userNameElement) {
-            userNameElement.textContent = currentUser.name;
-        }
-        updateUserAvatar(currentUser.name);
-        showProjectsMessage(i18n("projects.preview"), "success");
-        renderProjectsBoard(PREVIEW_PROJECTS);
+        renderUserName();
+        updateUserAvatar(getDisplayName(i18n("common.unavailable")));
+        allProjects = getPreviewProjects();
+        showProjectsMessage("", "success", "projects.preview");
+        await refreshProjectCompletionLookup(allProjects);
+        renderProjectsBoard(allProjects);
     }
     async function loadUserData() {
         try {
             const data = await requestWithAuth("/auth/me");
             currentUser = data.user;
-            if (userNameElement) {
-                userNameElement.textContent = currentUser.name;
-            }
-            updateUserAvatar(currentUser.name);
+            renderUserName();
+            updateUserAvatar(getDisplayName(i18n("common.unavailable")));
         }
         catch (error) {
             console.error("Error loading user data:", error);
             if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
                 return;
             }
-            if (userNameElement) {
-                userNameElement.textContent = i18n("common.unavailable");
-            }
+            renderUserName(i18n("common.unavailable"));
             updateUserAvatar(i18n("common.unavailable"));
+        }
+    }
+    function renderUserName(fallback = "") {
+        if (!userNameElement) {
+            return;
+        }
+        const name = getDisplayName(fallback);
+        userNameElement.textContent = name;
+        updateUserAvatar(name);
+    }
+    function getDisplayName(fallback = "") {
+        const storedName = readStoredProfileName();
+        return storedName || currentUser?.name?.trim() || fallback;
+    }
+    function readStoredProfileName() {
+        try {
+            const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+            if (!raw) {
+                return "";
+            }
+            const parsed = JSON.parse(raw);
+            return typeof parsed?.profileName === "string" ? parsed.profileName.trim() : "";
+        }
+        catch (error) {
+            console.warn("Failed to read stored profile name:", error);
+            return "";
         }
     }
     async function loadProjects() {
@@ -211,20 +322,24 @@ var ProjectsPage;
         renderBoardLoading();
         try {
             const data = await requestWithAuth("/projects");
-            renderProjectsBoard(data.projects);
+            allProjects = Array.isArray(data.projects) ? data.projects : [];
+            await refreshProjectCompletionLookup(allProjects);
+            renderProjectsBoard(allProjects);
         }
         catch (error) {
             console.error("Error loading projects:", error);
             if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
                 return;
             }
-            renderBoardError(getErrorText(error, "Failed to load projects. Please refresh the page."));
+            renderBoardError(getErrorText(error, i18n("dashboard.projectsUnavailable")));
         }
     }
     function renderBoardLoading() {
         if (!projectsBoardElement) {
             return;
         }
+        boardRenderState = "loading";
+        applyStoredProjectView();
         projectsBoardElement.innerHTML = `
       <article class="state-card">
         <h3>${escapeHtml(i18n("dashboard.loadingTitle"))}</h3>
@@ -236,19 +351,19 @@ var ProjectsPage;
         if (!projectsBoardElement) {
             return;
         }
-        const groupedProjects = groupProjectsByColumn(projects);
-        projectsBoardElement.innerHTML = KANBAN_COLUMNS.map((column) => renderColumn(column, groupedProjects[column.id])).join("");
-    }
-    function groupProjectsByColumn(projects) {
-        const grouped = {
-            "start-next": [],
-            "in-progress": [],
-            done: []
-        };
-        projects.forEach((project) => {
-            grouped[getColumnId(project.status)].push(project);
-        });
-        return grouped;
+        boardRenderState = "ready";
+        applyStoredProjectView();
+        persistKnownProjects(projects);
+        if (!projects.length) {
+            projectsBoardElement.innerHTML = `
+        <article class="state-card empty-state-card">
+          <h3>${escapeHtml(i18n("dashboard.noProjects"))}</h3>
+          <p>${escapeHtml(i18n("dashboard.noProjectsText"))}</p>
+        </article>
+      `;
+            return;
+        }
+        projectsBoardElement.innerHTML = projects.map((project) => renderProjectCard(project)).join("");
     }
     function getColumnId(status) {
         const normalizedStatus = status.trim().toLowerCase();
@@ -260,49 +375,27 @@ var ProjectsPage;
         }
         return "start-next";
     }
-    function renderColumn(column, projects) {
-        const cardsMarkup = projects.length > 0
-            ? projects.map((project) => renderProjectCard(project)).join("")
-            : `
-          <article class="state-card empty-column-card">
-            <h3>${escapeHtml(i18n("projects.emptyColumn"))}</h3>
-            <p>${escapeHtml(i18n("projects.emptyColumnText"))}</p>
-          </article>
-        `;
-        return `
-      <section class="kanban-column" aria-labelledby="column-${column.id}">
-        <header class="kanban-column-header">
-          <div class="kanban-column-copy">
-            <h3 id="column-${column.id}" class="kanban-column-title">${escapeHtml(getColumnTitle(column.id))}</h3>
-            <p class="kanban-column-caption">${escapeHtml(getColumnCaption(column.id))}</p>
-          </div>
-          <span class="kanban-count" aria-label="${projects.length} projects">${projects.length}</span>
-        </header>
-        <div class="kanban-list">
-          ${cardsMarkup}
-        </div>
-      </section>
-    `;
-    }
     function renderProjectCard(project) {
-        const creatorName = escapeHtml(currentUser?.name || i18n("common.you"));
+        const creatorName = escapeHtml(getDisplayName(i18n("common.you")));
+        const progress = getProjectCompletionSummary(project.id);
         const description = project.description?.trim()
             ? `<p class="project-description">${escapeHtml(project.description.trim())}</p>`
-            : '<p class="project-description is-empty">No description yet.</p>';
+            : `<p class="project-description is-empty">${escapeHtml(i18n("dashboard.projectDescriptionPlaceholder"))}</p>`;
         const normalizedStatus = project.status.trim().toLowerCase();
         const query = new URLSearchParams({
             projectId: project.id,
             projectName: project.name,
             status: formatStatus(project.status),
-            creator: currentUser?.name || "You",
+            statusKey: getProjectContextStatusKey(project.status),
+            creator: getDisplayName(i18n("common.you")),
             createdAt: project.created_at
         }).toString();
         return `
-      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}">
+      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}" data-project-name="${escapeHtml(project.name)}" data-project-status="${escapeHtml(getColumnId(project.status))}" data-project-status-label="${escapeHtml(formatStatus(project.status))}" data-project-status-key="${escapeHtml(getProjectContextStatusKey(project.status))}" data-project-creator="${escapeHtml(getDisplayName(i18n("common.you")))}" data-project-created-at="${escapeHtml(project.created_at)}">
         <div class="project-head">
           <div class="project-title-wrap">
             <h3 class="project-name">${escapeHtml(project.name)}</h3>
-            <span class="project-task-count">${escapeHtml(i18n("common.tasksCount", { count: typeof project.taskCount === "number" ? project.taskCount : 0 }))}</span>
+            <span class="project-task-count">${escapeHtml(i18n("common.tasksCount", { count: progress.totalTasks }))}</span>
           </div>
           <span class="project-status">${getStatusIconMarkup(normalizedStatus)}${escapeHtml(formatStatus(project.status))}</span>
         </div>
@@ -313,6 +406,20 @@ var ProjectsPage;
             <span class="project-date">${escapeHtml(formatProjectDate(project.created_at))}</span>
           </div>
         </div>
+        <div class="project-progress-row project-progress-tone-${escapeHtml(progress.tone)}">
+          <div
+            class="project-progress-track"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="${progress.percentage}"
+            aria-label="${escapeHtml(progress.label)}"
+          >
+            <span class="project-progress-fill" style="width: ${progress.percentage}%;"></span>
+          </div>
+          <span class="project-progress-text">${escapeHtml(progress.label)}</span>
+        </div>
+        <p class="project-progress-counter">${escapeHtml(progress.counterLabel)}</p>
       </a>
     `;
     }
@@ -320,6 +427,9 @@ var ProjectsPage;
         if (!projectsBoardElement) {
             return;
         }
+        boardRenderState = "error";
+        lastBoardErrorText = text;
+        applyStoredProjectView();
         projectsBoardElement.innerHTML = `
       <article class="state-card">
         <h3>${escapeHtml(i18n("dashboard.projectsUnavailable"))}</h3>
@@ -327,12 +437,200 @@ var ProjectsPage;
       </article>
     `;
     }
-    function showProjectsMessage(text, type) {
-        if (!projectsMessageBox) {
+function showProjectsMessage(text, type, key = "", values) {
+    if (!projectsMessageBox) {
+        return;
+    }
+    if (key) {
+        setDynamicText(projectsMessageBox, key, values);
+    }
+    else {
+        clearDynamicText(projectsMessageBox);
+        projectsMessageBox.textContent = text;
+    }
+    projectsMessageBox.className = type ? `form-message ${type}` : "form-message";
+}
+    function handleProjectCardClick(event) {
+        const target = event.target;
+        const projectCard = target?.closest(".project-card-link");
+        if (!projectCard) {
             return;
         }
-        projectsMessageBox.textContent = text;
-        projectsMessageBox.className = type ? `form-message ${type}` : "form-message";
+        const projectId = projectCard.dataset.projectId || "";
+        const projectName = projectCard.dataset.projectName || "";
+        const status = projectCard.dataset.projectStatusLabel || "";
+        const statusKey = projectCard.dataset.projectStatusKey || "";
+        const creator = projectCard.dataset.projectCreator || "";
+        const createdAt = projectCard.dataset.projectCreatedAt || "";
+        localStorage.setItem(SELECTED_PROJECT_STORAGE_KEY, JSON.stringify({
+            projectId,
+            projectName,
+            status,
+            statusKey,
+            creator,
+            createdAt
+        }));
+    }
+    function persistKnownProjects(projects) {
+        const creator = getDisplayName(i18n("common.you"));
+        const serializedProjects = projects.map((project) => ({
+            projectId: project.id,
+            projectName: project.name,
+            status: formatStatus(project.status),
+            statusKey: getProjectContextStatusKey(project.status),
+            creator,
+            createdAt: project.created_at
+        }));
+        localStorage.setItem(KNOWN_PROJECTS_STORAGE_KEY, JSON.stringify(serializedProjects.slice(0, 48)));
+    }
+async function refreshProjectCompletionLookup(projects) {
+    projectCompletionLookup = await readProjectCompletionLookup(projects);
+}
+function refreshProjectCompletionLookupLabels() {
+    projectCompletionLookup.forEach((summary, projectId) => {
+        projectCompletionLookup.set(projectId, {
+            percentage: summary.percentage,
+            tone: summary.tone,
+            label: formatProjectCompletionLabel(summary.percentage),
+            totalTasks: summary.totalTasks,
+            completedTasks: summary.completedTasks,
+            counterLabel: formatProjectCompletionCounter(summary.completedTasks, summary.totalTasks)
+        });
+    });
+}
+async function refreshProjectCardsFromIndexedDb() {
+    if (boardRenderState !== "ready" || allProjects.length === 0) {
+        return;
+    }
+    await refreshProjectCompletionLookup(allProjects);
+    renderProjectsBoard(allProjects);
+}
+    async function readProjectCompletionLookup(projects) {
+        const lookup = new Map();
+        const projectIds = projects
+            .map((project) => getProjectIdKey(project.id))
+            .filter(Boolean);
+        projectIds.forEach((projectId) => {
+            lookup.set(projectId, createProjectCompletionSummary(0, 0));
+        });
+        if (projectIds.length === 0 || !window.indexedDB) {
+            return lookup;
+        }
+        try {
+            const tasks = await readIndexedDbTasks();
+            const totalByProjectId = new Map();
+            const completedByProjectId = new Map();
+            tasks.forEach((task) => {
+                const projectId = getProjectIdKey(task?.projectId);
+                if (!projectId || !lookup.has(projectId)) {
+                    return;
+                }
+                totalByProjectId.set(projectId, (totalByProjectId.get(projectId) || 0) + 1);
+                if (isCompletedTaskStatus(task?.status)) {
+                    completedByProjectId.set(projectId, (completedByProjectId.get(projectId) || 0) + 1);
+                }
+            });
+            projectIds.forEach((projectId) => {
+                lookup.set(projectId, createProjectCompletionSummary(totalByProjectId.get(projectId) || 0, completedByProjectId.get(projectId) || 0));
+            });
+        }
+        catch (error) {
+            console.warn("Error reading project completion from IndexedDB:", error);
+        }
+        return lookup;
+    }
+    async function readIndexedDbTasks() {
+        if (!window.indexedDB) {
+            return [];
+        }
+        return await new Promise((resolve, reject) => {
+            const openRequest = window.indexedDB.open(DB_NAME, DB_VERSION);
+            openRequest.onupgradeneeded = () => {
+                const database = openRequest.result;
+                if (!database.objectStoreNames.contains(TASKS_STORE_NAME)) {
+                    database.createObjectStore(TASKS_STORE_NAME, {
+                        keyPath: "id",
+                        autoIncrement: true
+                    });
+                }
+            };
+            openRequest.onerror = () => {
+                reject(openRequest.error || new Error("Failed to open IndexedDB."));
+            };
+            openRequest.onsuccess = () => {
+                const database = openRequest.result;
+                let settled = false;
+                const finish = (callback) => {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    database.close();
+                    callback();
+                };
+                if (!database.objectStoreNames.contains(TASKS_STORE_NAME)) {
+                    finish(() => resolve([]));
+                    return;
+                }
+                const transaction = database.transaction(TASKS_STORE_NAME, "readonly");
+                const request = transaction.objectStore(TASKS_STORE_NAME).getAll();
+                request.onerror = () => {
+                    finish(() => reject(request.error || new Error("Failed to read IndexedDB tasks.")));
+                };
+                request.onsuccess = () => {
+                    const tasks = Array.isArray(request.result) ? request.result : [];
+                    finish(() => resolve(tasks));
+                };
+                transaction.onabort = () => {
+                    finish(() => reject(transaction.error || new Error("IndexedDB task read was aborted.")));
+                };
+            };
+        });
+    }
+    function getProjectCompletionSummary(projectId) {
+        return projectCompletionLookup.get(getProjectIdKey(projectId)) || createProjectCompletionSummary(0, 0);
+    }
+    function getProjectIdKey(projectId) {
+        if (projectId === null || projectId === undefined) {
+            return "";
+        }
+        return String(projectId).trim();
+    }
+function createProjectCompletionSummary(totalTasks, completedTasks) {
+    const safeTotalTasks = Math.max(0, totalTasks);
+    const safeCompletedTasks = Math.min(Math.max(0, completedTasks), safeTotalTasks);
+        const percentage = safeTotalTasks > 0
+            ? Math.round((safeCompletedTasks / safeTotalTasks) * 100)
+            : 0;
+    return {
+        percentage,
+        tone: getProjectCompletionTone(percentage),
+        label: formatProjectCompletionLabel(percentage),
+        totalTasks: safeTotalTasks,
+        completedTasks: safeCompletedTasks,
+        counterLabel: formatProjectCompletionCounter(safeCompletedTasks, safeTotalTasks)
+    };
+}
+    function getProjectCompletionTone(percentage) {
+        if (percentage <= 30) {
+            return "low";
+        }
+        if (percentage <= 60) {
+            return "medium";
+        }
+        return "high";
+    }
+function formatProjectCompletionLabel(percentage) {
+    return i18n("common.percentComplete", { percent: percentage });
+}
+function formatProjectCompletionCounter(completedTasks, totalTasks) {
+    if (totalTasks <= 0) {
+        return i18n("common.noTasksYet");
+    }
+    return i18n("common.tasksCompletedCounter", { completed: completedTasks, total: totalTasks });
+}
+    function isCompletedTaskStatus(status) {
+        return typeof status === "string" && status.trim().toLowerCase() === "done";
     }
     function getStoredToken() {
         return localStorage.getItem("token")?.trim() || "";
@@ -417,10 +715,24 @@ var ProjectsPage;
         return fallback;
     }
     function formatStatus(status) {
-        return status
-            .split("-")
-            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-            .join(" ");
+        const normalizedStatus = getColumnId(status);
+        if (normalizedStatus === "start-next") {
+            return i18n("projects.startNext");
+        }
+        if (normalizedStatus === "in-progress") {
+            return i18n("projects.inProgress");
+        }
+        return i18n("projects.done");
+    }
+    function getProjectContextStatusKey(status) {
+        const normalizedStatus = getColumnId(status);
+        if (normalizedStatus === "start-next") {
+            return "projects.startNext";
+        }
+        if (normalizedStatus === "in-progress") {
+            return "projects.inProgress";
+        }
+        return "projects.done";
     }
     function formatProjectDate(dateString) {
         const date = new Date(dateString);
@@ -433,24 +745,6 @@ var ProjectsPage;
                 day: "numeric",
                 year: "numeric"
             }) });
-    }
-    function getColumnTitle(columnId) {
-        if (columnId === "start-next") {
-            return i18n("projects.startNext");
-        }
-        if (columnId === "in-progress") {
-            return i18n("projects.inProgress");
-        }
-        return i18n("projects.done");
-    }
-    function getColumnCaption(columnId) {
-        if (columnId === "start-next") {
-            return i18n("projects.startNextCaption");
-        }
-        if (columnId === "in-progress") {
-            return i18n("projects.inProgressCaption");
-        }
-        return i18n("projects.doneCaption");
     }
     function escapeHtml(text) {
         const div = document.createElement("div");

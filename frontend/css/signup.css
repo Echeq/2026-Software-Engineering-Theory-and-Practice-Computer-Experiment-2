@@ -26,7 +26,21 @@ body {
   font-family: Inter, "Segoe UI", Arial, sans-serif;
   font-size: 17px;
   color: var(--text);
-  background: linear-gradient(180deg, var(--bg), #f1f5f9);
+  background: transparent;
+}
+
+#particles-js {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  background: #EEEEF5;
+}
+
+body[data-theme="dark"] #particles-js {
+  background: #0F0F1A;
 }
 
 .auth-page-controls {
@@ -130,6 +144,20 @@ body[data-theme="dark"] .theme-toggle {
   background: rgba(22, 27, 34, 0.92);
 }
 
+body[data-theme="dark"] .theme-toggle,
+body[data-theme="dark"] .language-option,
+body[data-theme="dark"] .language-switcher-trigger,
+body[data-theme="dark"] .submit-button {
+  color: #F1F5F9;
+}
+
+body[data-theme="dark"] .theme-toggle.is-dark,
+body[data-theme="dark"] .language-option.is-active {
+  border-color: rgba(165, 180, 252, 0.55);
+  background: #4f46e5;
+  color: #F1F5F9;
+}
+
 .language-option {
   min-height: 28px;
   padding: 0 9px;
@@ -176,6 +204,8 @@ body[data-theme="dark"] {
 
 .signup-page {
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   padding: 16px;
@@ -184,6 +214,8 @@ body[data-theme="dark"] {
 .signup-card {
   width: min(100%, 460px);
   min-width: 0;
+  position: relative;
+  z-index: 1;
   padding: 24px;
   border: 1px solid var(--surface-border);
   border-radius: 16px;
@@ -309,6 +341,14 @@ body[data-theme="dark"] .form-group input:focus {
 .submit-button:hover {
   background: var(--accent-hover);
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+}
+
+body[data-theme="dark"] .submit-button {
+  background: #6366f1;
+}
+
+body[data-theme="dark"] .submit-button:hover {
+  background: #4f46e5;
 }
 
 .submit-button:disabled {
