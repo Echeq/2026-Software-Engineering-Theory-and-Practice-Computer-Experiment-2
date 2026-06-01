@@ -47,8 +47,20 @@ Detailed record of tasks completed by each team member for the SPMP (Student Pro
 | 任杰 | Wrote comprehensive README.md with setup instructions and API documentation | Done |
 | Elvis | Managed version control, organized external_logs documentation | Done |
 
+## Module 5: Internationalization & Documentation Skill
+| Member Name | Tasks Completed | Status |
+| :--- | :--- | :--- |
+| AI Assistant | Added Russian (ru) locale to `i18n.ts` with full translation dictionary | Done |
+| AI Assistant | Added `data-i18n` and `data-i18n-aria-label` attributes to all 8+ HTML pages | Done |
+| AI Assistant | Fixed sidebar Team link icon regression caused by `data-i18n` placement | Done |
+| AI Assistant | Added missing i18n keys to TypeScript files (tasks.ts, team.ts, projects.ts, login.ts, settings.ts) | Done |
+| AI Assistant | Added missing `dashboard.statistics*` and `dashboard.closeProjectDialog` keys to zh, es, ru dictionaries | Done |
+| AI Assistant | Created `skills/software_engineering_course_skill.md` for reproducible AI-assisted course workflow | Done |
+| User (Sinn) | Reviewed and approved translations, caught sidebar icon bug, requested fixes | Done |
+| User (Sinn) | Provided skill requirements specification for course documentation workflow | Done |
+
 ## Summary
-- **Total Tasks Completed:** 24
-- **Team Members:** 4 (Elvis, 孔刚，李欣，任杰)
-- **Project Status:** All core features implemented and tested
+- **Total Tasks Completed:** 30
+- **Team Members:** 4 (Elvis, 孔刚，李欣，任杰) + AI Assistant + User (Sinn)
+- **Project Status:** All core features implemented and tested; internationalization complete (EN/ZH/ES/RU)
 - **Next Steps:** Optional features (task comments, team collaboration) can be added in future iterations
