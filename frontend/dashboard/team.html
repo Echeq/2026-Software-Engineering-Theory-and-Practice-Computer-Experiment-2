@@ -99,7 +99,64 @@
           </div>
         </div>
 
-        <div id="team-members-list" class="team-members-list" aria-live="polite"></div>
+        <div class="team-table-toolbar">
+          <div class="team-table-toolbar-left">
+            <button id="add-member-toggle-btn" type="button" class="submit-button" hidden>Add Member</button>
+            <p id="team-members-summary" class="team-members-summary">0 members · 0 admins</p>
+          </div>
+
+          <div class="team-table-toolbar-actions">
+            <button id="team-filter-btn" type="button" class="secondary-button">Filter: All</button>
+            <button id="team-sort-btn" type="button" class="secondary-button">Sort: Date joined</button>
+          </div>
+        </div>
+
+        <form id="add-member-form" class="add-member-form" novalidate hidden>
+          <p id="add-member-message" class="form-message" aria-live="polite"></p>
+          <div class="add-member-grid">
+            <label class="form-group" for="member-name">
+              <span>Name</span>
+              <input id="member-name" name="name" type="text" autocomplete="name" placeholder="Alex Johnson">
+            </label>
+
+            <label class="form-group" for="member-email">
+              <span>Email</span>
+              <input id="member-email" name="email" type="email" autocomplete="email" placeholder="alex.johnson@example.com">
+            </label>
+
+            <label class="form-group" for="member-role">
+              <span>Role</span>
+              <select id="member-role" name="role">
+                <option value="MEMBER">Member</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="add-member-actions">
+            <button type="submit" class="submit-button">Add Member</button>
+          </div>
+        </form>
+
+        <div class="team-table-wrap">
+          <table class="team-members-table">
+            <thead>
+              <tr>
+                <th scope="col">Member</th>
+                <th scope="col">Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">Role</th>
+                <th scope="col">Date joined</th>
+                <th scope="col" class="team-actions-column">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="team-members-list" aria-live="polite"></tbody>
+          </table>
+        </div>
+
+        <div class="team-table-footer">
+          <button id="team-load-more-btn" type="button" class="secondary-button" hidden>Load more</button>
+        </div>
       </section>
     </section>
   </main>
@@ -109,7 +166,11 @@
 
     const THEME_STORAGE_KEY = "dashboard-theme";
     const SETTINGS_STORAGE_KEY = "dashboard-settings-state";
+    const TEAM_MEMBERS_STORAGE_KEY = "team-members-state";
     const MOBILE_SIDEBAR_BREAKPOINT = 960;
+    const TEAM_PAGE_SIZE = 20;
+    const FILTER_STATES = ["ALL", "ADMIN", "MEMBER"];
+    const SORT_STATES = ["DATE_JOINED", "NAME", "ROLE"];
 
     const TEAM_MEMBERS = [
       { name: "Anna Ivanova", email: "anna.ivanova@example.com", role: "ADMIN", since: "March 12, 2026" },
@@ -125,14 +186,32 @@
     let userNameElement = null;
     let userAvatarElement = null;
     let teamMembersListElement = null;
+    let addMemberSectionElement = null;
+    let addMemberFormElement = null;
+    let addMemberMessageElement = null;
+    let memberNameInputElement = null;
+    let memberEmailInputElement = null;
+    let memberRoleSelectElement = null;
+    let addMemberToggleButton = null;
+    let teamMembersSummaryElement = null;
+    let filterButtonElement = null;
+    let sortButtonElement = null;
+    let loadMoreButtonElement = null;
+    let currentUserRole = "member";
+    let currentFilter = "ALL";
+    let currentSort = "DATE_JOINED";
+    let visibleRowCount = TEAM_PAGE_SIZE;
 
     document.addEventListener("DOMContentLoaded", initializeTeamPage);
 
     function initializeTeamPage() {
       cacheElements();
+      ensureCurrentUserIsAdmin();
+      currentUserRole = getCurrentUserRole();
       applyTheme(readStoredTheme() || getPreferredTheme());
       syncSidebarState();
       setupEventListeners();
+      syncAdminUi();
       renderCurrentUserPanel();
       renderTeamMembers();
     }
@@ -145,12 +224,29 @@
       userNameElement = document.getElementById("user-name");
       userAvatarElement = document.getElementById("user-avatar");
       teamMembersListElement = document.getElementById("team-members-list");
+      addMemberSectionElement = document.getElementById("add-member-section");
+      addMemberFormElement = document.getElementById("add-member-form");
+      addMemberMessageElement = document.getElementById("add-member-message");
+      memberNameInputElement = document.getElementById("member-name");
+      memberEmailInputElement = document.getElementById("member-email");
+      memberRoleSelectElement = document.getElementById("member-role");
+      addMemberToggleButton = document.getElementById("add-member-toggle-btn");
+      teamMembersSummaryElement = document.getElementById("team-members-summary");
+      filterButtonElement = document.getElementById("team-filter-btn");
+      sortButtonElement = document.getElementById("team-sort-btn");
+      loadMoreButtonElement = document.getElementById("team-load-more-btn");
     }
 
     function setupEventListeners() {
       sidebarToggleButton?.addEventListener("click", toggleSidebar);
       sidebarBackdropElement?.addEventListener("click", closeSidebar);
       logoutButton?.addEventListener("click", logout);
+      addMemberFormElement?.addEventListener("submit", handleAddMemberSubmit);
+      teamMembersListElement?.addEventListener("click", handleTeamMembersListClick);
+      addMemberToggleButton?.addEventListener("click", toggleAddMemberForm);
+      filterButtonElement?.addEventListener("click", cycleFilter);
+      sortButtonElement?.addEventListener("click", cycleSort);
+      loadMoreButtonElement?.addEventListener("click", handleLoadMoreClick);
       window.addEventListener("resize", syncSidebarState);
       document.querySelectorAll(".sidebar-link").forEach((link) => {
         link.addEventListener("click", () => {
@@ -164,6 +260,28 @@
     function readStoredTheme() {
       const value = localStorage.getItem(THEME_STORAGE_KEY);
       return value === "dark" || value === "light" ? value : "";
+    }
+
+    function getCurrentUserRole() {
+      const value = localStorage.getItem("userRole");
+      return typeof value === "string" && value.trim().toLowerCase() === "admin" ? "admin" : "member";
+    }
+
+    function ensureCurrentUserIsAdmin() {
+      localStorage.setItem("userRole", "admin");
+    }
+
+    function isAdminUser() {
+      return currentUserRole === "admin";
+    }
+
+    function syncAdminUi() {
+      if (addMemberToggleButton) {
+        addMemberToggleButton.hidden = !isAdminUser();
+      }
+      if (!isAdminUser() && addMemberFormElement) {
+        addMemberFormElement.hidden = true;
+      }
     }
 
     function getPreferredTheme() {
@@ -255,8 +373,52 @@
       const currentUser = getCurrentUser();
       const normalizedCurrentName = currentUser.name.trim().toLowerCase();
       const normalizedCurrentEmail = currentUser.email.trim().toLowerCase();
+      const allMembers = getNormalizedTeamMembers(currentUser);
+      const members = getProcessedTeamMembers(allMembers);
+      const visibleMembers = members.slice(0, visibleRowCount);
+      updateTeamSummary(allMembers);
+      syncTableControls(members.length);
 
-      const members = TEAM_MEMBERS.slice();
+      if (!visibleMembers.length) {
+        teamMembersListElement.innerHTML = `
+          <tr>
+            <td colspan="6" class="team-empty-cell">No members match the current filter.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      teamMembersListElement.innerHTML = visibleMembers.map((member) => {
+        const isCurrentUser = member.email.toLowerCase() === normalizedCurrentEmail || member.name.toLowerCase() === normalizedCurrentName;
+        return `
+          <tr class="team-member-row">
+            <td>
+              <span class="team-avatar-cell" aria-hidden="true">${escapeHtml(getInitials(member.name))}</span>
+            </td>
+            <td>
+              <div class="team-name-cell">
+                <strong>${escapeHtml(member.name)}</strong>
+                ${isCurrentUser ? '<span class="team-you-label">(you)</span>' : ""}
+              </div>
+            </td>
+            <td><span class="team-email-cell">${escapeHtml(member.email)}</span></td>
+            <td><span class="team-role-badge team-role-badge-${member.role.toLowerCase()}">${escapeHtml(member.role)}</span></td>
+            <td><span class="team-date-cell">${escapeHtml(member.since)}</span></td>
+            <td class="team-actions-cell">
+              ${isAdminUser() ? `<button type="button" class="secondary-button team-remove-button" data-remove-member="${escapeHtml(member.email)}">Remove</button>` : ""}
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function getNormalizedTeamMembers(currentUser) {
+      const storedMembers = readStoredTeamMembers();
+      const members = (storedMembers.length ? storedMembers : TEAM_MEMBERS)
+        .map(normalizeMemberRecord)
+        .filter(Boolean);
+      const normalizedCurrentName = currentUser.name.trim().toLowerCase();
+      const normalizedCurrentEmail = currentUser.email.trim().toLowerCase();
       const matchingMemberIndex = members.findIndex((member) => {
         return member.email.toLowerCase() === normalizedCurrentEmail || member.name.toLowerCase() === normalizedCurrentName;
       });
@@ -265,34 +427,239 @@
         members[matchingMemberIndex] = {
           ...members[matchingMemberIndex],
           name: currentUser.name,
-          email: currentUser.email
+          email: currentUser.email,
+          role: normalizeRole(members[matchingMemberIndex].role)
         };
       } else {
         members.unshift({
           name: currentUser.name,
           email: currentUser.email,
-          role: "ADMIN",
-          since: "March 12, 2026"
+          role: isAdminUser() ? "ADMIN" : "MEMBER",
+          since: formatMemberSince(new Date())
         });
       }
 
-      teamMembersListElement.innerHTML = members.map((member) => {
-        const isCurrentUser = member.email.toLowerCase() === normalizedCurrentEmail || member.name.toLowerCase() === normalizedCurrentName;
-        return `
-          <article class="team-member-card">
-            <div class="team-member-main">
-              <div class="team-member-heading">
-                <h3 class="team-member-name">${escapeHtml(member.name)}${isCurrentUser ? ' <span class="team-you-label">(you)</span>' : ""}</h3>
-                <span class="team-role-badge">${escapeHtml(member.role)}</span>
-              </div>
-              <div class="team-member-meta">
-                <span class="team-email-badge">${escapeHtml(member.email)}</span>
-                <p class="team-member-since">Member since ${escapeHtml(member.since)}</p>
-              </div>
-            </div>
-          </article>
-        `;
-      }).join("");
+      writeStoredTeamMembers(members);
+      return members;
+    }
+
+    function getProcessedTeamMembers(members) {
+      const filteredMembers = members.filter((member) => {
+        if (currentFilter === "ADMIN") {
+          return member.role === "ADMIN";
+        }
+        if (currentFilter === "MEMBER") {
+          return member.role === "MEMBER";
+        }
+        return true;
+      });
+
+      return filteredMembers.sort((left, right) => {
+        if (currentSort === "NAME") {
+          return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+        }
+        if (currentSort === "ROLE") {
+          const roleCompare = right.role.localeCompare(left.role, undefined, { sensitivity: "base" });
+          return roleCompare || left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
+        }
+        return Date.parse(left.sortDate) - Date.parse(right.sortDate);
+      });
+    }
+
+    function normalizeMemberRecord(member) {
+      if (!member || typeof member !== "object") {
+        return null;
+      }
+
+      const name = typeof member.name === "string" ? member.name.trim() : "";
+      const email = typeof member.email === "string" ? member.email.trim() : "";
+      const since = typeof member.since === "string" ? member.since.trim() : "";
+
+      if (!name || !email || !since) {
+        return null;
+      }
+
+      return {
+        name,
+        email,
+        role: normalizeRole(member.role),
+        since,
+        sortDate: toSortableDate(since)
+      };
+    }
+
+    function normalizeRole(role) {
+      return String(role).trim().toUpperCase() === "ADMIN" ? "ADMIN" : "MEMBER";
+    }
+
+    function readStoredTeamMembers() {
+      try {
+        const raw = localStorage.getItem(TEAM_MEMBERS_STORAGE_KEY);
+        if (!raw) {
+          return [];
+        }
+
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        console.warn("Failed to read stored team members:", error);
+        return [];
+      }
+    }
+
+    function writeStoredTeamMembers(members) {
+      localStorage.setItem(TEAM_MEMBERS_STORAGE_KEY, JSON.stringify(members));
+    }
+
+    function handleAddMemberSubmit(event) {
+      event.preventDefault();
+
+      if (!isAdminUser()) {
+        return;
+      }
+
+      const name = memberNameInputElement?.value.trim() || "";
+      const email = memberEmailInputElement?.value.trim() || "";
+      const role = normalizeRole(memberRoleSelectElement?.value || "MEMBER");
+
+      if (!name || !email) {
+        showAddMemberMessage("Enter a name and a valid email.", "error");
+        return;
+      }
+
+      if (!isValidEmail(email)) {
+        showAddMemberMessage("Enter a valid email address.", "error");
+        return;
+      }
+
+      const members = getNormalizedTeamMembers(getCurrentUser());
+      const emailExists = members.some((member) => member.email.toLowerCase() === email.toLowerCase());
+
+      if (emailExists) {
+        showAddMemberMessage("A member with this email already exists.", "error");
+        return;
+      }
+
+      members.push({
+        name,
+        email,
+        role,
+        since: formatMemberSince(new Date())
+      });
+
+      writeStoredTeamMembers(members);
+      visibleRowCount = TEAM_PAGE_SIZE;
+      renderTeamMembers();
+      addMemberFormElement?.reset();
+      if (memberRoleSelectElement) {
+        memberRoleSelectElement.value = "MEMBER";
+      }
+      showAddMemberMessage("Member added successfully.", "success");
+    }
+
+    function handleTeamMembersListClick(event) {
+      const button = event.target instanceof Element ? event.target.closest("[data-remove-member]") : null;
+      if (!button || !isAdminUser()) {
+        return;
+      }
+
+      const email = button.getAttribute("data-remove-member") || "";
+      if (!email) {
+        return;
+      }
+
+      const members = getNormalizedTeamMembers(getCurrentUser()).filter((member) => member.email.toLowerCase() !== email.toLowerCase());
+      writeStoredTeamMembers(members);
+      visibleRowCount = Math.max(TEAM_PAGE_SIZE, Math.min(visibleRowCount, members.length || TEAM_PAGE_SIZE));
+      renderTeamMembers();
+      showAddMemberMessage("Member removed successfully.", "success");
+    }
+
+    function toggleAddMemberForm() {
+      if (!addMemberFormElement || !isAdminUser()) {
+        return;
+      }
+      addMemberFormElement.hidden = !addMemberFormElement.hidden;
+      showAddMemberMessage("", "");
+    }
+
+    function cycleFilter() {
+      const currentIndex = FILTER_STATES.indexOf(currentFilter);
+      currentFilter = FILTER_STATES[(currentIndex + 1) % FILTER_STATES.length];
+      visibleRowCount = TEAM_PAGE_SIZE;
+      updateFilterButtonLabel();
+      renderTeamMembers();
+    }
+
+    function cycleSort() {
+      const currentIndex = SORT_STATES.indexOf(currentSort);
+      currentSort = SORT_STATES[(currentIndex + 1) % SORT_STATES.length];
+      visibleRowCount = TEAM_PAGE_SIZE;
+      updateSortButtonLabel();
+      renderTeamMembers();
+    }
+
+    function handleLoadMoreClick() {
+      visibleRowCount += TEAM_PAGE_SIZE;
+      renderTeamMembers();
+    }
+
+    function syncTableControls(totalMembers) {
+      if (loadMoreButtonElement) {
+        loadMoreButtonElement.hidden = totalMembers <= visibleRowCount;
+      }
+      updateFilterButtonLabel();
+      updateSortButtonLabel();
+    }
+
+    function updateTeamSummary(members) {
+      if (!teamMembersSummaryElement) {
+        return;
+      }
+      const adminCount = members.filter((member) => member.role === "ADMIN").length;
+      teamMembersSummaryElement.textContent = `${members.length} members · ${adminCount} admins`;
+    }
+
+    function updateFilterButtonLabel() {
+      if (!filterButtonElement) {
+        return;
+      }
+      const label = currentFilter === "ADMIN" ? "Admins" : currentFilter === "MEMBER" ? "Members" : "All";
+      filterButtonElement.textContent = `Filter: ${label}`;
+    }
+
+    function updateSortButtonLabel() {
+      if (!sortButtonElement) {
+        return;
+      }
+      const label = currentSort === "NAME" ? "Name" : currentSort === "ROLE" ? "Role" : "Date joined";
+      sortButtonElement.textContent = `Sort: ${label}`;
+    }
+
+    function showAddMemberMessage(text, type) {
+      if (!addMemberMessageElement) {
+        return;
+      }
+
+      addMemberMessageElement.textContent = text;
+      addMemberMessageElement.className = type ? `form-message ${type}` : "form-message";
+    }
+
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function formatMemberSince(date) {
+      return new Intl.DateTimeFormat("en-US", {
+        month: "long",
+        day: "2-digit",
+        year: "numeric"
+      }).format(date);
+    }
+
+    function toSortableDate(value) {
+      const parsed = Date.parse(value);
+      return Number.isNaN(parsed) ? new Date(0).toISOString() : new Date(parsed).toISOString();
     }
 
     function getInitials(name) {
@@ -320,106 +687,235 @@
   </script>
 
   <style>
-    .team-members-list {
-      display: grid;
-      gap: 14px;
-    }
-
-    .team-member-card {
-      border: 1px solid var(--surface-border);
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.98);
-      box-shadow: var(--shadow);
-      padding: 20px 22px;
-    }
-
-    body[data-theme="dark"] .team-member-card {
-      background: rgba(248, 250, 252, 0.98);
-      border-color: rgba(203, 213, 225, 0.9);
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
-      color: #1f2937;
-    }
-
-    .team-member-main {
-      display: grid;
-      gap: 14px;
-    }
-
-    .team-member-heading {
+    .team-table-toolbar,
+    .team-table-toolbar-left,
+    .team-table-toolbar-actions {
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
+      align-items: center;
       gap: 12px;
+    }
+
+    .team-table-toolbar {
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .team-table-toolbar-left {
       flex-wrap: wrap;
     }
 
-    .team-member-name {
-      font-size: 22px;
-      line-height: 1.2;
-      letter-spacing: -0.03em;
-      color: #111827;
-    }
-
-    .team-you-label {
-      color: var(--accent);
-      font-size: 16px;
-      font-weight: 700;
-    }
-
-    .team-role-badge,
-    .team-email-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: fit-content;
-      min-height: 32px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-    }
-
-    .team-role-badge {
-      border: 1px solid rgba(79, 70, 229, 0.16);
-      background: rgba(79, 70, 229, 0.1);
-      color: var(--accent);
-    }
-
-    .team-member-meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+    .team-table-toolbar-actions {
+      justify-content: flex-end;
       flex-wrap: wrap;
     }
 
-    .team-email-badge {
-      border: 1px solid rgba(148, 163, 184, 0.28);
-      background: #f8fafc;
-      color: #334155;
-      font-weight: 600;
-      letter-spacing: 0;
-    }
-
-    .team-member-since {
-      color: #475569;
+    .team-members-summary {
+      color: var(--muted);
       font-size: 14px;
       font-weight: 600;
     }
 
+    .team-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--surface-border);
+      border-radius: 14px;
+      background: var(--surface);
+    }
+
+    .team-members-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .team-members-table th,
+    .team-members-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--surface-border);
+      vertical-align: middle;
+    }
+
+    .team-members-table th {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: var(--surface-muted);
+      white-space: nowrap;
+    }
+
+    .team-members-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .team-member-row:hover {
+      background: var(--surface-muted);
+    }
+
+    .team-avatar-cell {
+      width: 40px;
+      height: 40px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 999px;
+      background: rgba(79, 70, 229, 0.16);
+      border: 1px solid rgba(79, 70, 229, 0.28);
+      color: #a5b4fc;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+    }
+
+    .team-name-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+      min-width: 0;
+    }
+
+    .team-email-cell,
+    .team-date-cell {
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .team-you-label {
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .team-role-badge {
+      min-height: 28px;
+      padding: 4px 10px;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+
+    .team-role-badge-admin {
+      background: rgba(79, 70, 229, 0.14);
+      border-color: rgba(79, 70, 229, 0.22);
+      color: #818cf8;
+    }
+
+    .team-role-badge-member {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+    }
+
+    .team-actions-column,
+    .team-actions-cell {
+      width: 112px;
+      text-align: right;
+    }
+
+    .team-remove-button {
+      min-height: 34px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .team-member-row:hover .team-remove-button,
+    .team-member-row:focus-within .team-remove-button {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .team-table-footer {
+      display: flex;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .team-empty-cell {
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+      padding: 28px 16px;
+    }
+
+    .add-member-form {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 16px;
+      padding: 18px;
+      border: 1px solid var(--surface-border);
+      border-radius: 14px;
+      background: var(--surface);
+    }
+
+    .add-member-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .add-member-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .form-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .form-group span {
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .form-group input,
+    .form-group select {
+      min-height: 44px;
+      padding: 0 14px;
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      background: var(--surface-muted);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+    }
+
+    .form-group input::placeholder {
+      color: var(--muted);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: rgba(79, 70, 229, 0.34);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.14);
+    }
+
+    @media (max-width: 900px) {
+      .team-table-toolbar {
+        align-items: stretch;
+      }
+
+      .team-table-toolbar-actions {
+        justify-content: flex-start;
+      }
+    }
+
     @media (max-width: 720px) {
-      .team-member-card {
-        padding: 18px;
+      .team-members-table {
+        min-width: 760px;
       }
 
-      .team-member-name {
-        font-size: 20px;
+      .add-member-grid {
+        grid-template-columns: 1fr;
       }
 
-      .team-member-meta {
-        align-items: flex-start;
-        flex-direction: column;
+      .add-member-actions .submit-button,
+      .team-table-toolbar-actions .secondary-button,
+      .team-table-toolbar-left .submit-button {
+        width: 100%;
       }
     }
   </style>

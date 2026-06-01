@@ -70,6 +70,11 @@ var SettingsPage;
     let sidebarToggleButton = null;
     let sidebarElement = null;
     let sidebarBackdropElement = null;
+    let teamRolesProfileElement = null;
+    let teamRolesAvatarElement = null;
+    let teamRolesNameElement = null;
+    let teamRolesEmailElement = null;
+    let teamRolesBadgeElement = null;
     document.addEventListener("DOMContentLoaded", () => {
         void initializeSettingsPage();
     });
@@ -124,6 +129,11 @@ var SettingsPage;
         sidebarToggleButton = document.getElementById("sidebar-toggle-btn");
         sidebarElement = document.getElementById("dashboard-sidebar");
         sidebarBackdropElement = document.getElementById("sidebar-backdrop");
+        teamRolesProfileElement = document.getElementById("team-roles-profile");
+        teamRolesAvatarElement = document.getElementById("team-roles-avatar");
+        teamRolesNameElement = document.getElementById("team-roles-name");
+        teamRolesEmailElement = document.getElementById("team-roles-email");
+        teamRolesBadgeElement = document.getElementById("team-roles-badge");
         if (userNameElement) {
             userNameElement.textContent = "";
         }
@@ -275,6 +285,7 @@ var SettingsPage;
             button.classList.toggle("is-active", isActive);
             button.setAttribute("aria-pressed", String(isActive));
         });
+        renderTeamRolesSection();
         setPasswordVisibility(currentPasswordInput, currentPasswordInput?.type === "text" ? "app.password.hide" : "app.password.show");
         setPasswordVisibility(newPasswordInput, newPasswordInput?.type === "text" ? "app.password.hide" : "app.password.show");
         setPasswordVisibility(confirmNewPasswordInput, confirmNewPasswordInput?.type === "text" ? "app.password.hide" : "app.password.show");
@@ -561,6 +572,36 @@ var SettingsPage;
     function clearAllLocalData() {
         localStorage.clear();
         window.location.reload();
+    }
+    function renderTeamRolesSection() {
+        if (!teamRolesProfileElement) {
+            return;
+        }
+        const name = getDisplayName("Current User");
+        const email = getCurrentUserEmail() || "current.user@example.com";
+        const role = getCurrentUserRole() === "admin" ? "Admin" : "Member";
+        if (teamRolesAvatarElement) {
+            teamRolesAvatarElement.textContent = getInitials(name);
+        }
+        if (teamRolesNameElement) {
+            teamRolesNameElement.textContent = name;
+        }
+        if (teamRolesEmailElement) {
+            teamRolesEmailElement.textContent = email;
+        }
+        if (teamRolesBadgeElement) {
+            teamRolesBadgeElement.textContent = role;
+            teamRolesBadgeElement.className = role === "Admin"
+                ? "settings-team-role-badge is-admin"
+                : "settings-team-role-badge is-member";
+        }
+    }
+    function getCurrentUserRole() {
+        const value = localStorage.getItem("userRole");
+        return typeof value === "string" && value.trim().toLowerCase() === "admin" ? "admin" : "member";
+    }
+    function getCurrentUserEmail() {
+        return settingsState.profileEmail.trim() || currentUser?.email?.trim() || "";
     }
     function showSettingsMessage(text, type = "", key = "", values) {
         if (!settingsMessageBox) {
