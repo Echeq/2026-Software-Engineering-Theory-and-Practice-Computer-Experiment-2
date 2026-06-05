@@ -82,12 +82,16 @@ router.post("/register", async (req, res: Response) => {
         const { name, email, password } = req.body;
 
         if (!name || !email || !password) {
-            res.status(400).json({ message: "Name, email, and password are required" });
+            res.status(400).json({
+                message: "Name, email, and password are required",
+            });
             return;
         }
 
         if (typeof password !== "string" || password.length < 6) {
-            res.status(400).json({ message: "Password must be at least 6 characters" });
+            res.status(400).json({
+                message: "Password must be at least 6 characters",
+            });
             return;
         }
 
@@ -124,6 +128,72 @@ router.get("/me", authenticateToken, (req: AuthRequest, res: Response) => {
         },
     });
 });
+
+router.post(
+    "/change-password",
+    authenticateToken,
+    async (req: AuthRequest, res: Response) => {
+        try {
+            if (!req.user || !req.sessionId) {
+                res.status(401).json({ message: "Not authenticated" });
+                return;
+            }
+
+            const { currentPassword, newPassword } = req.body;
+
+            if (!currentPassword || !newPassword) {
+                res.status(400).json({
+                    message: "Current password and new password are required",
+                });
+                return;
+            }
+
+            if (typeof newPassword !== "string" || newPassword.length < 6) {
+                res.status(400).json({
+                    message: "New password must be at least 6 characters",
+                });
+                return;
+            }
+
+            const passwordMatches = await UserModel.verifyPassword(
+                currentPassword,
+                req.user.password_hash,
+            );
+
+            if (!passwordMatches) {
+                res.status(401).json({
+                    message: "Current password is incorrect",
+                });
+                return;
+            }
+
+            const isSamePassword = await UserModel.verifyPassword(
+                newPassword,
+                req.user.password_hash,
+            );
+
+            if (isSamePassword) {
+                res.status(400).json({
+                    message:
+                        "New password must be different from the current password",
+                });
+                return;
+            }
+
+            await UserModel.updatePassword(req.user.id, newPassword);
+
+            SessionModel.deleteByUserId(req.user.id);
+            clearSessionCookie(res);
+
+            res.json({
+                message: "Password changed successfully. Please log in again.",
+            });
+        } catch (error) {
+            console.error("Change password error:", error);
+            res.status(500).json({ message: "Internal server error" });
+        }
+    },
+);
 
 router.post("/logout", (req, res: Response) => {
     const sessionId = readSessionId(req.headers.cookie);
