@@ -70,6 +70,11 @@ var SettingsPage;
     let sidebarToggleButton = null;
     let sidebarElement = null;
     let sidebarBackdropElement = null;
+    let teamRolesProfileElement = null;
+    let teamRolesAvatarElement = null;
+    let teamRolesNameElement = null;
+    let teamRolesEmailElement = null;
+    let teamRolesBadgeElement = null;
     document.addEventListener("DOMContentLoaded", () => {
         void initializeSettingsPage();
     });
@@ -124,6 +129,11 @@ var SettingsPage;
         sidebarToggleButton = document.getElementById("sidebar-toggle-btn");
         sidebarElement = document.getElementById("dashboard-sidebar");
         sidebarBackdropElement = document.getElementById("sidebar-backdrop");
+        teamRolesProfileElement = document.getElementById("team-roles-profile");
+        teamRolesAvatarElement = document.getElementById("team-roles-avatar");
+        teamRolesNameElement = document.getElementById("team-roles-name");
+        teamRolesEmailElement = document.getElementById("team-roles-email");
+        teamRolesBadgeElement = document.getElementById("team-roles-badge");
         if (userNameElement) {
             userNameElement.textContent = "";
         }
@@ -242,13 +252,425 @@ var SettingsPage;
             }
         }
         catch (error) {
-            console.error("Error loading user data:", error);
-            if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
-                redirectToLogin();
+            console.warn("Failed to parse settings state:", error);
+        }
+        return null;
+    }
+    function readStoredDefaultProjectView() {
+        const value = localStorage.getItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY);
+        return value === "grid" || value === "list" ? value : "";
+    }
+    function persistSettingsState() {
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settingsState));
+    }
+    function renderSettingsState() {
+        if (nameInput) {
+            nameInput.value = settingsState.profileName;
+        }
+        if (emailInput) {
+            emailInput.value = settingsState.profileEmail;
+        }
+        if (appearanceThemeValueElement) {
+            appearanceThemeValueElement.textContent = settingsState.theme === "dark" ? i18n("theme.dark") : i18n("theme.light");
+        }
+        if (appearanceThemeSwitchButton) {
+            const isDarkTheme = settingsState.theme === "dark";
+            appearanceThemeSwitchButton.setAttribute("aria-checked", String(isDarkTheme));
+            appearanceThemeSwitchButton.classList.toggle("is-dark", isDarkTheme);
+        }
+        renderPreferenceSwitch(emailNotificationsSwitchButton, emailNotificationsValueElement, settingsState.emailNotifications);
+        renderPreferenceSwitch(browserNotificationsSwitchButton, browserNotificationsValueElement, settingsState.browserNotifications);
+        projectViewButtons.forEach((button) => {
+            const isActive = button.dataset.projectView === settingsState.defaultProjectView;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-pressed", String(isActive));
+        });
+        renderTeamRolesSection();
+        setPasswordVisibility(currentPasswordInput, currentPasswordInput?.type === "text" ? "app.password.hide" : "app.password.show");
+        setPasswordVisibility(newPasswordInput, newPasswordInput?.type === "text" ? "app.password.hide" : "app.password.show");
+        setPasswordVisibility(confirmNewPasswordInput, confirmNewPasswordInput?.type === "text" ? "app.password.hide" : "app.password.show");
+    }
+    function handleProfileSaveClick(event) {
+        event.preventDefault();
+        openProfileConfirmModal();
+    }
+    function handleProfileSaveSubmit(event) {
+        event.preventDefault();
+        openProfileConfirmModal();
+    }
+    function openProfileConfirmModal() {
+        if (!profileConfirmModalElement) {
+            return;
+        }
+        resetProfileConfirmModal();
+        closeSidebar();
+        profileConfirmModalElement.hidden = false;
+        profileConfirmModalElement.setAttribute("aria-hidden", "false");
+        document.body.classList.add("modal-open");
+        profileConfirmPasswordInput?.focus();
+    }
+    function closeProfileConfirmModal() {
+        if (!profileConfirmModalElement) {
+            return;
+        }
+        profileConfirmModalElement.hidden = true;
+        profileConfirmModalElement.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("modal-open");
+        resetProfileConfirmModal();
+    }
+    function handleProfileConfirmModalClick(event) {
+        const target = event.target;
+        if (target?.dataset.closeModal === "true") {
+            closeProfileConfirmModal();
+        }
+    }
+    function handleProfileConfirmSubmit(event) {
+        event.preventDefault();
+        const password = profileConfirmPasswordInput?.value.trim() || "";
+        if (!password) {
+            showProfileConfirmMessage("", "error", "settings.profileConfirmRequired");
+            return;
+        }
+        void verifyAndApplyProfileDetails(password);
+    }
+    async function verifyAndApplyProfileDetails(password) {
+        try {
+            const isPasswordValid = await verifyProfilePassword(password);
+            if (!isPasswordValid) {
+                showProfileConfirmMessage("", "error", "settings.profileConfirmIncorrectPassword");
                 return;
             }
-            renderUserName(i18n("common.unavailable"));
-            updateUserAvatar(i18n("common.unavailable"));
+            applyProfileDetails();
+            closeProfileConfirmModal();
+            showSettingsMessage("", "success", "settings.profileSaveSuccess");
+        }
+        catch (error) {
+            console.error("Error verifying profile password:", error);
+            showProfileConfirmMessage("", "error", "settings.profileConfirmIncorrectPassword");
+        }
+    }
+    async function verifyProfilePassword(password) {
+        const email = currentUser?.email?.trim() || "";
+        if (!email || !password) {
+            return false;
+        }
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: "same-origin",
+            body: JSON.stringify({ email, password })
+        });
+        return response.ok;
+    }
+    function applyProfileDetails() {
+        const nextName = settingsState.profileName.trim();
+        const nextEmail = settingsState.profileEmail.trim();
+        if (currentUser) {
+            currentUser.name = nextName || currentUser.name;
+            currentUser.email = nextEmail || currentUser.email;
+        }
+        else {
+            currentUser = {
+                id: "local-user",
+                name: nextName,
+                email: nextEmail
+            };
+        }
+        renderUserName(i18n("common.unavailable"));
+        updateUserAvatar(getDisplayName(i18n("common.unavailable")));
+    }
+    function showProfileConfirmMessage(text, type = "", key = "", values) {
+        if (!profileConfirmMessageBox) {
+            return;
+        }
+        if (key) {
+            setDynamicText(profileConfirmMessageBox, key, values);
+        }
+        else {
+            clearDynamicText(profileConfirmMessageBox);
+            profileConfirmMessageBox.textContent = text;
+        }
+        profileConfirmMessageBox.className = type ? `form-message ${type}` : "form-message";
+    }
+    function resetProfileConfirmModal() {
+        profileConfirmFormElement?.reset();
+        showProfileConfirmMessage("");
+    }
+    function handleNameInput(event) {
+        const target = event.target;
+        settingsState.profileName = target?.value ?? "";
+        persistSettingsState();
+    }
+    function handleEmailInput(event) {
+        const target = event.target;
+        settingsState.profileEmail = target?.value ?? "";
+        persistSettingsState();
+    }
+    function setEmailNotifications(isEnabled) {
+        settingsState.emailNotifications = isEnabled;
+        persistSettingsState();
+        renderSettingsState();
+    }
+    function setBrowserNotifications(isEnabled) {
+        settingsState.browserNotifications = isEnabled;
+        persistSettingsState();
+        renderSettingsState();
+    }
+    function setDefaultProjectView(view) {
+        settingsState.defaultProjectView = view;
+        localStorage.setItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY, view);
+        persistSettingsState();
+        renderSettingsState();
+    }
+    function getNextTheme() {
+        return settingsState.theme === "dark" ? "light" : "dark";
+    }
+    function setTheme(theme) {
+        settingsState.theme = theme;
+        applyTheme(theme);
+        persistSettingsState();
+    }
+    function applyTheme(theme) {
+        document.body.dataset.theme = theme;
+        localStorage.setItem(THEME_STORAGE_KEY, theme);
+        if (themeToggleButton) {
+            const isDarkTheme = theme === "dark";
+            themeToggleButton.textContent = isDarkTheme ? i18n("theme.light") : i18n("theme.dark");
+            themeToggleButton.setAttribute("aria-pressed", String(isDarkTheme));
+            themeToggleButton.setAttribute("aria-label", isDarkTheme ? i18n("theme.toLight") : i18n("theme.toDark"));
+        }
+        renderSettingsState();
+    }
+    function handleChangePasswordClick() {
+        openChangePasswordModal();
+    }
+    function openChangePasswordModal() {
+        if (!changePasswordModalElement) {
+            return;
+        }
+        clearPasswordCloseTimer();
+        resetChangePasswordForm();
+        closeSidebar();
+        changePasswordModalElement.hidden = false;
+        changePasswordModalElement.setAttribute("aria-hidden", "false");
+        document.body.classList.add("modal-open");
+        currentPasswordInput?.focus();
+    }
+    function closeChangePasswordModal() {
+        if (!changePasswordModalElement) {
+            return;
+        }
+        clearPasswordCloseTimer();
+        changePasswordModalElement.hidden = true;
+        changePasswordModalElement.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("modal-open");
+        resetChangePasswordForm();
+    }
+    function handleChangePasswordModalClick(event) {
+        const target = event.target;
+        if (target?.dataset.closeModal === "true") {
+            closeChangePasswordModal();
+        }
+    }
+    function handleChangePasswordSubmit(event) {
+        event.preventDefault();
+        const validation = validateChangePasswordForm();
+        if (!validation.isValid) {
+            showChangePasswordMessage("", "error", validation.messageKey);
+            return;
+        }
+        showChangePasswordMessage("", "success", "settings.passwordSuccess");
+        clearPasswordCloseTimer();
+        passwordCloseTimer = window.setTimeout(() => {
+            closeChangePasswordModal();
+        }, 2000);
+    }
+    function validateChangePasswordForm() {
+        const currentPassword = currentPasswordInput?.value.trim() || "";
+        const newPassword = newPasswordInput?.value || "";
+        const confirmNewPassword = confirmNewPasswordInput?.value || "";
+        if (!currentPassword) {
+            return { isValid: false, messageKey: "settings.passwordValidation.currentRequired" };
+        }
+        if (newPassword.length < 8) {
+            return { isValid: false, messageKey: "settings.passwordValidation.newTooShort" };
+        }
+        if (confirmNewPassword !== newPassword) {
+            return { isValid: false, messageKey: "settings.passwordValidation.confirmMismatch" };
+        }
+        return { isValid: true, messageKey: "" };
+    }
+    function showChangePasswordMessage(text, type = "", key = "", values) {
+        if (!changePasswordMessageBox) {
+            return;
+        }
+        if (key) {
+            setDynamicText(changePasswordMessageBox, key, values);
+        }
+        else {
+            clearDynamicText(changePasswordMessageBox);
+            changePasswordMessageBox.textContent = text;
+        }
+        changePasswordMessageBox.className = type ? `form-message ${type}` : "form-message";
+    }
+    function resetChangePasswordForm() {
+        changePasswordFormElement?.reset();
+        showChangePasswordMessage("");
+        if (currentPasswordInput) {
+            currentPasswordInput.type = "password";
+        }
+        if (newPasswordInput) {
+            newPasswordInput.type = "password";
+        }
+        if (confirmNewPasswordInput) {
+            confirmNewPasswordInput.type = "password";
+        }
+        setPasswordVisibility(currentPasswordInput, "app.password.show");
+        setPasswordVisibility(newPasswordInput, "app.password.show");
+        setPasswordVisibility(confirmNewPasswordInput, "app.password.show");
+    }
+    function togglePasswordVisibility(button) {
+        const inputId = button.dataset.passwordToggle;
+        if (!inputId) {
+            return;
+        }
+        const input = document.getElementById(inputId);
+        if (!input) {
+            return;
+        }
+        const shouldShow = input.type === "password";
+        input.type = shouldShow ? "text" : "password";
+        setPasswordVisibility(input, shouldShow ? "app.password.hide" : "app.password.show");
+    }
+    function setPasswordVisibility(input, labelKey) {
+        if (!input) {
+            return;
+        }
+        const button = document.querySelector(`[data-password-toggle="${input.id}"]`);
+        if (button) {
+            setDynamicText(button, labelKey);
+            button.setAttribute("aria-pressed", String(input.type === "text"));
+        }
+    }
+    function clearPasswordCloseTimer() {
+        if (passwordCloseTimer !== null) {
+            window.clearTimeout(passwordCloseTimer);
+            passwordCloseTimer = null;
+        }
+    }
+    function renderPreferenceSwitch(button, valueElement, isEnabled) {
+        if (button) {
+            button.setAttribute("aria-checked", String(isEnabled));
+            button.classList.toggle("is-active", isEnabled);
+        }
+        if (valueElement) {
+            valueElement.textContent = isEnabled ? i18n("settings.toggleOn") : i18n("settings.toggleOff");
+        }
+    }
+    function clearAllLocalData() {
+        localStorage.clear();
+        window.location.reload();
+    }
+    function renderTeamRolesSection() {
+        if (!teamRolesProfileElement) {
+            return;
+        }
+        const name = getDisplayName("Current User");
+        const email = getCurrentUserEmail() || "current.user@example.com";
+        const role = getCurrentUserRole() === "admin" ? "Admin" : "Member";
+        if (teamRolesAvatarElement) {
+            teamRolesAvatarElement.textContent = getInitials(name);
+        }
+        if (teamRolesNameElement) {
+            teamRolesNameElement.textContent = name;
+        }
+        if (teamRolesEmailElement) {
+            teamRolesEmailElement.textContent = email;
+        }
+        if (teamRolesBadgeElement) {
+            teamRolesBadgeElement.textContent = role;
+            teamRolesBadgeElement.className = role === "Admin"
+                ? "settings-team-role-badge is-admin"
+                : "settings-team-role-badge is-member";
+        }
+    }
+    function getCurrentUserRole() {
+        const value = localStorage.getItem("userRole");
+        return typeof value === "string" && value.trim().toLowerCase() === "admin" ? "admin" : "member";
+    }
+    function getCurrentUserEmail() {
+        return settingsState.profileEmail.trim() || currentUser?.email?.trim() || "";
+    }
+    function showSettingsMessage(text, type = "", key = "", values) {
+        if (!settingsMessageBox) {
+            return;
+        }
+        if (key) {
+            setDynamicText(settingsMessageBox, key, values);
+        }
+        else {
+            clearDynamicText(settingsMessageBox);
+            settingsMessageBox.textContent = text;
+        }
+        settingsMessageBox.className = type ? `form-message ${type}` : "form-message";
+    }
+    function isMobileViewport() {
+        return window.innerWidth <= MOBILE_SIDEBAR_BREAKPOINT;
+    }
+    function syncSidebarState() {
+        if (!sidebarElement || !sidebarToggleButton || !sidebarBackdropElement) {
+            return;
+        }
+        if (!isMobileViewport()) {
+            document.body.classList.remove("sidebar-open");
+        }
+        const isSidebarOpen = !isMobileViewport() || document.body.classList.contains("sidebar-open");
+        sidebarElement.setAttribute("aria-hidden", String(!isSidebarOpen));
+        sidebarToggleButton.setAttribute("aria-expanded", String(isMobileViewport() && document.body.classList.contains("sidebar-open")));
+        sidebarToggleButton.setAttribute("aria-label", document.body.classList.contains("sidebar-open") ? i18n("app.aria.closeNavigationMenu") : i18n("app.aria.openNavigationMenu"));
+        sidebarBackdropElement.hidden = !(isMobileViewport() && document.body.classList.contains("sidebar-open"));
+    }
+    function openSidebar() {
+        if (!isMobileViewport()) {
+            return;
+        }
+        document.body.classList.add("sidebar-open");
+        syncSidebarState();
+    }
+    function closeSidebar() {
+        document.body.classList.remove("sidebar-open");
+        syncSidebarState();
+    }
+    function toggleSidebar() {
+        if (document.body.classList.contains("sidebar-open")) {
+            closeSidebar();
+            return;
+        }
+        openSidebar();
+    }
+    function handleSidebarBackdropClick(event) {
+        const target = event.target;
+        if (target?.dataset.closeSidebar === "true") {
+            closeSidebar();
+        }
+    }
+    function handleEscapeKey(event) {
+        if (event.key === "Escape" && profileConfirmModalElement && !profileConfirmModalElement.hidden) {
+            closeProfileConfirmModal();
+            return;
+        }
+        if (event.key === "Escape" && document.body.classList.contains("sidebar-open")) {
+            if (changePasswordModalElement && !changePasswordModalElement.hidden) {
+                closeChangePasswordModal();
+                return;
+            }
+            closeSidebar();
+            return;
+        }
+        if (event.key === "Escape" && changePasswordModalElement && !changePasswordModalElement.hidden) {
+            closeChangePasswordModal();
         }
     }
     function loadPreviewUser() {

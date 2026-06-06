@@ -36,8 +36,8 @@
             <span data-i18n="sidebar.tasks">Tasks</span>
           </a>
           <a href="./team.html" class="sidebar-link">
-            <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="6.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2 17c0-3.04 2.46-5.5 5.5-5.5S13 13.96 13 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14.5" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M18 17c0-2.49-1.79-4.56-4.17-4.97" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            <span data-i18n="sidebar.team">Team</span>
+            <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="6.2" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="13.8" cy="6.5" r="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2.8 15.8c.5-2.4 2.4-4 4.7-4s4.2 1.6 4.7 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M11.4 15.3c.3-1.8 1.8-3.1 3.6-3.1 1 0 1.9.3 2.7 1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span>Team</span>
           </a>
           <a href="./settings.html" class="sidebar-link is-active">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 10h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 14.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="13.5" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
@@ -253,6 +253,22 @@
 
             <div class="settings-actions">
               <button id="clear-local-data-btn" type="button" class="danger-button" data-i18n="settings.clearLocalData">Clear all local data</button>
+            </div>
+          </article>
+
+          <article class="settings-card" aria-labelledby="team-roles-title">
+            <div class="settings-card-header">
+              <h3 id="team-roles-title">Team Roles</h3>
+              <p>Your current role in this workspace.</p>
+            </div>
+
+            <div id="team-roles-profile" class="settings-team-role-card">
+              <span id="team-roles-avatar" class="settings-team-role-avatar" aria-hidden="true">U</span>
+              <div class="settings-team-role-copy">
+                <strong id="team-roles-name">Current User</strong>
+                <span id="team-roles-email" class="settings-inline-note">current.user@example.com</span>
+                <span id="team-roles-badge" class="settings-team-role-badge">Member</span>
+              </div>
             </div>
           </article>
         </form>
