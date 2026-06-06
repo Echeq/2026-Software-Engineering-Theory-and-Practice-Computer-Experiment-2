@@ -1,0 +1,58 @@
+{
+  "_services-C27tdWVt.css": {
+    "file": "assets/services-C27tdWVt.css",
+    "src": "_services-C27tdWVt.css"
+  },
+  "_services-D7O9Uyug.js": {
+    "file": "assets/services-D7O9Uyug.js",
+    "name": "services",
+    "css": [
+      "assets/services-C27tdWVt.css"
+    ]
+  },
+  "src/dashboard.ts": {
+    "file": "assets/dashboard-ByFdBSmS.js",
+    "name": "dashboard",
+    "src": "src/dashboard.ts",
+    "isEntry": true,
+    "imports": [
+      "_services-D7O9Uyug.js"
+    ]
+  },
+  "src/login.ts": {
+    "file": "assets/login-tf9znRKW.js",
+    "name": "login",
+    "src": "src/login.ts",
+    "isEntry": true,
+    "css": [
+      "assets/login-DMrjtl9A.css"
+    ]
+  },
+  "src/projects.ts": {
+    "file": "assets/projects-PwWLy4i-.js",
+    "name": "projects",
+    "src": "src/projects.ts",
+    "isEntry": true,
+    "imports": [
+      "_services-D7O9Uyug.js"
+    ]
+  },
+  "src/settings.ts": {
+    "file": "assets/settings-C1Mv3afv.js",
+    "name": "settings",
+    "src": "src/settings.ts",
+    "isEntry": true,
+    "imports": [
+      "_services-D7O9Uyug.js"
+    ]
+  },
+  "src/tasks.ts": {
+    "file": "assets/tasks-vXT898rx.js",
+    "name": "tasks",
+    "src": "src/tasks.ts",
+    "isEntry": true,
+    "imports": [
+      "_services-D7O9Uyug.js"
+    ]
+  }
+}
