@@ -5,6 +5,7 @@ import { getCurrentUser, isSessionError, logout } from "./core/services";
 namespace SettingsPage {
   const THEME_STORAGE_KEY = "dashboard-theme";
   const SETTINGS_STORAGE_KEY = "dashboard-settings-state";
+  const DEFAULT_PROJECT_VIEW_STORAGE_KEY = "defaultProjectView";
   const MOBILE_SIDEBAR_BREAKPOINT = 960;
   const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 
@@ -182,15 +183,17 @@ namespace SettingsPage {
 
   function hydrateState(): void {
     const stored = readStoredSettingsState();
+    const storedDefaultProjectView = readStoredDefaultProjectView();
     if (stored) {
       settingsState = {
         profileName: stored.profileName,
         profileEmail: stored.profileEmail,
         emailNotifications: stored.emailNotifications,
         browserNotifications: stored.browserNotifications,
-        defaultProjectView: stored.defaultProjectView,
+        defaultProjectView: storedDefaultProjectView || stored.defaultProjectView,
         theme: stored.theme
       };
+      localStorage.setItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY, settingsState.defaultProjectView);
       applyTheme(settingsState.theme);
       return;
     }
@@ -200,9 +203,10 @@ namespace SettingsPage {
       profileEmail: "",
       emailNotifications: true,
       browserNotifications: false,
-      defaultProjectView: "grid",
+      defaultProjectView: storedDefaultProjectView || "grid",
       theme: settingsState.theme
     };
+    localStorage.setItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY, settingsState.defaultProjectView);
     persistSettingsState();
   }
 
@@ -241,6 +245,11 @@ namespace SettingsPage {
     }
 
     return null;
+  }
+
+  function readStoredDefaultProjectView(): ProjectView | "" {
+    const value = localStorage.getItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY);
+    return value === "grid" || value === "list" ? value : "";
   }
 
   function persistSettingsState(): void {
@@ -379,6 +388,7 @@ namespace SettingsPage {
 
   function setDefaultProjectView(view: ProjectView): void {
     settingsState.defaultProjectView = view;
+    localStorage.setItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY, view);
     persistSettingsState();
     renderSettingsState();
   }

@@ -5,18 +5,22 @@ import { getCurrentUser, isSessionError, logout } from "./core/services";
 type ProjectsTheme = "light" | "dark";
 
 const THEME_STORAGE_KEY = "dashboard-theme";
+const DEFAULT_PROJECT_VIEW_STORAGE_KEY = "defaultProjectView";
 const MOBILE_SIDEBAR_BREAKPOINT = 960;
 const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 
 let userNameElement: HTMLElement | null = null;
 let userAvatarElement: HTMLElement | null = null;
 let projectsMessageBox: HTMLElement | null = null;
+let projectsBoardElement: HTMLElement | null = null;
 let logoutButton: HTMLButtonElement | null = null;
 let themeToggleButton: HTMLButtonElement | null = null;
 let sidebarToggleButton: HTMLButtonElement | null = null;
 let sidebarElement: HTMLElement | null = null;
 let sidebarBackdropElement: HTMLElement | null = null;
 let projectsLanguageInput: HTMLInputElement | null = null;
+let projectViewButtons: NodeListOf<HTMLButtonElement>;
+let currentProjectView: "grid" | "list" = "grid";
 
 document.addEventListener("DOMContentLoaded", () => {
   void initializeProjectsPage();
@@ -28,6 +32,7 @@ async function initializeProjectsPage(): Promise<void> {
   syncSidebarState();
   syncLanguageInput();
   setupEventListeners();
+  applyStoredProjectView();
   renderBoardLoading();
   await loadUserData();
   refreshProjectsBoard();
@@ -37,12 +42,14 @@ function cacheElements(): void {
   userNameElement = document.getElementById("user-name");
   userAvatarElement = document.getElementById("user-avatar");
   projectsMessageBox = document.getElementById("projects-message");
+  projectsBoardElement = document.getElementById("projects-board");
   logoutButton = document.getElementById("logout-btn") as HTMLButtonElement | null;
   themeToggleButton = document.getElementById("theme-toggle-btn") as HTMLButtonElement | null;
   sidebarToggleButton = document.getElementById("sidebar-toggle-btn") as HTMLButtonElement | null;
   sidebarElement = document.getElementById("dashboard-sidebar");
   sidebarBackdropElement = document.getElementById("sidebar-backdrop");
   projectsLanguageInput = document.getElementById("projects-language-input") as HTMLInputElement | null;
+  projectViewButtons = document.querySelectorAll("[data-project-view]");
 }
 
 function setupEventListeners(): void {
@@ -53,6 +60,14 @@ function setupEventListeners(): void {
   window.addEventListener("resize", syncSidebarState);
   document.addEventListener("keydown", handleEscapeKey);
   document.addEventListener("app-language-change", handleLanguageChange);
+  projectViewButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const view = button.dataset.projectView;
+      if (view === "grid" || view === "list") {
+        setProjectView(view);
+      }
+    });
+  });
 
   document.querySelectorAll(".sidebar-link").forEach((link) => {
     link.addEventListener("click", () => {
@@ -72,6 +87,42 @@ function initializeTheme(): void {
 function readStoredTheme(): ProjectsTheme | "" {
   const value = localStorage.getItem(THEME_STORAGE_KEY);
   return value === "light" || value === "dark" ? value : "";
+}
+
+function readStoredProjectView(): "grid" | "list" {
+  const value = localStorage.getItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY);
+  return value === "list" ? "list" : "grid";
+}
+
+function applyStoredProjectView(): void {
+  currentProjectView = readStoredProjectView();
+  renderProjectViewButtons();
+  applyProjectBoardViewClass();
+}
+
+function setProjectView(view: "grid" | "list"): void {
+  currentProjectView = view;
+  localStorage.setItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY, view);
+  renderProjectViewButtons();
+  applyProjectBoardViewClass();
+}
+
+function renderProjectViewButtons(): void {
+  projectViewButtons.forEach((button) => {
+    const isActive = button.dataset.projectView === currentProjectView;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function applyProjectBoardViewClass(): void {
+  if (!projectsBoardElement) {
+    return;
+  }
+
+  projectsBoardElement.className = currentProjectView === "list"
+    ? "projects-grid projects-view-list"
+    : "projects-grid projects-view-grid";
 }
 
 function toggleTheme(): void {
@@ -202,6 +253,8 @@ function getInitials(name: string): string {
 
 function handleLanguageChange(): void {
   syncLanguageInput();
+  renderProjectViewButtons();
+  applyProjectBoardViewClass();
   refreshProjectsBoard();
 }
 
@@ -218,7 +271,7 @@ function refreshProjectsBoard(): void {
 }
 
 function renderBoardLoading(): void {
-  const board = document.getElementById("projects-board");
+  const board = projectsBoardElement;
 
   if (!board) {
     return;

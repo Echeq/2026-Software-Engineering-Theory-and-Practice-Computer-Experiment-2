@@ -1814,6 +1814,10 @@ body[data-theme="dark"] .task-empty-lottie {
   color: #f59e0b;
 }
 
+.task-column-review .kanban-column-title {
+  color: #f87171;
+}
+
 .task-column-done .kanban-column-title {
   color: #22c55e;
 }
@@ -1824,6 +1828,10 @@ body[data-theme="dark"] .task-empty-lottie {
 
 .task-column-progress .kanban-count {
   color: #d97706;
+}
+
+.task-column-review .kanban-count {
+  color: #ef4444;
 }
 
 .task-column-done .kanban-count {

@@ -4,8 +4,15 @@ import { getCurrentUser, getProjects, getProjectTasks, createTask, updateTask, d
 
 const THEME_STORAGE_KEY = "dashboard-theme";
 const MOBILE_SIDEBAR_BREAKPOINT = 960;
+const EMPTY_COLUMN_LOTTIE_PATH = "https://assets2.lottiefiles.com/packages/lf20_ysrn2iwp.json";
 const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 const TASK_CATEGORIES = ["design", "frontend", "backend", "database", "api", "testing", "bugfix", "refactoring", "documentation", "devops", "performance", "security", "research", "chore"];
+const TASK_COLUMN_DEFS = [
+  { status: "pending", titleKey: "tasks.status.todo", domId: "todo", className: "task-column-todo" },
+  { status: "in-progress", titleKey: "tasks.status.inProgress", domId: "in-progress", className: "task-column-progress" },
+  { status: "in review", titleKey: "tasks.status.inReview", domId: "in-review", className: "task-column-review" },
+  { status: "done", titleKey: "tasks.status.done", domId: "done", className: "task-column-done" },
+] as const;
 
 interface CurrentUser {
   id: string; name: string; email: string;
@@ -62,6 +69,7 @@ let taskEstHoursInput: HTMLInputElement | null;
 let taskFormMessage: HTMLElement | null;
 let cancelTaskBtn: HTMLButtonElement | null;
 let saveTaskBtn: HTMLButtonElement | null;
+const emptyColumnAnimations = new Map<string, { destroy?: () => void }>();
 
 
 const selectedTags: Set<string> = new Set();
@@ -124,7 +132,10 @@ function setupListeners(): void {
   themeToggleButton?.addEventListener("click", toggleTheme);
   sidebarToggleButton?.addEventListener("click", toggleSidebarFn);
   sidebarBackdropElement?.addEventListener("click", (e) => { if ((e.target as HTMLElement).dataset.closeSidebar === "true") closeSidebarFn(); });
-  window.addEventListener("resize", syncSidebar);
+  window.addEventListener("resize", () => {
+    syncSidebar();
+    renderKanban();
+  });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       if (taskModal && !taskModal.hidden) closeTaskModal();
@@ -153,9 +164,21 @@ function setupListeners(): void {
   document.getElementById("task-filter-priority")?.addEventListener("change", () => renderKanban());
   document.getElementById("task-filter-status")?.addEventListener("change", () => renderKanban());
   document.getElementById("task-sort-select")?.addEventListener("change", () => renderKanban());
+  document.addEventListener("app-language-change", handleLanguageChange);
   document.querySelectorAll(".sidebar-link").forEach((link) => {
     link.addEventListener("click", () => { if (isMobileViewport()) closeSidebarFn(); });
   });
+}
+
+function handleLanguageChange(): void {
+  syncSidebar();
+  updateThemeToggleLabel();
+  populateProjectSelect();
+  updateFilterLabels();
+  if (taskModal && !taskModal.hidden) {
+    openTaskModal(editingTaskId ?? undefined);
+  }
+  renderKanban();
 }
 
 async function fetchMembers(): Promise<TeamMember[]> {
@@ -195,8 +218,10 @@ async function loadTasks(): Promise<void> {
 
 function renderKanban(): void {
   if (!tasksBoard) return;
+  destroyEmptyColumnAnimations();
   if (!currentProjectId) {
-    tasksBoard.innerHTML = `<article class="state-card"><h3>Select a project</h3><p>Choose a project from the dropdown to view its tasks.</p></article>`;
+    tasksBoard.className = "tasks-board";
+    tasksBoard.innerHTML = `<article class="state-card"><h3>${escapeHtml(i18n("tasks.selectProjectTitle"))}</h3><p>${escapeHtml(i18n("tasks.selectProjectText"))}</p></article>`;
     return;
   }
   const priorityFilter = (document.getElementById("task-filter-priority") as HTMLSelectElement)?.value || "all";
@@ -222,30 +247,44 @@ function renderKanban(): void {
     return 0;
   });
 
-  const columns = [
-    { status: "pending", title: i18n("tasks.status.todo") },
-    { status: "in-progress", title: i18n("tasks.status.inProgress") },
-    { status: "in review", title: i18n("tasks.status.inReview") },
-    { status: "done", title: i18n("tasks.status.done") },
-  ];
-
-  let html = `<div class="kanban-board">`;
-  for (const col of columns) {
-    const colTasks = filtered.filter(t => t.status === col.status || (!col.status && !t.status));
-    html += `<div class="kanban-column" data-column-status="${col.status}" style="background:var(--surface);border-radius:12px;padding:16px;">
-      <h3 style="margin:0 0 12px;font-size:15px;">${escapeHtml(col.title)} <span style="font-weight:400;color:var(--muted)">(${colTasks.length})</span></h3>
-      ${colTasks.length === 0 ? `<p style="color:var(--muted);font-size:13px;">${i18n("tasks.noTasks")}</p>` : ""}
-      ${colTasks.map(t => renderTaskCard(t, memberMap)).join("")}
-    </div>`;
-  }
-  html += `</div>`;
-  tasksBoard.innerHTML = html;
-
-  const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-  if (isTouch) {
-    attachMobilePicker();
+  if (isMobileViewport()) {
+    tasksBoard.className = "tasks-board tasks-list-view";
+    tasksBoard.innerHTML = `
+      <div class="tasks-list-scroll">
+        ${filtered.length > 0
+          ? filtered.map(t => renderTaskListRow(t, memberMap)).join("")
+          : `<article class="state-card"><h3>${escapeHtml(i18n("tasks.noTasks"))}</h3><p>${escapeHtml(i18n("tasks.subtitleDefault"))}</p></article>`}
+      </div>
+    `;
   } else {
-    attachDragDrop();
+    tasksBoard.className = "tasks-board kanban-board";
+    const taskColumns = getTaskColumns();
+    let html = ``;
+    for (const col of taskColumns) {
+      const colTasks = filtered.filter(t => t.status === col.status || (!col.status && !t.status));
+      html += `<section class="kanban-column ${col.className}" data-column-status="${col.status}" style="background:var(--surface);border-radius:12px;padding:16px;">
+        <header class="kanban-column-header">
+          <div class="kanban-column-copy">
+            <h3 class="kanban-column-title">${escapeHtml(col.title)}</h3>
+          </div>
+          <span class="kanban-count" aria-label="${escapeHtml(i18n("common.tasksCount", { count: colTasks.length }))}">${colTasks.length}</span>
+        </header>
+        <div class="kanban-list">
+          ${colTasks.length > 0 ? colTasks.map(t => renderTaskCard(t, memberMap)).join("") : renderEmptyTaskState(col.domId, col.title)}
+        </div>
+      </section>`;
+    }
+    tasksBoard.innerHTML = html;
+    initializeEmptyColumnAnimations();
+  }
+
+  if (!isMobileViewport()) {
+    const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    if (isTouch) {
+      attachMobilePicker();
+    } else {
+      attachDragDrop();
+    }
   }
   document.querySelectorAll<HTMLButtonElement>(".task-edit-btn").forEach(btn => {
     btn.addEventListener("click", () => openTaskModal(btn.dataset.taskId!));
@@ -253,6 +292,45 @@ function renderKanban(): void {
   document.querySelectorAll<HTMLButtonElement>(".task-delete-btn").forEach(btn => {
     btn.addEventListener("click", () => void deleteTaskHandler(btn.dataset.taskId!));
   });
+}
+
+function renderEmptyTaskState(columnDomId: string, columnTitle: string): string {
+  const lottieId = getEmptyColumnLottieId(columnDomId);
+  return `
+    <article class="state-card task-empty-state">
+      <div class="task-empty-lottie-shell" aria-hidden="true">
+        <div id="${escapeHtml(lottieId)}" class="task-empty-lottie"></div>
+      </div>
+      <p>${escapeHtml(i18n("tasks.emptyColumnText", { column: columnTitle.toLowerCase() }))}</p>
+    </article>
+  `;
+}
+
+function initializeEmptyColumnAnimations(): void {
+  const lottieApi = (window as Window & { lottie?: { loadAnimation?: (config: Record<string, unknown>) => { destroy?: () => void } } }).lottie;
+  if (!lottieApi || typeof lottieApi.loadAnimation !== "function") return;
+
+  TASK_COLUMN_DEFS.forEach((column) => {
+    const container = document.getElementById(getEmptyColumnLottieId(column.domId));
+    if (!container) return;
+    const animation = lottieApi.loadAnimation({
+      container,
+      renderer: "svg",
+      loop: true,
+      autoplay: true,
+      path: EMPTY_COLUMN_LOTTIE_PATH,
+    });
+    emptyColumnAnimations.set(column.domId, animation);
+  });
+}
+
+function destroyEmptyColumnAnimations(): void {
+  emptyColumnAnimations.forEach((animation) => animation?.destroy?.());
+  emptyColumnAnimations.clear();
+}
+
+function getEmptyColumnLottieId(columnDomId: string): string {
+  return `task-empty-lottie-${columnDomId}`;
 }
 
 function renderTaskCard(t: TaskItem, memberMap: Map<string, string>): string {
@@ -281,6 +359,31 @@ function renderTaskCard(t: TaskItem, memberMap: Map<string, string>): string {
       </div>
     </article>
   `;
+}
+
+function renderTaskListRow(t: TaskItem, memberMap: Map<string, string>): string {
+  return renderTaskCard(t, memberMap).replace("task-card-draggable", "task-card-draggable tasks-list-row");
+}
+
+function getTaskColumns(): Array<{ status: string; title: string; domId: string; className: string }> {
+  return TASK_COLUMN_DEFS.map((column) => ({
+    status: column.status,
+    title: i18n(column.titleKey),
+    domId: column.domId,
+    className: column.className,
+  }));
+}
+
+function updateFilterLabels(): void {
+  const projectOption = projectSelect?.querySelector("option[value='']");
+  if (projectOption) {
+    projectOption.textContent = i18n("tasks.selectProject");
+  }
+
+  const modalProjectOption = taskProjectSelect?.querySelector("option[value='']");
+  if (modalProjectOption) {
+    modalProjectOption.textContent = i18n("tasks.selectProject");
+  }
 }
 
 function attachDragDrop(): void {
@@ -348,6 +451,7 @@ function attachMobilePicker(): void {
       sheet.appendChild(btn);
     }
     const cancelBtn = document.createElement("button");
+    cancelBtn.dataset.pickerCancel = "true";
     cancelBtn.textContent = i18n("tasks.cancel");
     cancelBtn.style.cssText = "display:block;width:100%;padding:16px;font-size:16px;border:none;border-radius:12px;background:var(--surface-border,#e5e7eb);color:var(--text,#111);cursor:pointer;";
     sheet.appendChild(cancelBtn);
@@ -361,7 +465,7 @@ function attachMobilePicker(): void {
         if (status && taskId) void moveTask(taskId, status);
         pickerEl!.style.display = "none";
         pickerEl!.dataset.taskId = "";
-      } else if ((e.target as HTMLElement) === pickerEl || (e.target as HTMLElement).textContent === "Cancel") {
+      } else if ((e.target as HTMLElement) === pickerEl || (e.target as HTMLElement).closest("[data-picker-cancel='true']")) {
         pickerEl!.style.display = "none";
         pickerEl!.dataset.taskId = "";
       }
@@ -566,9 +670,14 @@ function initTheme(): void {
 }
 function applyTheme(theme: "light" | "dark"): void {
   document.body.dataset.theme = theme;
+  updateThemeToggleLabel();
+}
+
+function updateThemeToggleLabel(): void {
   if (!themeToggleButton) return;
-  themeToggleButton.textContent = theme === "dark" ? i18n("theme.light") : i18n("theme.dark");
-  themeToggleButton.setAttribute("aria-pressed", String(theme === "dark"));
+  const isDark = document.body.dataset.theme === "dark";
+  themeToggleButton.textContent = isDark ? i18n("theme.light") : i18n("theme.dark");
+  themeToggleButton.setAttribute("aria-pressed", String(isDark));
 }
 function toggleTheme(): void {
   const next = document.body.dataset.theme === "dark" ? "light" : "dark";
