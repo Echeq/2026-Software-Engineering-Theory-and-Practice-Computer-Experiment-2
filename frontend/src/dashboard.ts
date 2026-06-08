@@ -659,8 +659,16 @@ async function renderCharts(): Promise<void> {
       "in-review": i18n("status.inReview"),
       done: i18n("status.done"),
     };
-    const labels = Object.keys(statusCounts).map(k => statusLabels[k] || k);
-    const data = Object.values(statusCounts);
+    const projectStatusColors: Record<string, string> = {
+      planning: "#94a3b8",
+      active: "#f59e0b",
+      "in-review": "#f87171",
+      done: "#22c55e",
+    };
+    const statusKeys = Object.keys(statusCounts);
+    const labels = statusKeys.map(k => statusLabels[k] || k);
+    const data = statusKeys.map(k => statusCounts[k]);
+    const backgroundColor = statusKeys.map(k => projectStatusColors[k] || "#94a3b8");
 
     const statusCanvas = document.getElementById("project-status-chart") as HTMLCanvasElement | null;
     if (statusCanvas && labels.length > 0) {
@@ -668,7 +676,7 @@ async function renderCharts(): Promise<void> {
         type: "doughnut",
         data: {
           labels,
-          datasets: [{ data, backgroundColor: ["#6366f1", "#22c55e", "#f59e0b", "#94a3b8"] }],
+          datasets: [{ data, backgroundColor }],
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } },
       });
@@ -682,16 +690,24 @@ async function renderCharts(): Promise<void> {
     const taskStatusLabels: Record<string, string> = {
       pending: i18n("tasks.status.todo"),
       "in-progress": i18n("tasks.status.inProgress"),
-      "in review": i18n("tasks.status.inProgress"),
+      "in review": i18n("tasks.status.inReview"),
       done: i18n("tasks.status.done"),
+    };
+    const taskStatusColors: Record<string, string> = {
+      pending: "#94a3b8",
+      "in-progress": "#f59e0b",
+      "in review": "#f87171",
+      done: "#22c55e",
     };
     const taskCounts: Record<string, number> = {};
     for (const t of taskAll) {
       const s = t.status || "pending";
       taskCounts[s] = (taskCounts[s] || 0) + 1;
     }
-    const tLabels = Object.keys(taskCounts).map(k => taskStatusLabels[k] || k);
-    const tData = Object.values(taskCounts);
+    const taskStatusKeys = Object.keys(taskCounts);
+    const tLabels = taskStatusKeys.map(k => taskStatusLabels[k] || k);
+    const tData = taskStatusKeys.map(k => taskCounts[k]);
+    const taskBackgroundColor = taskStatusKeys.map(k => taskStatusColors[k] || "#94a3b8");
 
     const taskCanvas = document.getElementById("task-overview-chart") as HTMLCanvasElement | null;
     if (taskCanvas && tLabels.length > 0) {
@@ -699,7 +715,7 @@ async function renderCharts(): Promise<void> {
         type: "bar",
         data: {
           labels: tLabels,
-          datasets: [{ label: i18n("tasks.pageTag"), data: tData, backgroundColor: "#6366f1" }],
+          datasets: [{ label: i18n("tasks.pageTag"), data: tData, backgroundColor: taskBackgroundColor }],
         },
         options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } },
       });

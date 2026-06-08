@@ -1,4 +1,5 @@
 import "../css/login.css";
+import "./i18n";
 
 (() => {
     const API_BASE_URL = `${window.location.origin}/api`;
@@ -28,6 +29,7 @@ import "../css/login.css";
     let alertTimeoutId = 0;
 
     initializeTheme();
+    initializeParticles();
     updateThemeToggle();
     form.addEventListener("submit", handleFormSubmit);
     themeToggleButton?.addEventListener("click", toggleTheme);
@@ -67,6 +69,54 @@ import "../css/login.css";
         themeToggleButton.setAttribute("aria-label", nextThemeLabel);
         themeToggleButton.setAttribute("title", nextThemeLabel);
         themeToggleButton.classList.toggle("is-dark", isDarkTheme);
+    }
+
+    function initializeParticles(): void {
+        const particlesJs = (window as Window & { particlesJS?: (tagId: string, config: Record<string, unknown>) => void }).particlesJS;
+        if (typeof particlesJs !== "function" || !document.getElementById("particles-js")) {
+            return;
+        }
+
+        const isDarkTheme = document.body.dataset.theme === "dark";
+        const particleColor = isDarkTheme ? "#FFFFFF" : "#6366F1";
+        const particleOpacity = isDarkTheme ? 0.6 : 0.8;
+        const particleCount = isDarkTheme ? 56 : 80;
+        const linkColor = isDarkTheme ? "#6366F1" : "#4F46E5";
+        const linkOpacity = isDarkTheme ? 0.25 : 0.3;
+
+        particlesJs("particles-js", {
+            particles: {
+                number: { value: particleCount, density: { enable: true, value_area: 900 } },
+                color: { value: particleColor },
+                shape: { type: "circle" },
+                opacity: { value: particleOpacity },
+                size: { value: 4, random: true },
+                line_linked: {
+                    enable: true,
+                    distance: 140,
+                    color: linkColor,
+                    opacity: linkOpacity,
+                    width: 1.5
+                },
+                move: {
+                    enable: true,
+                    speed: 1.1,
+                    direction: "none",
+                    random: false,
+                    straight: false,
+                    out_mode: "out"
+                }
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: {
+                    onhover: { enable: false },
+                    onclick: { enable: false },
+                    resize: true
+                }
+            },
+            retina_detect: true
+        });
     }
 
     async function handleFormSubmit(event: Event): Promise<void> {
