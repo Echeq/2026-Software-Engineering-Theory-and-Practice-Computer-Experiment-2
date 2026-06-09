@@ -18,24 +18,79 @@ router.post("/", requireManager, async (req: AuthRequest, res: Response) => {
     const { name, email, password } = req.body;
 
     if (!name?.trim() || !email?.trim() || !password?.trim()) {
-        res.status(400).json({ message: "Name, email, and password are required" });
+        res.status(400).json({
+            message: "Name, email, and password are required",
+        });
         return;
     }
 
     if (UserModel.findByEmail(email.trim())) {
-        res.status(409).json({ message: "A user with this email already exists" });
+        res.status(409).json({
+            message: "A user with this email already exists",
+        });
         return;
     }
 
     try {
-        const user = await UserModel.create({ name: name.trim(), email: email.trim(), password });
+        const user = await UserModel.create({
+            name: name.trim(),
+            email: email.trim(),
+            password,
+        });
         res.status(201).json({
-            user: { id: user.id, name: user.name, email: user.email, role: user.role, created_at: user.created_at }
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                created_at: user.created_at,
+            },
         });
     } catch (error) {
         console.error("Failed to create user:", error);
         res.status(500).json({ message: "Failed to create user" });
     }
+});
+
+router.patch("/me/name", (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+
+    const { name } = req.body;
+    const trimmedName = typeof name === "string" ? name.trim() : "";
+
+    if (!trimmedName) {
+        res.status(400).json({ message: "Name is required" });
+        return;
+    }
+
+    if (trimmedName.length < 2) {
+        res.status(400).json({
+            message: "Name must be at least 2 characters",
+        });
+        return;
+    }
+
+    const updatedUser = UserModel.updateName(req.user.id, trimmedName);
+
+    if (!updatedUser) {
+        res.status(404).json({ message: "User not found" });
+        return;
+    }
+
+    res.json({
+        message: "Name updated successfully",
+        user: {
+            id: updatedUser.id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            role: updatedUser.role,
+            created_at: updatedUser.created_at,
+            updated_at: updatedUser.updated_at,
+        },
+    });
 });
 
 router.delete("/:id", requireManager, (req: AuthRequest, res: Response) => {
