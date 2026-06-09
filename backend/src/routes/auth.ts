@@ -82,12 +82,16 @@ router.post("/register", async (req, res: Response) => {
         const { name, email, password } = req.body;
 
         if (!name || !email || !password) {
-            res.status(400).json({ message: "Name, email, and password are required" });
+            res.status(400).json({
+                message: "Name, email, and password are required",
+            });
             return;
         }
 
         if (typeof password !== "string" || password.length < 6) {
-            res.status(400).json({ message: "Password must be at least 6 characters" });
+            res.status(400).json({
+                message: "Password must be at least 6 characters",
+            });
             return;
         }
 
@@ -120,6 +124,7 @@ router.get("/me", authenticateToken, (req: AuthRequest, res: Response) => {
             id: req.user.id,
             name: req.user.name,
             email: req.user.email,
+            role: req.user.role,
         },
     });
 });
@@ -156,7 +161,9 @@ router.post(
             );
 
             if (!passwordMatches) {
-                res.status(401).json({ message: "Current password is incorrect" });
+                res.status(401).json({
+                    message: "Current password is incorrect",
+                });
                 return;
             }
 
@@ -167,7 +174,8 @@ router.post(
 
             if (isSamePassword) {
                 res.status(400).json({
-                    message: "New password must be different from the current password",
+                    message:
+                        "New password must be different from the current password",
                 });
                 return;
             }

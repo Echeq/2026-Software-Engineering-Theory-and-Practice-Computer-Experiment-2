@@ -1,12 +1,29 @@
-"use strict";
+﻿"use strict";
 var SettingsPage;
 (function (SettingsPage) {
     const API_BASE_URL = `${window.location.origin}/api`;
     const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
     const THEME_STORAGE_KEY = "dashboard-theme";
     const SETTINGS_STORAGE_KEY = "dashboard-settings-state";
+    const DEFAULT_PROJECT_VIEW_STORAGE_KEY = "defaultProjectView";
     const MOBILE_SIDEBAR_BREAKPOINT = 960;
     const i18n = (key, values) => window.I18n?.t(key, values) || key;
+    const setDynamicText = (element, key, values) => {
+        if (!element) {
+            return;
+        }
+        if (typeof window.I18n?.setDynamicTranslation === "function") {
+            window.I18n.setDynamicTranslation(element, key, values);
+            return;
+        }
+        element.textContent = i18n(key, values);
+    };
+    const clearDynamicText = (element) => {
+        if (!element) {
+            return;
+        }
+        window.I18n?.clearDynamicTranslation?.(element);
+    };
     let currentUser = null;
     let settingsState = {
         profileName: "",
@@ -23,7 +40,25 @@ var SettingsPage;
     let appearanceThemeSwitchButton = null;
     let appearanceThemeValueElement = null;
     let changePasswordButton = null;
+    let changePasswordModalElement = null;
+    let changePasswordFormElement = null;
+    let changePasswordMessageBox = null;
+    let changePasswordCloseButton = null;
+    let cancelChangePasswordButton = null;
+    let currentPasswordInput = null;
+    let newPasswordInput = null;
+    let confirmNewPasswordInput = null;
+    let passwordToggleButtons;
+    let passwordCloseTimer = null;
+    let profileSaveButton = null;
+    let profileConfirmModalElement = null;
+    let profileConfirmFormElement = null;
+    let profileConfirmPasswordInput = null;
+    let profileConfirmMessageBox = null;
+    let profileConfirmCancelButton = null;
+    let profileConfirmSubmitButton = null;
     let settingsMessageBox = null;
+    let settingsFormElement = null;
     let nameInput = null;
     let emailInput = null;
     let emailNotificationsSwitchButton = null;
@@ -47,7 +82,7 @@ var SettingsPage;
         renderSettingsState();
         const token = getStoredToken();
         if (!token) {
-            loadPreviewUser();
+            redirectToLogin();
             return;
         }
         await loadUserData();
@@ -60,7 +95,24 @@ var SettingsPage;
         appearanceThemeSwitchButton = document.getElementById("appearance-theme-switch");
         appearanceThemeValueElement = document.getElementById("appearance-theme-value");
         changePasswordButton = document.getElementById("change-password-btn");
+        changePasswordModalElement = document.getElementById("change-password-modal");
+        changePasswordFormElement = document.getElementById("change-password-form");
+        changePasswordMessageBox = document.getElementById("change-password-modal-message");
+        changePasswordCloseButton = document.getElementById("close-change-password-modal");
+        cancelChangePasswordButton = document.getElementById("cancel-change-password-btn");
+        currentPasswordInput = document.getElementById("current-password-input");
+        newPasswordInput = document.getElementById("new-password-input");
+        confirmNewPasswordInput = document.getElementById("confirm-new-password-input");
+        passwordToggleButtons = document.querySelectorAll("[data-password-toggle]");
+        profileSaveButton = document.getElementById("profile-save-btn");
+        profileConfirmModalElement = document.getElementById("profile-confirm-modal");
+        profileConfirmFormElement = document.getElementById("profile-confirm-form");
+        profileConfirmPasswordInput = document.getElementById("profile-confirm-password");
+        profileConfirmMessageBox = document.getElementById("profile-confirm-message");
+        profileConfirmCancelButton = document.getElementById("profile-confirm-cancel-btn");
+        profileConfirmSubmitButton = document.getElementById("profile-confirm-submit-btn");
         settingsMessageBox = document.getElementById("settings-message");
+        settingsFormElement = document.getElementById("settings-form");
         nameInput = document.getElementById("settings-name");
         emailInput = document.getElementById("settings-email");
         emailNotificationsSwitchButton = document.getElementById("email-notifications-switch");
@@ -72,12 +124,27 @@ var SettingsPage;
         sidebarToggleButton = document.getElementById("sidebar-toggle-btn");
         sidebarElement = document.getElementById("dashboard-sidebar");
         sidebarBackdropElement = document.getElementById("sidebar-backdrop");
+        if (userNameElement) {
+            userNameElement.textContent = "";
+        }
     }
     function setupEventListeners() {
         logoutButton?.addEventListener("click", logout);
         themeToggleButton?.addEventListener("click", () => setTheme(getNextTheme()));
         appearanceThemeSwitchButton?.addEventListener("click", () => setTheme(getNextTheme()));
         changePasswordButton?.addEventListener("click", handleChangePasswordClick);
+        changePasswordCloseButton?.addEventListener("click", closeChangePasswordModal);
+        cancelChangePasswordButton?.addEventListener("click", closeChangePasswordModal);
+        changePasswordFormElement?.addEventListener("submit", handleChangePasswordSubmit);
+        changePasswordModalElement?.addEventListener("click", handleChangePasswordModalClick);
+        passwordToggleButtons.forEach((button) => {
+            button.addEventListener("click", () => togglePasswordVisibility(button));
+        });
+        profileSaveButton?.addEventListener("click", handleProfileSaveClick);
+        settingsFormElement?.addEventListener("submit", handleProfileSaveSubmit);
+        profileConfirmCancelButton?.addEventListener("click", closeProfileConfirmModal);
+        profileConfirmFormElement?.addEventListener("submit", handleProfileConfirmSubmit);
+        profileConfirmModalElement?.addEventListener("click", handleProfileConfirmModalClick);
         nameInput?.addEventListener("input", handleNameInput);
         emailInput?.addEventListener("input", handleEmailInput);
         emailNotificationsSwitchButton?.addEventListener("click", () => setEmailNotifications(!settingsState.emailNotifications));
@@ -95,7 +162,7 @@ var SettingsPage;
         sidebarBackdropElement?.addEventListener("click", handleSidebarBackdropClick);
         window.addEventListener("resize", syncSidebarState);
         document.addEventListener("keydown", handleEscapeKey);
-        document.addEventListener("app-language-change", renderSettingsState);
+        document.addEventListener("app-language-change", handleLanguageChange);
         document.querySelectorAll(".sidebar-link").forEach((link) => {
             link.addEventListener("click", () => {
                 if (isMobileViewport()) {
@@ -110,6 +177,11 @@ var SettingsPage;
         settingsState.theme = storedTheme || preferredTheme;
         applyTheme(settingsState.theme);
     }
+    function handleLanguageChange() {
+        renderUserName(currentUser ? "" : i18n("common.unavailable"));
+        renderSettingsState();
+        syncSidebarState();
+    }
     function hydrateState() {
         const stored = readStoredSettingsState();
         if (stored) {
@@ -121,18 +193,26 @@ var SettingsPage;
                 defaultProjectView: stored.defaultProjectView,
                 theme: stored.theme
             };
-            applyTheme(settingsState.theme);
-            return;
         }
-        settingsState = {
-            profileName: "",
-            profileEmail: "",
-            emailNotifications: true,
-            browserNotifications: false,
-            defaultProjectView: "grid",
-            theme: settingsState.theme
-        };
+        else {
+            settingsState = {
+                profileName: "",
+                profileEmail: "",
+                emailNotifications: true,
+                browserNotifications: false,
+                defaultProjectView: "grid",
+                theme: settingsState.theme
+            };
+        }
+        const syncedTheme = readStoredTheme() || settingsState.theme;
+        settingsState.theme = syncedTheme;
+        const storedDefaultProjectView = readStoredDefaultProjectView();
+        if (storedDefaultProjectView) {
+            settingsState.defaultProjectView = storedDefaultProjectView;
+        }
+        localStorage.setItem(DEFAULT_PROJECT_VIEW_STORAGE_KEY, settingsState.defaultProjectView);
         persistSettingsState();
+        applyTheme(settingsState.theme);
     }
     function readStoredTheme() {
         const value = localStorage.getItem(THEME_STORAGE_KEY);
@@ -162,153 +242,20 @@ var SettingsPage;
             }
         }
         catch (error) {
-            console.warn("Failed to parse settings state:", error);
-        }
-        return null;
-    }
-    function persistSettingsState() {
-        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settingsState));
-    }
-    function renderSettingsState() {
-        if (nameInput) {
-            nameInput.value = settingsState.profileName;
-        }
-        if (emailInput) {
-            emailInput.value = settingsState.profileEmail;
-        }
-        if (appearanceThemeValueElement) {
-            appearanceThemeValueElement.textContent = settingsState.theme === "dark" ? i18n("theme.dark") : i18n("theme.light");
-        }
-        if (appearanceThemeSwitchButton) {
-            const isDarkTheme = settingsState.theme === "dark";
-            appearanceThemeSwitchButton.setAttribute("aria-checked", String(isDarkTheme));
-            appearanceThemeSwitchButton.classList.toggle("is-dark", isDarkTheme);
-        }
-        renderPreferenceSwitch(emailNotificationsSwitchButton, emailNotificationsValueElement, settingsState.emailNotifications);
-        renderPreferenceSwitch(browserNotificationsSwitchButton, browserNotificationsValueElement, settingsState.browserNotifications);
-        projectViewButtons.forEach((button) => {
-            const isActive = button.dataset.projectView === settingsState.defaultProjectView;
-            button.classList.toggle("is-active", isActive);
-            button.setAttribute("aria-pressed", String(isActive));
-        });
-    }
-    function handleNameInput(event) {
-        const target = event.target;
-        settingsState.profileName = target?.value ?? "";
-        persistSettingsState();
-    }
-    function handleEmailInput(event) {
-        const target = event.target;
-        settingsState.profileEmail = target?.value ?? "";
-        persistSettingsState();
-    }
-    function setEmailNotifications(isEnabled) {
-        settingsState.emailNotifications = isEnabled;
-        persistSettingsState();
-        renderSettingsState();
-    }
-    function setBrowserNotifications(isEnabled) {
-        settingsState.browserNotifications = isEnabled;
-        persistSettingsState();
-        renderSettingsState();
-    }
-    function setDefaultProjectView(view) {
-        settingsState.defaultProjectView = view;
-        persistSettingsState();
-        renderSettingsState();
-    }
-    function getNextTheme() {
-        return settingsState.theme === "dark" ? "light" : "dark";
-    }
-    function setTheme(theme) {
-        settingsState.theme = theme;
-        applyTheme(theme);
-        persistSettingsState();
-    }
-    function applyTheme(theme) {
-        document.body.dataset.theme = theme;
-        localStorage.setItem(THEME_STORAGE_KEY, theme);
-        if (themeToggleButton) {
-            const isDarkTheme = theme === "dark";
-            themeToggleButton.textContent = isDarkTheme ? i18n("theme.light") : i18n("theme.dark");
-            themeToggleButton.setAttribute("aria-pressed", String(isDarkTheme));
-            themeToggleButton.setAttribute("aria-label", isDarkTheme ? i18n("theme.toLight") : i18n("theme.toDark"));
-        }
-        renderSettingsState();
-    }
-    function handleChangePasswordClick() {
-        showSettingsMessage(i18n("settings.changePasswordHint"), "success");
-    }
-    function renderPreferenceSwitch(button, valueElement, isEnabled) {
-        if (button) {
-            button.setAttribute("aria-checked", String(isEnabled));
-            button.classList.toggle("is-active", isEnabled);
-        }
-        if (valueElement) {
-            valueElement.textContent = isEnabled ? i18n("settings.toggleOn") : i18n("settings.toggleOff");
-        }
-    }
-    function clearAllLocalData() {
-        localStorage.clear();
-        window.location.reload();
-    }
-    function showSettingsMessage(text, type = "") {
-        if (!settingsMessageBox) {
-            return;
-        }
-        settingsMessageBox.textContent = text;
-        settingsMessageBox.className = type ? `form-message ${type}` : "form-message";
-    }
-    function isMobileViewport() {
-        return window.innerWidth <= MOBILE_SIDEBAR_BREAKPOINT;
-    }
-    function syncSidebarState() {
-        if (!sidebarElement || !sidebarToggleButton || !sidebarBackdropElement) {
-            return;
-        }
-        if (!isMobileViewport()) {
-            document.body.classList.remove("sidebar-open");
-        }
-        const isSidebarOpen = !isMobileViewport() || document.body.classList.contains("sidebar-open");
-        sidebarElement.setAttribute("aria-hidden", String(!isSidebarOpen));
-        sidebarToggleButton.setAttribute("aria-expanded", String(isMobileViewport() && document.body.classList.contains("sidebar-open")));
-        sidebarToggleButton.setAttribute("aria-label", document.body.classList.contains("sidebar-open") ? "Close navigation menu" : "Open navigation menu");
-        sidebarBackdropElement.hidden = !(isMobileViewport() && document.body.classList.contains("sidebar-open"));
-    }
-    function openSidebar() {
-        if (!isMobileViewport()) {
-            return;
-        }
-        document.body.classList.add("sidebar-open");
-        syncSidebarState();
-    }
-    function closeSidebar() {
-        document.body.classList.remove("sidebar-open");
-        syncSidebarState();
-    }
-    function toggleSidebar() {
-        if (document.body.classList.contains("sidebar-open")) {
-            closeSidebar();
-            return;
-        }
-        openSidebar();
-    }
-    function handleSidebarBackdropClick(event) {
-        const target = event.target;
-        if (target?.dataset.closeSidebar === "true") {
-            closeSidebar();
-        }
-    }
-    function handleEscapeKey(event) {
-        if (event.key === "Escape" && document.body.classList.contains("sidebar-open")) {
-            closeSidebar();
+            console.error("Error loading user data:", error);
+            if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
+                redirectToLogin();
+                return;
+            }
+            renderUserName(i18n("common.unavailable"));
+            updateUserAvatar(i18n("common.unavailable"));
         }
     }
     function loadPreviewUser() {
         currentUser = {
             id: "preview-user",
-            name: "Anna Ivanova",
-            email: "anna.ivanova@example.com"
+            name: "Regular User",
+            email: "user@email.com"
         };
         if (!settingsState.profileName) {
             settingsState.profileName = currentUser.name;
@@ -318,10 +265,8 @@ var SettingsPage;
         }
         persistSettingsState();
         renderSettingsState();
-        if (userNameElement) {
-            userNameElement.textContent = currentUser.name;
-        }
-        updateUserAvatar(currentUser.name);
+        renderUserName();
+        updateUserAvatar(getDisplayName(i18n("common.unavailable")));
     }
     async function loadUserData() {
         try {
@@ -335,24 +280,31 @@ var SettingsPage;
             }
             persistSettingsState();
             renderSettingsState();
-            if (userNameElement) {
-                userNameElement.textContent = currentUser.name;
-            }
-            updateUserAvatar(currentUser.name);
+            renderUserName();
+            updateUserAvatar(getDisplayName(i18n("common.unavailable")));
         }
         catch (error) {
             console.error("Error loading user data:", error);
             if (getErrorText(error, "") === SESSION_EXPIRED_MESSAGE) {
                 return;
             }
-            if (userNameElement) {
-                userNameElement.textContent = i18n("common.unavailable");
-            }
+            renderUserName(i18n("common.unavailable"));
             updateUserAvatar(i18n("common.unavailable"));
         }
     }
+    function renderUserName(fallback = "") {
+        if (!userNameElement) {
+            return;
+        }
+        const name = getDisplayName(fallback);
+        userNameElement.textContent = name;
+        updateUserAvatar(name);
+    }
+    function getDisplayName(fallback = "") {
+        return settingsState.profileName.trim() || currentUser?.name?.trim() || fallback;
+    }
     function getStoredToken() {
-        return localStorage.getItem("token")?.trim() || "";
+        return localStorage.getItem("spmp-csrf-token")?.trim() || "";
     }
     function redirectToLogin() {
         window.location.href = "../index.html";
@@ -389,7 +341,7 @@ var SettingsPage;
         const token = getStoredToken();
         const headers = new Headers(init.headers);
         if (token) {
-            headers.set("Authorization", `Bearer ${token}`);
+            headers.set("X-CSRF-Token", token);
         }
         const response = await fetch(`${API_BASE_URL}${path}`, {
             ...init,

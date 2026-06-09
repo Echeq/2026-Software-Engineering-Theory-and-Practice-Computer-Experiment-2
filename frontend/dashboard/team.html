@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SPMP | Team</title>
   <link rel="stylesheet" href="../css/dashboard.css">
-  <script src="../js/i18n.js" defer></script>
 </head>
 <body>
   <div id="sidebar-backdrop" class="sidebar-backdrop" hidden data-close-sidebar="true"></div>
@@ -18,7 +17,7 @@
             <span class="sidebar-logo">SP</span>
             <span class="sidebar-brand-copy">
               <strong>SPMP</strong>
-              <span>Project workspace</span>
+              <span data-i18n="app.brand.workspace">Project workspace</span>
             </span>
           </a>
         </div>
@@ -38,7 +37,7 @@
           </a>
           <a href="./team.html" class="sidebar-link is-active">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="6.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2 17c0-3.04 2.46-5.5 5.5-5.5S13 13.96 13 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14.5" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M18 17c0-2.49-1.79-4.56-4.17-4.97" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            <span>Team</span>
+            <span data-i18n="sidebar.team">Team</span>
           </a>
           <a href="./settings.html" class="sidebar-link">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 10h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 14.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="13.5" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
@@ -50,7 +49,7 @@
       <div class="sidebar-footer">
         <div class="user-panel" aria-live="polite">
           <span id="user-avatar" class="user-avatar" aria-hidden="true">U</span>
-          <strong id="user-name" class="user-display">Loading...</strong>
+          <strong id="user-name" class="user-display" data-i18n="app.loading">Loading...</strong>
         </div>
         <button id="logout-btn" type="button" class="secondary-button sidebar-logout"><svg class="button-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5H5.5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2H8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 6.5 15 10l-4 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 10H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span data-i18n="sidebar.logout">Log Out</span></button>
       </div>
@@ -72,35 +71,35 @@
             <span></span>
           </button>
           <div class="topbar-copy">
-            <span class="section-tag">Team</span>
-            <p class="topbar-label">View team members and manage invitations.</p>
+            <span class="section-tag" data-i18n="team.topbarTag">Team</span>
+            <p class="topbar-label" data-i18n="team.topbarLabel">View team members and manage invitations.</p>
           </div>
         </div>
-        <button id="theme-toggle-btn" type="button" class="theme-toggle" aria-pressed="false">Dark Mode</button>
+        <div class="topbar-actions"></div>
       </header>
 
       <section class="overview-panel" aria-labelledby="team-page-title">
         <div class="overview-copy">
-          <span class="brand-tag">SPMP</span>
-          <h1 id="team-page-title">Team</h1>
-          <p class="subtitle">All members of this workspace.</p>
+          <span class="brand-tag" data-i18n="app.brand.workspace">SPMP</span>
+          <h1 id="team-page-title" data-i18n="team.title">Team</h1>
+          <p class="subtitle" data-i18n="team.subtitle">All members of this workspace.</p>
         </div>
         <div class="overview-actions">
           <div class="overview-note">
-            <span class="overview-note-label">Current View</span>
-            <strong>Team Members</strong>
-            <p>Managers can invite and remove members.</p>
+            <span class="overview-note-label" data-i18n="team.currentView">Current View</span>
+            <strong data-i18n="team.membersSummary">Team Members</strong>
+            <p data-i18n="team.managersNote">Managers can invite and remove members.</p>
           </div>
-          <button id="invite-member-btn" type="button" class="submit-button" hidden>Invite Member</button>
+          <button id="invite-member-btn" type="button" class="submit-button" hidden data-i18n="team.inviteMember">Invite Member</button>
         </div>
       </section>
 
       <section class="projects-section" aria-labelledby="members-title">
         <div class="section-header">
           <div class="section-copy">
-            <span class="section-tag">Members</span>
-            <h2 id="members-title">Team Members</h2>
-            <p class="section-subtitle">Everyone with access to this workspace.</p>
+            <span class="section-tag" data-i18n="team.membersTag">Members</span>
+            <h2 id="members-title" data-i18n="team.membersSectionTitle">Team Members</h2>
+            <p class="section-subtitle" data-i18n="team.membersSubtitle">Everyone with access to this workspace.</p>
           </div>
         </div>
 
@@ -108,8 +107,8 @@
 
         <div id="members-list" class="projects-grid">
           <article class="state-card">
-            <h3>Loading team...</h3>
-            <p>Fetching workspace members.</p>
+            <h3 data-i18n="team.loadingTitle">Loading team...</h3>
+            <p data-i18n="team.loadingText">Fetching workspace members.</p>
           </article>
         </div>
       </section>
@@ -121,32 +120,32 @@
     <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="invite-modal-title">
       <div class="modal-header">
         <div>
-          <span class="brand-tag">SPMP</span>
-          <h2 id="invite-modal-title">Invite Member</h2>
-          <p class="subtitle">Create an account for a new team member.</p>
+          <span class="brand-tag" data-i18n="app.brand.workspace">SPMP</span>
+          <h2 id="invite-modal-title" data-i18n="team.inviteModalTitle">Invite Member</h2>
+          <p class="subtitle" data-i18n="team.inviteModalSubtitle">Create an account for a new team member.</p>
         </div>
         <button id="close-invite-modal" type="button" class="close-btn" aria-label="Close invite dialog">&times;</button>
       </div>
       <form id="invite-form" class="project-form" novalidate>
         <div class="form-group">
-          <label for="invite-name">Full Name</label>
+          <label for="invite-name" data-i18n="team.inviteNameLabel">Full Name</label>
           <input id="invite-name" name="name" type="text" placeholder="Jane Smith" maxlength="120">
           <small class="field-error" data-error-for="invite-name"></small>
         </div>
         <div class="form-group">
-          <label for="invite-email">Email</label>
+          <label for="invite-email" data-i18n="team.inviteEmailLabel">Email</label>
           <input id="invite-email" name="email" type="email" placeholder="jane@example.com" maxlength="200">
           <small class="field-error" data-error-for="invite-email"></small>
         </div>
         <div class="form-group">
-          <label for="invite-password">Temporary Password</label>
+          <label for="invite-password" data-i18n="team.invitePasswordLabel">Temporary Password</label>
           <input id="invite-password" name="password" type="password" placeholder="Set a password" maxlength="200">
           <small class="field-error" data-error-for="invite-password"></small>
         </div>
         <p class="form-message" id="invite-form-message" aria-live="polite"></p>
         <div class="modal-actions">
-          <button id="cancel-invite-btn" type="button" class="secondary-button">Cancel</button>
-          <button id="invite-submit-btn" type="submit" class="submit-button">Send Invite</button>
+          <button id="cancel-invite-btn" type="button" class="secondary-button" data-i18n="team.cancel">Cancel</button>
+          <button id="invite-submit-btn" type="submit" class="submit-button" data-i18n="team.sendInvite">Send Invite</button>
         </div>
       </form>
     </section>

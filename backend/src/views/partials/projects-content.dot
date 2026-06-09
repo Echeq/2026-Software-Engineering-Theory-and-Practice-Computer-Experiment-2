@@ -17,7 +17,7 @@
 <section class="projects-section projects-board-section" aria-labelledby="projects-board-title">
   <div class="section-header">
     <div class="section-copy">
-      <span class="section-tag" data-i18n="projects.kanbanTag">Kanban</span>
+      <span class="section-tag" data-i18n="projects.kanbanTag">Pipeline</span>
       <h2 id="projects-board-title" data-i18n="projects.flowTitle">Project Flow</h2>
       <p class="section-subtitle" data-i18n="projects.flowSubtitle">Each column groups projects by their current delivery phase.</p>
     </div>

@@ -3,17 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SPMP | Login</title>
+  <title data-i18n-document-title="app.title.login">SPMP | Login</title>
   <link rel="stylesheet" href="./css/login.css">
   <script src="./js/i18n.js" defer></script>
 </head>
 <body>
+  <div id="particles-js" aria-hidden="true"></div>
   <div class="auth-page-controls">
     <button
       id="theme-toggle-btn"
       type="button"
       class="theme-toggle"
       aria-pressed="false"
+      data-i18n-aria-label="theme.toDark"
+      data-i18n-title="theme.toDark"
       aria-label="Switch to dark mode"
       title="Switch to dark mode"
     >
@@ -77,6 +80,7 @@
     </section>
   </main>
 
-  <script type="module" src="/src/login.ts"></script>
+  <script src="./js/login.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
 </body>
 </html>

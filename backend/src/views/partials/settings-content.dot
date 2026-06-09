@@ -35,7 +35,7 @@
       <div class="settings-field-grid">
         <label class="form-group" for="settings-name">
           <span data-i18n="settings.name">Name</span>
-          <input id="settings-name" type="text" autocomplete="name" placeholder="Anna Ivanova" data-i18n-placeholder="settings.namePlaceholder">
+          <input id="settings-name" type="text" autocomplete="name" placeholder="Regular User" data-i18n-placeholder="settings.namePlaceholder">
         </label>
 
         <label class="form-group" for="settings-email">

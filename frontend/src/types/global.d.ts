@@ -1,4 +1,4 @@
-export type Language = "en" | "zh" | "es";
+export type Language = "en" | "zh" | "es" | "ru";
 
 export interface TranslationApi {
   applyTranslations(root?: ParentNode): void;

@@ -47,6 +47,8 @@ router.post("/", (req: AuthRequest, res: Response) => {
         assigned_to,
         priority,
         due_date,
+        tags,
+        estimated_hours,
     }: CreateTaskInput = req.body;
 
     if (!title || !project_id) {
@@ -73,6 +75,8 @@ router.post("/", (req: AuthRequest, res: Response) => {
         assigned_to,
         priority,
         due_date,
+        tags,
+        estimated_hours,
     });
 
     res.status(201).json({ task });

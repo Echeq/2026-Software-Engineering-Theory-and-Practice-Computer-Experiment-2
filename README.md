@@ -4,9 +4,9 @@ A full-stack web-based project and task management platform built with Node.js, 
 
 ## Quick Links
 
-| 📚 Docs | 🔧 API | 🗄️ DB | 🎨 UI | 🏗️ Arch |
-|---------|--------|-------|-------|----------|
-| [User Guide](./docs/external_logs/user_guid.md) | [Backend API](./docs/external_logs/deisgn_logs/backend_api.md) | [Database](./docs/external_logs/deisgn_logs/db.md) | [UI Design](./docs/external_logs/deisgn_logs/ui_design.md) | [Architecture](./docs/external_logs/deisgn_logs/architect.md) |
+| 📚 Docs | 🔧 API | 🗄️ DB | 🎨 UI | 🏗️ Arch | 🤖 AI Skill | 🌐 i18n |
+|---------|--------|-------|-------|----------|-------------|---------|
+| [User Guide](./docs/external_logs/user_guid.md) | [Backend API](./docs/external_logs/deisgn_logs/backend_api.md) | [Database](./docs/external_logs/deisgn_logs/db.md) | [UI Design](./docs/external_logs/deisgn_logs/ui_design.md) | [Architecture](./docs/external_logs/deisgn_logs/architect.md) | [Course Skill](./skills/software_engineering_course_skill.md) | [EN/ZH/ES/RU](#-internationalization-i18n) |
 
 ---
 
@@ -125,6 +125,7 @@ npm run dev
 - **Languages**: HTML5, CSS3, TypeScript
 - **Build Tool**: Vite
 - **Architecture**: Modular with separate files per page
+- **Internationalization**: Built-in i18n system with 4 languages
 
 ---
 
@@ -153,17 +154,52 @@ spmp-platform/
 │   └── package.json
 ├── docs/                      # Documentation
 │   └── external_logs/
+│       ├── ai.md             # AI interaction log
+│       ├── assign.md         # Task assignment record
 │       ├── user_guid.md      # User guide
 │       ├── use_cases.md      # Use cases
 │       ├── use_stories.md    # User stories
+│       ├── install.md        # Installation guide
+│       ├── test.md           # Testing documentation
 │       └── deisgn_logs/
 │           ├── backend_api.md
 │           ├── db.md
 │           ├── ui_design.md
 │           └── architect.md
+├── skills/                    # AI skills
+│   └── software_engineering_course_skill.md
 ├── package.json              # Root scripts
 └── README.md
 ```
+
+---
+
+## 🌐 Internationalization (i18n)
+
+The platform supports 4 languages, switchable via the Settings page:
+
+| Language | Code | Status |
+|----------|------|--------|
+| English | `en` | Default, complete |
+| Chinese (Simplified) | `zh` | Complete |
+| Spanish | `es` | Complete |
+| Russian | `ru` | Complete |
+
+Translation dictionaries are in `frontend/src/i18n.ts`. All HTML pages use `data-i18n` / `data-i18n-aria-label` attributes for automatic text replacement.
+
+---
+
+## 🤖 AI Course Skill
+
+This project includes an AI skill at [`skills/software_engineering_course_skill.md`](./skills/software_engineering_course_skill.md) that enables an AI assistant to execute the "Software Engineering Theory and Practice Course Design" workflow. The skill covers:
+
+- Requirements analysis (user stories, use cases)
+- Architecture & design (architecture, UI, API, DB)
+- Implementation
+- Testing
+- Deployment & documentation
+
+All AI interactions are logged in [`docs/external_logs/ai.md`](./docs/external_logs/ai.md) and task assignments in [`docs/external_logs/assign.md`](./docs/external_logs/assign.md).
 
 ---
 

@@ -1,4 +1,4 @@
-type Language = "en" | "zh" | "es";
+type Language = "en" | "zh" | "es" | "ru";
 
 type TranslationValues = Record<string, string | number>;
 
@@ -6,10 +6,10 @@ interface I18nApi {
   applyTranslations(root?: ParentNode): void;
   getLanguage(): Language;
   setLanguage(language: Language): void;
-  t(key: string, values?: TranslationValues): string;
-}
+    t(key: string, values?: TranslationValues): string;
+  }
 
-interface TranslationDictionary {
+  interface TranslationDictionary {
   [key: string]: string;
 }
 
@@ -22,7 +22,7 @@ interface Window {
 
 const LANGUAGE_STORAGE_KEY = "app-language";
 const DEFAULT_LANGUAGE: Language = "en";
-const LANGUAGE_ORDER: Language[] = ["en", "zh", "es"];
+const LANGUAGE_ORDER: Language[] = ["en", "zh", "es", "ru"];
 const LANGUAGE_OPTIONS: Record<Language, { label: string; flag: string }> = {
   en: {
     label: "English",
@@ -35,12 +35,29 @@ const LANGUAGE_OPTIONS: Record<Language, { label: string; flag: string }> = {
   es: {
     label: "Espa\u00F1ol",
     flag: "\u{1F1EA}\u{1F1F8}"
+  },
+  ru: {
+    label: "Русский",
+    flag: "\u{1F1F7}\u{1F1FA}"
   }
 };
 
 let languageMenuEventsBound = false;
 let notificationCenterEventsBound = false;
-const NOTIFICATION_COUNT = 3;
+const NOTIF_ITEMS = ["item1", "item2", "item3"];
+
+function getDismissedNotifications(): string[] {
+  try { return JSON.parse(localStorage.getItem("dashboard-notifications-dismissed") || "[]"); } catch { return []; }
+}
+
+function setDismissedNotifications(ids: string[]): void {
+  localStorage.setItem("dashboard-notifications-dismissed", JSON.stringify(ids));
+}
+
+function getActiveNotificationCount(): number {
+  const dismissed = getDismissedNotifications();
+  return NOTIF_ITEMS.filter(id => !dismissed.includes(id)).length;
+}
 
 const translations: Record<Language, TranslationDictionary> = {
   en: {
@@ -52,6 +69,7 @@ const translations: Record<Language, TranslationDictionary> = {
     "notifications.item1": "Design review has been scheduled for tomorrow morning.",
     "notifications.item2": "A new comment was added to the Frontend Showcase project.",
     "notifications.item3": "Your workspace preferences were saved on this device.",
+    "notifications.dismiss": "Dismiss",
     "login.title": "Log In",
     "login.subtitle": "A platform for managing projects and tasks.",
     "login.email": "Email",
@@ -73,7 +91,7 @@ const translations: Record<Language, TranslationDictionary> = {
     "signup.title": "Create Account",
     "signup.subtitle": "Create your account to start managing projects and tasks.",
     "signup.name": "Full Name",
-    "signup.namePlaceholder": "Anna Ivanova",
+    "signup.namePlaceholder": "Regular User",
     "signup.email": "Email",
     "signup.emailPlaceholder": "student@example.com",
     "signup.password": "Password",
@@ -96,10 +114,24 @@ const translations: Record<Language, TranslationDictionary> = {
     "signup.validation.passwordShort": "Password must be at least 6 characters.",
     "signup.validation.confirmRequired": "Confirm your password.",
     "signup.validation.confirmMismatch": "Passwords do not match.",
+    "app.brand.workspace": "Project workspace",
+    "app.aria.dashboardHome": "SPMP dashboard home",
+    "app.aria.primaryNavigation": "Primary navigation",
+    "app.aria.workspaceNavigation": "Workspace navigation",
+    "app.aria.openNavigationMenu": "Open navigation menu",
+    "app.aria.projectSearchFilters": "Project search and filters",
+    "app.aria.projectStatusFilters": "Filter projects by status",
+    "app.aria.dailyGreeting": "Daily greeting",
+    "app.aria.projectViewMode": "Project view mode",
+    "app.title.dashboard": "SPMP | Dashboard",
+    "app.title.projects": "SPMP | Projects",
+    "app.title.tasks": "SPMP | Tasks",
+    "app.title.settings": "SPMP | Settings",
     "sidebar.workspace": "Project workspace",
     "sidebar.dashboard": "Dashboard",
     "sidebar.projects": "Projects",
     "sidebar.tasks": "Tasks",
+    "sidebar.team": "Team",
     "sidebar.settings": "Settings",
     "sidebar.signedInAs": "Signed in as",
     "sidebar.logout": "Log Out",
@@ -110,6 +142,14 @@ const translations: Record<Language, TranslationDictionary> = {
     "dashboard.topbarTag": "Workspace",
     "dashboard.topbarLabel": "Navigation, projects, and account controls in one place.",
     "dashboard.greetingMorning": "Good morning, {name}",
+    "dashboard.statisticsTag": "Statistics",
+    "dashboard.statisticsTitle": "Dashboard Statistics",
+    "dashboard.statisticsSubtitle": "A quick visual summary of project and task progress on this device.",
+    "dashboard.projectStatusTitle": "Project Status",
+    "dashboard.projectStatusChartAriaLabel": "Project status chart",
+    "dashboard.taskOverviewTitle": "Task Overview",
+    "dashboard.taskOverviewChartAriaLabel": "Task overview chart",
+    "dashboard.closeProjectDialog": "Close create project dialog",
     "dashboard.greetingMorningFallback": "Good morning",
     "dashboard.title": "Projects Dashboard",
     "dashboard.subtitle": "A focused workspace for tracking projects, planning new work, and staying organized across your study flow.",
@@ -161,7 +201,7 @@ const translations: Record<Language, TranslationDictionary> = {
     "projects.boardMode": "Board Mode",
     "projects.boardModeName": "Projects Pipeline",
     "projects.boardModeText": "Open any project card to continue into the tasks view.",
-    "projects.kanbanTag": "Kanban",
+    "projects.kanbanTag": "Pipeline",
     "projects.flowTitle": "Project Flow",
     "projects.flowSubtitle": "Each column groups projects by their current delivery phase.",
     "projects.preview": "Preview mode: the projects board is shown with demo data.",
@@ -186,6 +226,114 @@ const translations: Record<Language, TranslationDictionary> = {
     "tasks.sectionSubtitle": "This page is ready as the navigation target for project cards.",
     "tasks.detailText": "The selected project context is loaded from the projects board. This keeps the click-through flow working now and leaves room for a fuller task board later.",
     "tasks.subtitleProject": "Continue planning and delivery for {projectName}.",
+    "tasks.localStorageTag": "Local Tasks",
+    "tasks.localBoardTitle": "Local Task Board",
+    "tasks.localBoardSubtitle": "Your local task board powered by IndexedDB.",
+    "tasks.addTask": "Add Task",
+    "tasks.filters.priority": "Priority",
+    "tasks.filters.status": "Status",
+    "tasks.priority.high": "High",
+    "tasks.priority.medium": "Medium",
+    "tasks.priority.low": "Low",
+    "tasks.status.todo": "To-Do",
+    "tasks.status.inProgress": "In Progress",
+    "tasks.status.done": "Done",
+    "tasks.sort.label": "Sort",
+    "tasks.sort.createdDesc": "Date created: newest first",
+    "tasks.sort.createdAsc": "Date created: oldest first",
+    "tasks.sort.dueAsc": "Due date: earliest first",
+    "tasks.sort.dueDesc": "Due date: latest first",
+    "tasks.sort.priorityDesc": "Priority: High to Low",
+    "tasks.clearFilters": "Clear filters",
+    "tasks.loadingTitle": "Loading tasks...",
+    "tasks.loadingText": "Opening the local IndexedDB task store.",
+    "tasks.modalSubtitle": "Create a task and save it locally in IndexedDB on this device.",
+    "tasks.closeTaskDialog": "Close add task dialog",
+    "tasks.form.title": "Title",
+    "tasks.form.titlePlaceholder": "Add a clear task title",
+    "tasks.form.description": "Description",
+    "tasks.form.descriptionPlaceholder": "Optional notes, links, or acceptance criteria",
+    "tasks.form.status": "Status",
+    "tasks.form.priority": "Priority",
+    "tasks.form.dueDate": "Due Date",
+    "tasks.form.dueDatePlaceholder": "YYYY-MM-DD",
+    "tasks.form.project": "Project",
+    "tasks.saveTask": "Save Task",
+    "tasks.cancel": "Cancel",
+    "tasks.formTitle": "Title",
+    "tasks.formDescription": "Description",
+    "tasks.formProject": "Project",
+    "tasks.formAssignee": "Assignee",
+    "tasks.formDueDate": "Due Date",
+    "tasks.formEstHours": "Est. Hours",
+    "tasks.formCategories": "Categories",
+    "tasks.status.inReview": "In Review",
+    "tasks.noTasks": "No tasks",
+    "tasks.unknown": "Unknown",
+    "tasks.unassigned": "Unassigned",
+    "tasks.edit": "Edit",
+    "tasks.delete": "Delete",
+    "tasks.changeStatus": "Change Status",
+    "tasks.editTask": "Edit Task",
+    "tasks.updateTask": "Update Task",
+    "tasks.createTask": "Create Task",
+    "tasks.me": "(me)",
+    "tasks.selectProject": "-- Select Project --",
+    "tasks.validation.titleRequired": "Title is required.",
+    "tasks.validation.projectRequired": "Project is required.",
+    "tasks.failedLoadPage": "Failed to load page data",
+    "tasks.failedLoadTasks": "Failed to load tasks",
+    "tasks.failedUpdateStatus": "Failed to update task status",
+    "tasks.taskDeleted": "Task deleted",
+    "tasks.failedDeleteTask": "Failed to delete task",
+    "tasks.taskUpdated": "Task updated",
+    "tasks.taskCreated": "Task created",
+    "tasks.failedSaveTask": "Failed to save task",
+    "tasks.confirmDelete": "Delete this task?",
+    "team.topbarTag": "Team",
+    "team.topbarLabel": "View team members and manage invitations.",
+    "team.title": "Team",
+    "team.subtitle": "All members of this workspace.",
+    "team.currentView": "Current View",
+    "team.membersSummary": "Team Members",
+    "team.managersNote": "Managers can invite and remove members.",
+    "team.inviteMember": "Invite Member",
+    "team.membersTag": "Members",
+    "team.membersSectionTitle": "Team Members",
+    "team.membersSubtitle": "Everyone with access to this workspace.",
+    "team.loadingTitle": "Loading team...",
+    "team.loadingText": "Fetching workspace members.",
+    "team.inviteModalTitle": "Invite Member",
+    "team.inviteModalSubtitle": "Create an account for a new team member.",
+    "team.inviteNameLabel": "Full Name",
+    "team.inviteEmailLabel": "Email",
+    "team.invitePasswordLabel": "Temporary Password",
+    "team.sendInvite": "Send Invite",
+    "team.cancel": "Cancel",
+    "team.selectProject": "-- Select Project --",
+    "team.couldNotLoadMembers": "Could not load members",
+    "team.noMembers": "No members yet",
+    "team.invitePrompt": "Invite someone to get started.",
+    "team.roleManager": "Manager",
+    "team.roleMember": "Member",
+    "team.removeMember": "Remove",
+    "team.you": "(you)",
+    "team.memberSince": "Member since ",
+    "team.confirmRemove": "Remove {name} from the team? This cannot be undone.",
+    "team.memberRemoved": "Member removed.",
+    "team.failedRemoveMember": "Failed to remove member.",
+    "team.validation.nameRequired": "Name is required.",
+    "team.validation.emailRequired": "Email is required.",
+    "team.validation.passwordMinLength": "Password must be at least 6 characters.",
+    "team.memberAdded": "{name} has been added to the team.",
+    "team.failedInviteMember": "Failed to invite member.",
+    "team.sending": "Sending...",
+    "team.failedRefreshMembers": "Failed to refresh members.",
+    "team.failedLoadMembers": "Failed to load team members.",
+    "team.joinedRecently": "recently",
+    "app.loading": "Loading...",
+    "settings.nameLabel": "Name",
+    "settings.emailLabel": "Email",
     "settings.pageTag": "Settings",
     "settings.topbarLabel": "Manage your profile details, account actions, and appearance preferences.",
     "settings.title": "Workspace Settings",
@@ -199,13 +347,37 @@ const translations: Record<Language, TranslationDictionary> = {
     "settings.profileTitle": "Profile",
     "settings.profileText": "Edit your name and email in local frontend state.",
     "settings.name": "Name",
-    "settings.namePlaceholder": "Anna Ivanova",
+    "settings.namePlaceholder": "Regular User",
     "settings.email": "Email",
     "settings.emailPlaceholder": "student@example.com",
+    "settings.profileSave": "Save Changes",
+    "settings.profileConfirmTitle": "Confirm your identity",
+    "settings.profileConfirmPassword": "Password",
+    "settings.profileConfirmPasswordPlaceholder": "Enter your password",
+    "settings.profileConfirmCancel": "Cancel",
+    "settings.profileConfirmConfirm": "Confirm",
+    "settings.profileConfirmRequired": "Password is required.",
+    "settings.profileSaveSuccess": "Profile changes saved successfully.",
     "settings.accountTitle": "Account",
     "settings.accountText": "Account security actions are available here as frontend-only interactions.",
     "settings.changePassword": "Change Password",
     "settings.changePasswordHint": "Password change is not connected to the backend in this frontend-only view.",
+    "settings.passwordModalTitle": "Change Password",
+    "settings.passwordModalSubtitle": "Validate the form locally and keep the entire flow on the frontend.",
+    "settings.passwordModalClose": "Close change password dialog",
+    "settings.currentPassword": "Current Password",
+    "settings.currentPasswordPlaceholder": "Enter your current password",
+    "settings.newPassword": "New Password",
+    "settings.newPasswordPlaceholder": "Enter a new password",
+    "settings.confirmNewPassword": "Confirm New Password",
+    "settings.confirmNewPasswordPlaceholder": "Re-enter the new password",
+    "settings.passwordSave": "Save",
+    "settings.passwordValidation.currentRequired": "Current Password is required.",
+    "settings.passwordValidation.newTooShort": "New Password must be at least 8 characters.",
+    "settings.passwordValidation.confirmMismatch": "Confirm New Password must match New Password exactly.",
+    "settings.passwordSuccess": "Password updated successfully.",
+    "settings.passwordShow": "Show",
+    "settings.passwordHide": "Hide",
     "settings.accountHint": "This button is a frontend placeholder and does not send a backend request.",
     "settings.notificationsTitle": "Notification preferences",
     "settings.notificationsText": "Choose which alerts stay enabled on this device.",
@@ -261,7 +433,7 @@ const translations: Record<Language, TranslationDictionary> = {
     "signup.title": "创建账号",
     "signup.subtitle": "创建账号以开始管理项目和任务。",
     "signup.name": "姓名",
-    "signup.namePlaceholder": "Anna Ivanova",
+    "signup.namePlaceholder": "Regular User",
     "signup.email": "邮箱",
     "signup.emailPlaceholder": "student@example.com",
     "signup.password": "密码",
@@ -289,6 +461,7 @@ const translations: Record<Language, TranslationDictionary> = {
     "sidebar.projects": "项目",
     "sidebar.tasks": "任务",
     "sidebar.settings": "设置",
+    "sidebar.team": "团队",
     "sidebar.signedInAs": "当前登录用户",
     "sidebar.logout": "退出登录",
     "theme.dark": "深色模式",
@@ -297,8 +470,14 @@ const translations: Record<Language, TranslationDictionary> = {
     "theme.toLight": "切换到浅色模式",
     "dashboard.topbarTag": "工作区",
     "dashboard.topbarLabel": "将导航、项目和账户操作集中在一个地方。",
-    "dashboard.greetingMorning": "\u65e9\u4e0a\u597d\uff0c{name}",
-    "dashboard.greetingMorningFallback": "\u65e9\u4e0a\u597d",
+    "dashboard.greetingMorning": "早上好，{name}",
+    "dashboard.statisticsTag": "统计",
+    "dashboard.statisticsTitle": "仪表盘统计",
+    "dashboard.projectStatusTitle": "项目状态",
+    "dashboard.projectStatusChartAriaLabel": "项目状态图表",
+    "dashboard.taskOverviewTitle": "任务概览",
+    "dashboard.taskOverviewChartAriaLabel": "任务概览图表",
+    "dashboard.greetingMorningFallback": "早上好",
     "dashboard.title": "项目仪表盘",
     "dashboard.subtitle": "一个专注的工作区，用于跟踪项目、规划工作，并让学习流程保持有序。",
     "dashboard.currentView": "当前视图",
@@ -374,6 +553,90 @@ const translations: Record<Language, TranslationDictionary> = {
     "tasks.sectionSubtitle": "此页面已准备好作为项目卡片的导航目标。",
     "tasks.detailText": "所选项目的上下文来自项目看板。这保证了当前点击跳转流程可用，并为后续更完整的任务看板预留空间。",
     "tasks.subtitleProject": "继续为 {projectName} 规划和推进工作。",
+    "tasks.addTask": "添加任务",
+    "tasks.filters.priority": "优先级",
+    "tasks.filters.status": "状态",
+    "tasks.sort.label": "排序",
+    "tasks.sort.createdDesc": "创建日期：最新优先",
+    "tasks.sort.createdAsc": "创建日期：最早优先",
+    "tasks.sort.dueAsc": "截止日期：最早优先",
+    "tasks.sort.dueDesc": "截止日期：最晚优先",
+    "tasks.sort.priorityDesc": "优先级：高到低",
+    "tasks.clearFilters": "清除筛选",
+    "tasks.cancel": "取消",
+    "tasks.formTitle": "标题",
+    "tasks.formDescription": "描述",
+    "tasks.formProject": "项目",
+    "tasks.formAssignee": "负责人",
+    "tasks.formDueDate": "截止日期",
+    "tasks.formEstHours": "预计工时",
+    "tasks.formCategories": "分类",
+    "tasks.status.inReview": "评审中",
+    "tasks.noTasks": "没有任务",
+    "tasks.unknown": "未知",
+    "tasks.unassigned": "未分配",
+    "tasks.edit": "编辑",
+    "tasks.delete": "删除",
+    "tasks.changeStatus": "更改状态",
+    "tasks.editTask": "编辑任务",
+    "tasks.updateTask": "更新任务",
+    "tasks.createTask": "创建任务",
+    "tasks.me": "(我)",
+    "tasks.selectProject": "-- 选择项目 --",
+    "tasks.validation.titleRequired": "标题不能为空。",
+    "tasks.validation.projectRequired": "请选择项目。",
+    "tasks.failedLoadPage": "加载页面数据失败",
+    "tasks.failedLoadTasks": "加载任务失败",
+    "tasks.failedUpdateStatus": "更新任务状态失败",
+    "tasks.taskDeleted": "任务已删除",
+    "tasks.failedDeleteTask": "删除任务失败",
+    "tasks.taskUpdated": "任务已更新",
+    "tasks.taskCreated": "任务已创建",
+    "tasks.failedSaveTask": "保存任务失败",
+    "tasks.confirmDelete": "确认删除此任务？",
+    "team.topbarTag": "团队",
+    "team.topbarLabel": "查看团队成员和管理邀请。",
+    "team.title": "团队",
+    "team.subtitle": "此工作区的所有成员。",
+    "team.currentView": "当前视图",
+    "team.membersSummary": "团队成员",
+    "team.managersNote": "管理员可以邀请和移除成员。",
+    "team.inviteMember": "邀请成员",
+    "team.membersTag": "成员",
+    "team.membersSectionTitle": "团队成员",
+    "team.membersSubtitle": "拥有此工作区访问权限的所有人。",
+    "team.loadingTitle": "正在加载团队...",
+    "team.loadingText": "正在获取工作区成员。",
+    "team.inviteModalTitle": "邀请成员",
+    "team.inviteModalSubtitle": "为新团队成员创建账号。",
+    "team.inviteNameLabel": "姓名",
+    "team.inviteEmailLabel": "邮箱",
+    "team.invitePasswordLabel": "临时密码",
+    "team.sendInvite": "发送邀请",
+    "team.cancel": "取消",
+    "team.couldNotLoadMembers": "无法加载成员",
+    "team.noMembers": "暂无成员",
+    "team.invitePrompt": "邀请成员以开始协作。",
+    "team.roleManager": "管理员",
+    "team.roleMember": "成员",
+    "team.removeMember": "移除",
+    "team.you": "(你)",
+    "team.memberSince": "加入于 ",
+    "team.confirmRemove": "确定从团队中移除 {name}？此操作无法撤销。",
+    "team.memberRemoved": "成员已移除。",
+    "team.failedRemoveMember": "移除成员失败。",
+    "team.validation.nameRequired": "请输入姓名。",
+    "team.validation.emailRequired": "请输入邮箱。",
+    "team.validation.passwordMinLength": "密码至少需要 6 个字符。",
+    "team.memberAdded": "{name} 已添加到团队。",
+    "team.failedInviteMember": "邀请成员失败。",
+    "team.sending": "发送中...",
+    "team.failedRefreshMembers": "刷新成员列表失败。",
+    "team.failedLoadMembers": "加载团队成员失败。",
+    "team.joinedRecently": "最近加入",
+    "app.loading": "正在加载...",
+    "settings.nameLabel": "姓名",
+    "settings.emailLabel": "邮箱",
     "settings.pageTag": "设置",
     "settings.topbarLabel": "管理你的个人资料、账户操作和外观偏好。",
     "settings.title": "工作区设置",
@@ -387,13 +650,16 @@ const translations: Record<Language, TranslationDictionary> = {
     "settings.profileTitle": "个人资料",
     "settings.profileText": "在本地前端状态中编辑你的姓名和邮箱。",
     "settings.name": "姓名",
-    "settings.namePlaceholder": "Anna Ivanova",
+    "settings.namePlaceholder": "Regular User",
     "settings.email": "邮箱",
     "settings.emailPlaceholder": "student@example.com",
+    "settings.profileSave": "保存更改",
     "settings.accountTitle": "账户",
     "settings.accountText": "这里的账户安全操作仅作为前端交互展示。",
     "settings.changePassword": "修改密码",
     "settings.changePasswordHint": "当前前端视图中的修改密码功能未连接后端。",
+    "settings.passwordShow": "显示",
+    "settings.passwordHide": "隐藏",
     "settings.accountHint": "这个按钮只是前端占位，不会发送后端请求。",
     "settings.notificationsTitle": "通知偏好",
     "settings.notificationsText": "选择在此设备上保留启用的提醒方式。",
@@ -413,6 +679,7 @@ const translations: Record<Language, TranslationDictionary> = {
     "settings.dangerTitle": "重置与清除",
     "settings.dangerText": "移除此浏览器中本地保存的偏好设置和会话数据。",
     "settings.clearLocalData": "清除所有本地数据",
+    "notifications.dismiss": "忽略",
     "status.planning": "规划中",
     "status.active": "进行中",
     "status.inReview": "评审中",
@@ -449,7 +716,7 @@ const translations: Record<Language, TranslationDictionary> = {
     "signup.title": "Crear cuenta",
     "signup.subtitle": "Crea tu cuenta para empezar a gestionar proyectos y tareas.",
     "signup.name": "Nombre completo",
-    "signup.namePlaceholder": "Anna Ivanova",
+    "signup.namePlaceholder": "Regular User",
     "signup.email": "Correo electrónico",
     "signup.emailPlaceholder": "student@example.com",
     "signup.password": "Contraseña",
@@ -477,6 +744,7 @@ const translations: Record<Language, TranslationDictionary> = {
     "sidebar.projects": "Proyectos",
     "sidebar.tasks": "Tareas",
     "sidebar.settings": "Configuración",
+    "sidebar.team": "Equipo",
     "sidebar.signedInAs": "Sesión iniciada como",
     "sidebar.logout": "Cerrar sesión",
     "theme.dark": "Modo oscuro",
@@ -485,8 +753,14 @@ const translations: Record<Language, TranslationDictionary> = {
     "theme.toLight": "Cambiar a modo claro",
     "dashboard.topbarTag": "Espacio de trabajo",
     "dashboard.topbarLabel": "Navegación, proyectos y controles de cuenta en un solo lugar.",
-    "dashboard.greetingMorning": "Buenos d\u00edas, {name}",
-    "dashboard.greetingMorningFallback": "Buenos d\u00edas",
+    "dashboard.greetingMorning": "Buenos días, {name}",
+    "dashboard.statisticsTag": "Estadísticas",
+    "dashboard.statisticsTitle": "Estadísticas del panel",
+    "dashboard.projectStatusTitle": "Estado de proyectos",
+    "dashboard.projectStatusChartAriaLabel": "Gráfico de estado de proyectos",
+    "dashboard.taskOverviewTitle": "Resumen de tareas",
+    "dashboard.taskOverviewChartAriaLabel": "Gráfico de resumen de tareas",
+    "dashboard.greetingMorningFallback": "Buenos días",
     "dashboard.title": "Panel de proyectos",
     "dashboard.subtitle": "Un espacio enfocado para seguir proyectos, planificar trabajo nuevo y mantener todo organizado.",
     "dashboard.currentView": "Vista actual",
@@ -537,7 +811,7 @@ const translations: Record<Language, TranslationDictionary> = {
     "projects.boardMode": "Modo tablero",
     "projects.boardModeName": "Flujo de proyectos",
     "projects.boardModeText": "Abre cualquier tarjeta de proyecto para continuar en la vista de tareas.",
-    "projects.kanbanTag": "Kanban",
+    "projects.kanbanTag": "Pipeline",
     "projects.flowTitle": "Flujo del proyecto",
     "projects.flowSubtitle": "Cada columna agrupa proyectos por su fase actual.",
     "projects.preview": "Modo de vista previa: el tablero de proyectos se muestra con datos de demostración.",
@@ -562,6 +836,90 @@ const translations: Record<Language, TranslationDictionary> = {
     "tasks.sectionSubtitle": "Esta página está lista como destino de navegación para las tarjetas de proyecto.",
     "tasks.detailText": "El contexto del proyecto seleccionado se carga desde el tablero de proyectos. Esto mantiene el flujo actual y deja espacio para un tablero de tareas más completo más adelante.",
     "tasks.subtitleProject": "Continúa planificando y ejecutando para {projectName}.",
+    "tasks.addTask": "Añadir tarea",
+    "tasks.filters.priority": "Prioridad",
+    "tasks.filters.status": "Estado",
+    "tasks.sort.label": "Ordenar",
+    "tasks.sort.createdDesc": "Fecha de creación: más reciente primero",
+    "tasks.sort.createdAsc": "Fecha de creación: más antiguo primero",
+    "tasks.sort.dueAsc": "Fecha de vencimiento: más próximo primero",
+    "tasks.sort.dueDesc": "Fecha de vencimiento: más lejano primero",
+    "tasks.sort.priorityDesc": "Prioridad: alta a baja",
+    "tasks.clearFilters": "Limpiar filtros",
+    "tasks.cancel": "Cancelar",
+    "tasks.formTitle": "Título",
+    "tasks.formDescription": "Descripción",
+    "tasks.formProject": "Proyecto",
+    "tasks.formAssignee": "Asignado",
+    "tasks.formDueDate": "Fecha de vencimiento",
+    "tasks.formEstHours": "Horas est.",
+    "tasks.formCategories": "Categorías",
+    "tasks.status.inReview": "En revisión",
+    "tasks.noTasks": "Sin tareas",
+    "tasks.unknown": "Desconocido",
+    "tasks.unassigned": "Sin asignar",
+    "tasks.edit": "Editar",
+    "tasks.delete": "Eliminar",
+    "tasks.changeStatus": "Cambiar estado",
+    "tasks.editTask": "Editar tarea",
+    "tasks.updateTask": "Actualizar tarea",
+    "tasks.createTask": "Crear tarea",
+    "tasks.me": "(yo)",
+    "tasks.selectProject": "-- Seleccionar proyecto --",
+    "tasks.validation.titleRequired": "El título es obligatorio.",
+    "tasks.validation.projectRequired": "El proyecto es obligatorio.",
+    "tasks.failedLoadPage": "Error al cargar los datos de la página",
+    "tasks.failedLoadTasks": "Error al cargar las tareas",
+    "tasks.failedUpdateStatus": "Error al actualizar el estado de la tarea",
+    "tasks.taskDeleted": "Tarea eliminada",
+    "tasks.failedDeleteTask": "Error al eliminar la tarea",
+    "tasks.taskUpdated": "Tarea actualizada",
+    "tasks.taskCreated": "Tarea creada",
+    "tasks.failedSaveTask": "Error al guardar la tarea",
+    "tasks.confirmDelete": "¿Eliminar esta tarea?",
+    "team.topbarTag": "Equipo",
+    "team.topbarLabel": "Ver miembros del equipo y gestionar invitaciones.",
+    "team.title": "Equipo",
+    "team.subtitle": "Todos los miembros de este espacio de trabajo.",
+    "team.currentView": "Vista actual",
+    "team.membersSummary": "Miembros del equipo",
+    "team.managersNote": "Los gestores pueden invitar y eliminar miembros.",
+    "team.inviteMember": "Invitar miembro",
+    "team.membersTag": "Miembros",
+    "team.membersSectionTitle": "Miembros del equipo",
+    "team.membersSubtitle": "Todos los que tienen acceso a este espacio de trabajo.",
+    "team.loadingTitle": "Cargando equipo...",
+    "team.loadingText": "Obteniendo miembros del espacio de trabajo.",
+    "team.inviteModalTitle": "Invitar miembro",
+    "team.inviteModalSubtitle": "Crear una cuenta para un nuevo miembro del equipo.",
+    "team.inviteNameLabel": "Nombre completo",
+    "team.inviteEmailLabel": "Correo electrónico",
+    "team.invitePasswordLabel": "Contraseña temporal",
+    "team.sendInvite": "Enviar invitación",
+    "team.cancel": "Cancelar",
+    "team.couldNotLoadMembers": "No se pudieron cargar los miembros",
+    "team.noMembers": "Aún no hay miembros",
+    "team.invitePrompt": "Invita a alguien para empezar.",
+    "team.roleManager": "Gestor",
+    "team.roleMember": "Miembro",
+    "team.removeMember": "Eliminar",
+    "team.you": "(tú)",
+    "team.memberSince": "Miembro desde ",
+    "team.confirmRemove": "¿Eliminar a {name} del equipo? Esto no se puede deshacer.",
+    "team.memberRemoved": "Miembro eliminado.",
+    "team.failedRemoveMember": "Error al eliminar miembro.",
+    "team.validation.nameRequired": "El nombre es obligatorio.",
+    "team.validation.emailRequired": "El correo es obligatorio.",
+    "team.validation.passwordMinLength": "La contraseña debe tener al menos 6 caracteres.",
+    "team.memberAdded": "{name} ha sido añadido al equipo.",
+    "team.failedInviteMember": "Error al invitar miembro.",
+    "team.sending": "Enviando...",
+    "team.failedRefreshMembers": "Error al refrescar miembros.",
+    "team.failedLoadMembers": "Error al cargar los miembros del equipo.",
+    "team.joinedRecently": "recientemente",
+    "app.loading": "Cargando...",
+    "settings.nameLabel": "Nombre",
+    "settings.emailLabel": "Correo electrónico",
     "settings.pageTag": "Configuración",
     "settings.topbarLabel": "Gestiona los datos de tu perfil, acciones de cuenta y preferencias de apariencia.",
     "settings.title": "Configuración del espacio",
@@ -575,13 +933,16 @@ const translations: Record<Language, TranslationDictionary> = {
     "settings.profileTitle": "Perfil",
     "settings.profileText": "Edita tu nombre y correo en el estado local del frontend.",
     "settings.name": "Nombre",
-    "settings.namePlaceholder": "Anna Ivanova",
+    "settings.namePlaceholder": "Regular User",
     "settings.email": "Correo electrónico",
     "settings.emailPlaceholder": "student@example.com",
+    "settings.profileSave": "Guardar cambios",
     "settings.accountTitle": "Cuenta",
     "settings.accountText": "Las acciones de seguridad de la cuenta están disponibles aquí como interacciones solo de frontend.",
     "settings.changePassword": "Cambiar contraseña",
     "settings.changePasswordHint": "El cambio de contraseña no está conectado al backend en esta vista solo de frontend.",
+    "settings.passwordShow": "Mostrar",
+    "settings.passwordHide": "Ocultar",
     "settings.accountHint": "Este botón es un marcador frontend y no envía ninguna solicitud al backend.",
     "settings.notificationsTitle": "Preferencias de notificaciones",
     "settings.notificationsText": "Elige qué alertas permanecen activas en este dispositivo.",
@@ -601,6 +962,7 @@ const translations: Record<Language, TranslationDictionary> = {
     "settings.dangerTitle": "Restablecer y borrar",
     "settings.dangerText": "Elimina de este navegador todas las preferencias guardadas localmente y los datos de sesión.",
     "settings.clearLocalData": "Borrar todos los datos locales",
+    "notifications.dismiss": "Descartar",
     "status.planning": "Planificación",
     "status.active": "Activo",
     "status.inReview": "En revisión",
@@ -611,6 +973,306 @@ const translations: Record<Language, TranslationDictionary> = {
     "common.createdRecently": "Creado recientemente",
     "common.createdDate": "Creado {date}",
     "auth.sessionExpired": "Tu sesión ha expirado. Inicia sesión de nuevo."
+  },
+  ru: {
+    "language.english": "English",
+    "language.chinese": "中文",
+    "language.spanish": "Español",
+    "language.russian": "Русский",
+    "notifications.buttonLabel": "Уведомления",
+    "notifications.title": "Уведомления",
+    "notifications.item1": "Ревью дизайна запланировано на завтра утром.",
+    "notifications.item2": "Новый комментарий добавлен к проекту Frontend Showcase.",
+    "notifications.item3": "Настройки рабочего пространства сохранены на этом устройстве.",
+    "notifications.dismiss": "Закрыть",
+    "app.brand.workspace": "Рабочее пространство",
+    "app.aria.dashboardHome": "SPMP панель управления",
+    "app.aria.primaryNavigation": "Основная навигация",
+    "app.aria.workspaceNavigation": "Навигация по рабочему пространству",
+    "app.aria.openNavigationMenu": "Открыть меню навигации",
+    "app.aria.projectSearchFilters": "Поиск и фильтры проектов",
+    "app.aria.projectStatusFilters": "Фильтровать проекты по статусу",
+    "app.aria.dailyGreeting": "Ежедневное приветствие",
+    "app.aria.projectViewMode": "Режим просмотра проектов",
+    "app.title.dashboard": "SPMP | Панель управления",
+    "app.title.projects": "SPMP | Проекты",
+    "app.title.tasks": "SPMP | Задачи",
+    "app.title.settings": "SPMP | Настройки",
+    "sidebar.workspace": "Рабочее пространство",
+    "sidebar.dashboard": "Панель",
+    "sidebar.projects": "Проекты",
+    "sidebar.tasks": "Задачи",
+    "sidebar.settings": "Настройки",
+    "sidebar.team": "Команда",
+    "sidebar.signedInAs": "Вы вошли как",
+    "sidebar.logout": "Выйти",
+    "theme.dark": "Тёмная тема",
+    "theme.light": "Светлая тема",
+    "theme.toDark": "Переключить на тёмную тему",
+    "theme.toLight": "Переключить на светлую тему",
+    "dashboard.topbarTag": "Рабочее пространство",
+    "dashboard.topbarLabel": "Навигация, проекты и управление аккаунтом в одном месте.",
+    "dashboard.statisticsTag": "Статистика",
+    "dashboard.statisticsTitle": "Статистика панели",
+    "dashboard.statisticsSubtitle": "Краткий визуальный обзор прогресса проектов и задач на этом устройстве.",
+    "dashboard.projectStatusTitle": "Статус проектов",
+    "dashboard.projectStatusChartAriaLabel": "Диаграмма статуса проектов",
+    "dashboard.taskOverviewTitle": "Обзор задач",
+    "dashboard.taskOverviewChartAriaLabel": "Диаграмма обзора задач",
+    "dashboard.closeProjectDialog": "Закрыть диалог создания проекта",
+    "dashboard.greetingMorning": "Доброе утро, {name}",
+    "dashboard.greetingMorningFallback": "Доброе утро",
+    "dashboard.title": "Панель проектов",
+    "dashboard.subtitle": "Сфокусированное пространство для отслеживания проектов.",
+    "dashboard.currentView": "Текущий вид",
+    "dashboard.currentViewName": "Обзор панели",
+    "dashboard.currentViewText": "Просматривайте активные проекты.",
+    "dashboard.createProject": "Создать проект",
+    "dashboard.projectsTag": "Проекты",
+    "dashboard.projectsTitle": "Мои проекты",
+    "dashboard.projectsSubtitle": "Держите проекты в порядке.",
+    "dashboard.search": "Поиск",
+    "dashboard.sort": "Сортировка",
+    "dashboard.sortNewest": "Сначала новые",
+    "dashboard.sortOldest": "Сначала старые",
+    "dashboard.sortAZ": "А-Я",
+    "dashboard.searchPlaceholder": "Поиск проектов",
+    "dashboard.filter.all": "Все",
+    "dashboard.filter.active": "Активные",
+    "dashboard.filter.inReview": "На проверке",
+    "dashboard.filter.planning": "Планирование",
+    "dashboard.loadingTitle": "Загрузка проектов...",
+    "dashboard.loadingText": "Получение рабочего пространства.",
+    "dashboard.noProjects": "Нет проектов",
+    "dashboard.noProjectsText": "Создайте первый проект.",
+    "dashboard.noProjectsFound": "Проекты не найдены",
+    "dashboard.noProjectsFoundText": "Попробуйте другой поиск или фильтр.",
+    "dashboard.projectsUnavailable": "Проекты недоступны",
+    "dashboard.preview": "Режим предпросмотра.",
+    "dashboard.previewProjectCreated": "Демо-проект создан.",
+    "dashboard.projectCreated": "Проект создан.",
+    "dashboard.projectCreateFailed": "Не удалось создать проект.",
+    "dashboard.projectModalTitle": "Создать проект",
+    "dashboard.projectModalSubtitle": "Добавьте новый проект.",
+    "dashboard.projectName": "Название проекта",
+    "dashboard.projectNamePlaceholder": "Планировщик проектов",
+    "dashboard.projectDescription": "Описание",
+    "dashboard.projectDescriptionPlaceholder": "Кратко опишите цель проекта",
+    "dashboard.cancel": "Отмена",
+    "dashboard.projectSubmit": "Создать проект",
+    "dashboard.projectSubmitting": "Создание...",
+    "dashboard.validation.projectRequired": "Название проекта обязательно.",
+    "dashboard.validation.projectShort": "Минимум 2 символа.",
+    "dashboard.validation.projectDescriptionLong": "Максимум 500 символов.",
+    "dashboard.validation.fix": "Исправьте ошибки и попробуйте снова.",
+    "projects.pageTag": "Проекты",
+    "projects.topbarLabel": "Управляйте потоком проектов.",
+    "projects.title": "Доска проектов",
+    "projects.subtitle": "Канбан-вид для принятия решений.",
+    "projects.boardMode": "Режим доски",
+    "projects.boardModeName": "Конвейер проектов",
+    "projects.boardModeText": "Откройте карточку для просмотра задач.",
+    "projects.kanbanTag": "Конвейер",
+    "projects.flowTitle": "Поток проектов",
+    "projects.flowSubtitle": "Колонки группируют проекты по фазе.",
+    "projects.preview": "Режим предпросмотра.",
+    "projects.loadingText": "Подготовка доски.",
+    "projects.emptyColumn": "Нет проектов",
+    "projects.emptyColumnText": "В этой колонке нет проектов.",
+    "projects.startNext": "Далее",
+    "projects.startNextCaption": "В очереди и планирование.",
+    "projects.inProgress": "В работе",
+    "projects.inProgressCaption": "Активная работа.",
+    "projects.done": "Готово",
+    "projects.doneCaption": "Завершённая работа.",
+    "tasks.pageTag": "Задачи",
+    "tasks.topbarLabel": "Задачи выбранного проекта.",
+    "tasks.title": "Пространство задач",
+    "tasks.subtitleDefault": "Откройте проект для просмотра задач.",
+    "tasks.selectedProject": "Выбранный проект",
+    "tasks.noProject": "Проект не выбран",
+    "tasks.noProjectMeta": "Выберите проект для просмотра задач.",
+    "tasks.sectionTag": "Задачи",
+    "tasks.sectionTitle": "Доска задач",
+    "tasks.sectionSubtitle": "Страница для навигации по проектам.",
+    "tasks.detailText": "Контекст загружается с доски проектов.",
+    "tasks.subtitleProject": "Планирование для {projectName}.",
+    "tasks.addTask": "Добавить задачу",
+    "tasks.filters.priority": "Приоритет",
+    "tasks.filters.status": "Статус",
+    "tasks.priority.high": "Высокий",
+    "tasks.priority.medium": "Средний",
+    "tasks.priority.low": "Низкий",
+    "tasks.status.todo": "К выполнению",
+    "tasks.status.inProgress": "В работе",
+    "tasks.status.done": "Готово",
+    "tasks.sort.label": "Сортировка",
+    "tasks.sort.createdDesc": "Сначала новые",
+    "tasks.sort.createdAsc": "Сначала старые",
+    "tasks.sort.dueAsc": "Сначала ближайшие",
+    "tasks.sort.dueDesc": "Сначала дальние",
+    "tasks.sort.priorityDesc": "По приоритету",
+    "tasks.clearFilters": "Сбросить фильтры",
+    "tasks.loadingTitle": "Загрузка задач...",
+    "tasks.loadingText": "Открытие хранилища.",
+    "tasks.modalSubtitle": "Создайте задачу локально.",
+    "tasks.closeTaskDialog": "Закрыть",
+    "tasks.form.title": "Название",
+    "tasks.form.titlePlaceholder": "Добавьте название",
+    "tasks.form.description": "Описание",
+    "tasks.form.descriptionPlaceholder": "Необязательные примечания",
+    "tasks.form.status": "Статус",
+    "tasks.form.priority": "Приоритет",
+    "tasks.form.dueDate": "Срок",
+    "tasks.form.dueDatePlaceholder": "ГГГГ-ММ-ДД",
+    "tasks.form.project": "Проект",
+    "tasks.saveTask": "Сохранить задачу",
+    "tasks.cancel": "Отмена",
+    "tasks.formTitle": "Название",
+    "tasks.formDescription": "Описание",
+    "tasks.formProject": "Проект",
+    "tasks.formAssignee": "Исполнитель",
+    "tasks.formDueDate": "Срок",
+    "tasks.formEstHours": "Часы",
+    "tasks.formCategories": "Категории",
+    "tasks.status.inReview": "На проверке",
+    "tasks.noTasks": "Нет задач",
+    "tasks.unknown": "Неизвестно",
+    "tasks.unassigned": "Не назначено",
+    "tasks.edit": "Редактировать",
+    "tasks.delete": "Удалить",
+    "tasks.changeStatus": "Изменить статус",
+    "tasks.editTask": "Редактировать задачу",
+    "tasks.updateTask": "Обновить задачу",
+    "tasks.createTask": "Создать задачу",
+    "tasks.me": "(я)",
+    "tasks.selectProject": "-- Выберите проект --",
+    "tasks.validation.titleRequired": "Название обязательно.",
+    "tasks.validation.projectRequired": "Проект обязателен.",
+    "tasks.failedLoadPage": "Не удалось загрузить данные страницы",
+    "tasks.failedLoadTasks": "Не удалось загрузить задачи",
+    "tasks.failedUpdateStatus": "Не удалось обновить статус задачи",
+    "tasks.taskDeleted": "Задача удалена",
+    "tasks.failedDeleteTask": "Не удалось удалить задачу",
+    "tasks.taskUpdated": "Задача обновлена",
+    "tasks.taskCreated": "Задача создана",
+    "tasks.failedSaveTask": "Не удалось сохранить задачу",
+    "tasks.confirmDelete": "Удалить эту задачу?",
+    "team.topbarTag": "Команда",
+    "team.topbarLabel": "Просмотр участников команды и управление приглашениями.",
+    "team.title": "Команда",
+    "team.subtitle": "Все участники этого рабочего пространства.",
+    "team.currentView": "Текущий вид",
+    "team.membersSummary": "Участники команды",
+    "team.managersNote": "Менеджеры могут приглашать и удалять участников.",
+    "team.inviteMember": "Пригласить участника",
+    "team.membersTag": "Участники",
+    "team.membersSectionTitle": "Участники команды",
+    "team.membersSubtitle": "Все, у кого есть доступ к этому рабочему пространству.",
+    "team.loadingTitle": "Загрузка команды...",
+    "team.loadingText": "Получение участников рабочего пространства.",
+    "team.inviteModalTitle": "Пригласить участника",
+    "team.inviteModalSubtitle": "Создать аккаунт для нового участника команды.",
+    "team.inviteNameLabel": "Полное имя",
+    "team.inviteEmailLabel": "Эл. почта",
+    "team.invitePasswordLabel": "Временный пароль",
+    "team.sendInvite": "Отправить приглашение",
+    "team.cancel": "Отмена",
+    "team.couldNotLoadMembers": "Не удалось загрузить участников",
+    "team.noMembers": "Нет участников",
+    "team.invitePrompt": "Пригласите кого-нибудь, чтобы начать.",
+    "team.roleManager": "Менеджер",
+    "team.roleMember": "Участник",
+    "team.removeMember": "Удалить",
+    "team.you": "(вы)",
+    "team.memberSince": "Участник с ",
+    "team.confirmRemove": "Удалить {name} из команды? Это действие нельзя отменить.",
+    "team.memberRemoved": "Участник удалён.",
+    "team.failedRemoveMember": "Не удалось удалить участника.",
+    "team.validation.nameRequired": "Имя обязательно.",
+    "team.validation.emailRequired": "Эл. почта обязательна.",
+    "team.validation.passwordMinLength": "Пароль должен содержать не менее 6 символов.",
+    "team.memberAdded": "{name} добавлен в команду.",
+    "team.failedInviteMember": "Не удалось пригласить участника.",
+    "team.sending": "Отправка...",
+    "team.failedRefreshMembers": "Не удалось обновить список участников.",
+    "team.failedLoadMembers": "Не удалось загрузить участников команды.",
+    "team.joinedRecently": "недавно",
+    "app.loading": "Загрузка...",
+    "settings.nameLabel": "Имя",
+    "settings.emailLabel": "Эл. почта",
+    "settings.pageTag": "Настройки",
+    "settings.topbarLabel": "Управление профилем и настройками.",
+    "settings.title": "Настройки",
+    "settings.subtitle": "Настройте форму профиля на этом устройстве.",
+    "settings.stateLabel": "Локальное состояние",
+    "settings.stateName": "Локальное хранилище",
+    "settings.stateText": "Изменения сохраняются локально.",
+    "settings.sectionTag": "Настройки",
+    "settings.sectionTitle": "Форма настроек",
+    "settings.sectionSubtitle": "Обновите поля профиля.",
+    "settings.profileTitle": "Профиль",
+    "settings.profileText": "Редактируйте имя и эл. почту.",
+    "settings.name": "Имя",
+    "settings.namePlaceholder": "Пользователь",
+    "settings.email": "Эл. почта",
+    "settings.emailPlaceholder": "user@example.com",
+    "settings.profileSave": "Сохранить",
+    "settings.profileConfirmTitle": "Подтвердите личность",
+    "settings.profileConfirmPassword": "Пароль",
+    "settings.profileConfirmPasswordPlaceholder": "Введите пароль",
+    "settings.profileConfirmCancel": "Отмена",
+    "settings.profileConfirmConfirm": "Подтвердить",
+    "settings.profileConfirmRequired": "Пароль обязателен.",
+    "settings.accountTitle": "Аккаунт",
+    "settings.accountText": "Действия безопасности.",
+    "settings.changePassword": "Сменить пароль",
+    "settings.changePasswordHint": "Смена пароля не подключена.",
+    "settings.passwordModalTitle": "Смена пароля",
+    "settings.passwordModalSubtitle": "Проверьте форму локально.",
+    "settings.passwordModalClose": "Закрыть",
+    "settings.currentPassword": "Текущий пароль",
+    "settings.currentPasswordPlaceholder": "Введите текущий пароль",
+    "settings.newPassword": "Новый пароль",
+    "settings.newPasswordPlaceholder": "Введите новый пароль",
+    "settings.confirmNewPassword": "Подтвердите",
+    "settings.confirmNewPasswordPlaceholder": "Повторите пароль",
+    "settings.passwordSave": "Сохранить",
+    "settings.passwordValidation.currentRequired": "Текущий пароль обязателен.",
+    "settings.passwordValidation.newTooShort": "Минимум 8 символов.",
+    "settings.passwordValidation.confirmMismatch": "Пароли должны совпадать.",
+    "settings.passwordSuccess": "Пароль обновлён.",
+    "settings.passwordShow": "Показать",
+    "settings.passwordHide": "Скрыть",
+    "settings.accountHint": "Frontend-заглушка.",
+    "settings.notificationsTitle": "Уведомления",
+    "settings.notificationsText": "Выберите активные уведомления.",
+    "settings.emailNotifications": "Эл. почта",
+    "settings.browserNotifications": "Браузер",
+    "settings.toggleOn": "Вкл",
+    "settings.toggleOff": "Выкл",
+    "settings.appearanceTitle": "Внешний вид",
+    "settings.appearanceText": "Переключайте тему.",
+    "settings.themeSwitchLabel": "Тема",
+    "settings.appearanceHint": "Синхронизируется с заголовком.",
+    "settings.displayTitle": "Отображение",
+    "settings.displayText": "Вид страницы проектов.",
+    "settings.defaultProjectView": "Вид по умолчанию",
+    "settings.viewGrid": "Сетка",
+    "settings.viewList": "Список",
+    "settings.dangerTitle": "Сброс",
+    "settings.dangerText": "Удалить все локальные данные.",
+    "settings.clearLocalData": "Очистить данные",
+    "status.planning": "Планирование",
+    "status.active": "Активно",
+    "status.inReview": "На проверке",
+    "status.done": "Готово",
+    "common.you": "Вы",
+    "common.unavailable": "Недоступно",
+    "common.tasksCount": "{count} задач",
+    "common.createdRecently": "Недавно",
+    "common.createdDate": "Создано {date}",
+    "auth.sessionExpired": "Сессия истекла. Войдите снова."
   }
 };
 
@@ -620,7 +1282,7 @@ function interpolate(template: string, values: TranslationValues = {}): string {
 
 function getPreferredLanguage(): Language {
   const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  if (stored === "en" || stored === "zh" || stored === "es") {
+  if (stored === "en" || stored === "zh" || stored === "es" || stored === "ru") {
     return stored;
   }
 
@@ -631,6 +1293,10 @@ function getPreferredLanguage(): Language {
 
   if (browserLanguage.startsWith("es")) {
     return "es";
+  }
+
+  if (browserLanguage.startsWith("ru")) {
+    return "ru";
   }
 
   return DEFAULT_LANGUAGE;
@@ -645,7 +1311,7 @@ function t(key: string, values?: TranslationValues): string {
 
 function getLanguage(): Language {
   const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  return stored === "en" || stored === "zh" || stored === "es" ? stored : DEFAULT_LANGUAGE;
+  return stored === "en" || stored === "zh" || stored === "es" || stored === "ru" ? stored : DEFAULT_LANGUAGE;
 }
 
 function getLanguageOption(language: Language): { label: string; flag: string } {
@@ -683,7 +1349,7 @@ function updateSwitcherSelection(): void {
 
   document.querySelectorAll<HTMLButtonElement>(".language-option").forEach((button) => {
     const language = button.dataset.language;
-    if (language !== "en" && language !== "zh" && language !== "es") {
+    if (language !== "en" && language !== "zh" && language !== "es" && language !== "ru") {
       return;
     }
 
@@ -796,7 +1462,7 @@ function upgradeExistingLanguageSwitcher(switcher: HTMLElement | null): void {
   const optionMarkup = buttons
     .map((button) => {
       const language = button.dataset.language;
-      if (language !== "en" && language !== "zh" && language !== "es") {
+      if (language !== "en" && language !== "zh" && language !== "es" && language !== "ru") {
         return "";
       }
 
@@ -833,7 +1499,7 @@ function upgradeExistingLanguageSwitcher(switcher: HTMLElement | null): void {
   switcher.querySelectorAll<HTMLButtonElement>(".language-option").forEach((button) => {
     button.addEventListener("click", () => {
       const language = button.dataset.language;
-      if (language === "en" || language === "zh" || language === "es") {
+      if (language === "en" || language === "zh" || language === "es" || language === "ru") {
         setLanguage(language);
         setLanguageMenuOpen(switcher, false);
       }
@@ -883,6 +1549,43 @@ function bindNotificationCenterEvents(): void {
   notificationCenterEventsBound = true;
 }
 
+function updateNotificationCount(center: HTMLElement): void {
+  const items = center.querySelectorAll<HTMLElement>(".notification-item");
+  const count = items.length;
+  const badge = center.querySelector<HTMLElement>(".notification-badge");
+  const countLabel = center.querySelector<HTMLElement>(".notification-center-count");
+  const list = center.querySelector<HTMLElement>(".notification-center-list");
+  if (badge) badge.textContent = String(count);
+  if (countLabel) countLabel.textContent = String(count);
+  if (count === 0 && list && !list.querySelector(".notif-empty")) {
+    const empty = document.createElement("p");
+    empty.className = "notif-empty";
+    empty.style.cssText = "padding:16px;color:var(--muted);font-size:13px;";
+    empty.textContent = "No notifications";
+    list.appendChild(empty);
+  }
+}
+
+function bindDismissButtons(center: HTMLElement): void {
+  center.querySelectorAll<HTMLButtonElement>(".notification-item-dismiss").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const item = btn.closest<HTMLElement>(".notification-item");
+      if (!item) return;
+      const id = item.dataset.notifId;
+      if (id) {
+        const dismissed = getDismissedNotifications();
+        if (!dismissed.includes(id)) {
+          dismissed.push(id);
+          setDismissedNotifications(dismissed);
+        }
+      }
+      item.remove();
+      updateNotificationCount(center);
+    });
+  });
+}
+
 function upgradeNotificationCenter(center: HTMLElement | null): void {
   if (!center || center.dataset.upgraded === "true") {
     return;
@@ -896,6 +1599,8 @@ function upgradeNotificationCenter(center: HTMLElement | null): void {
     setNotificationCenterOpen(center, shouldOpen);
   });
 
+  bindDismissButtons(center);
+
   bindNotificationCenterEvents();
 }
 
@@ -903,6 +1608,17 @@ function injectNotificationCenter(): void {
   const dashboardTopbarActions = document.querySelector(".topbar-actions");
   if (!dashboardTopbarActions || dashboardTopbarActions.querySelector(".notification-center")) {
     return;
+  }
+
+  const dismissed = getDismissedNotifications();
+  const count = getActiveNotificationCount();
+  const activeItems = NOTIF_ITEMS.filter(id => !dismissed.includes(id));
+  let itemsHtml = "";
+  for (const id of activeItems) {
+    itemsHtml += `<article class="notification-item" data-notif-id="${id}">
+      <p>${t("notifications." + id)}</p>
+      <button type="button" class="notification-item-dismiss" aria-label="${t("notifications.dismiss")}">×</button>
+    </article>`;
   }
 
   const wrapper = document.createElement("div");
@@ -921,25 +1637,17 @@ function injectNotificationCenter(): void {
           <path d="M8.2 15.2a2 2 0 0 0 3.6 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
         </svg>
       </span>
-      <span class="notification-badge" aria-hidden="true">${NOTIFICATION_COUNT}</span>
+      <span class="notification-badge" aria-hidden="true">${count}</span>
       <span class="notification-center-label">${t("notifications.buttonLabel")}</span>
     </button>
 
     <section class="notification-center-panel" role="dialog" aria-label="${t("notifications.title")}" hidden>
       <div class="notification-center-header">
         <strong>${t("notifications.title")}</strong>
-        <span class="notification-center-count">${NOTIFICATION_COUNT}</span>
+        <span class="notification-center-count">${count}</span>
       </div>
       <div class="notification-center-list">
-        <article class="notification-item">
-          <p>${t("notifications.item1")}</p>
-        </article>
-        <article class="notification-item">
-          <p>${t("notifications.item2")}</p>
-        </article>
-        <article class="notification-item">
-          <p>${t("notifications.item3")}</p>
-        </article>
+        ${itemsHtml || `<p style="padding:16px;color:var(--muted);font-size:13px;">No notifications</p>`}
       </div>
     </section>
   `;
@@ -970,12 +1678,13 @@ function injectLanguageSwitcher(): void {
     <button type="button" class="language-option" data-language="en">English</button>
     <button type="button" class="language-option" data-language="zh">中文</button>
     <button type="button" class="language-option" data-language="es">Español</button>
+    <button type="button" class="language-option" data-language="ru">Русский</button>
   `;
 
   wrapper.querySelectorAll<HTMLButtonElement>(".language-option").forEach((button) => {
     button.addEventListener("click", () => {
       const language = button.dataset.language;
-      if (language === "en" || language === "zh" || language === "es") {
+      if (language === "en" || language === "zh" || language === "es" || language === "ru") {
         setLanguage(language);
       }
     });

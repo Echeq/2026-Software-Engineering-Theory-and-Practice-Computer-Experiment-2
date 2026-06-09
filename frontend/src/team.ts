@@ -1,8 +1,10 @@
 export {};
+import "./i18n";
 const API_BASE_URL = `${window.location.origin}/api`;
 const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
 const THEME_STORAGE_KEY = "dashboard-theme";
 const MOBILE_SIDEBAR_BREAKPOINT = 960;
+const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 
 interface TeamMember {
   id: string;
@@ -43,7 +45,7 @@ async function initTeamPage(): Promise<void> {
 // ── Auth ────────────────────────────────────────────────────────────────────
 
 function getStoredToken(): string {
-  return localStorage.getItem("token")?.trim() || "";
+  return localStorage.getItem("spmp-csrf-token")?.trim() || "";
 }
 
 function redirectToLogin(): void {
@@ -110,20 +112,20 @@ async function refreshMembers(): Promise<void> {
     const data = await requestWithAuth<{ users: TeamMember[] }>("/users");
     renderMembers(data.users);
   } catch (error) {
-    showMessage(getErrorText(error, "Failed to refresh members."), "error");
+    showMessage(getErrorText(error, i18n("team.failedRefreshMembers")), "error");
   }
 }
 
 async function loadMembers(): Promise<void> {
   const list = document.getElementById("members-list")!;
-  list.innerHTML = `<article class="state-card"><h3>Loading...</h3></article>`;
+  list.innerHTML = `<article class="state-card"><h3>${i18n("app.loading")}</h3></article>`;
 
   try {
     const data = await requestWithAuth<{ users: TeamMember[] }>("/users");
     renderMembers(data.users);
   } catch (error) {
-    showMessage(getErrorText(error, "Failed to load team members."), "error");
-    list.innerHTML = `<article class="state-card"><h3>Could not load members</h3></article>`;
+    showMessage(getErrorText(error, i18n("team.failedLoadMembers")), "error");
+    list.innerHTML = `<article class="state-card"><h3>${i18n("team.couldNotLoadMembers")}</h3></article>`;
   }
 }
 
@@ -131,7 +133,7 @@ function renderMembers(members: TeamMember[]): void {
   const list = document.getElementById("members-list")!;
 
   if (members.length === 0) {
-    list.innerHTML = `<article class="state-card"><h3>No members yet</h3><p>Invite someone to get started.</p></article>`;
+    list.innerHTML = `<article class="state-card"><h3>${i18n("team.noMembers")}</h3><p>${i18n("team.invitePrompt")}</p></article>`;
     return;
   }
 
@@ -139,14 +141,14 @@ function renderMembers(members: TeamMember[]): void {
     const isMe = m.id === currentUser?.id;
     const isManager = currentUser?.role === "manager";
     const roleBadge = m.role === "manager"
-      ? `<span class="project-status" style="color:var(--accent)">Manager</span>`
-      : `<span class="project-status">Member</span>`;
+      ? `<span class="project-status" style="color:var(--accent)">${i18n("team.roleManager")}</span>`
+      : `<span class="project-status">${i18n("team.roleMember")}</span>`;
 
     const removeBtn = isManager && !isMe
-      ? `<button type="button" class="secondary-button remove-member-btn" data-member-id="${escapeHtml(m.id)}" data-member-name="${escapeHtml(m.name)}" style="margin-top:12px;font-size:13px;">Remove</button>`
+      ? `<button type="button" class="secondary-button remove-member-btn" data-member-id="${escapeHtml(m.id)}" data-member-name="${escapeHtml(m.name)}" style="margin-top:12px;font-size:13px;">${i18n("team.removeMember")}</button>`
       : "";
 
-    const youBadge = isMe ? ` <span style="font-size:12px;color:var(--muted)">(you)</span>` : "";
+    const youBadge = isMe ? ` <span style="font-size:12px;color:var(--muted)">${i18n("team.you")}</span>` : "";
 
     return `
       <article class="project-card" style="cursor:default" data-member-card="${escapeHtml(m.id)}">
@@ -157,7 +159,7 @@ function renderMembers(members: TeamMember[]): void {
           </div>
           ${roleBadge}
         </div>
-        <p class="project-description">Member since ${formatDate(m.created_at)}</p>
+        <p class="project-description">${i18n("team.memberSince")} ${formatDate(m.created_at)}</p>
         ${removeBtn}
       </article>
     `;
@@ -173,7 +175,7 @@ function renderMembers(members: TeamMember[]): void {
 }
 
 async function confirmRemoveMember(id: string, name: string): Promise<void> {
-  if (!confirm(`Remove ${name} from the team? This cannot be undone.`)) return;
+  if (!confirm(i18n("team.confirmRemove", { name }))) return;
   await removeMember(id);
 }
 
@@ -188,10 +190,10 @@ async function removeMember(id: string): Promise<void> {
   try {
     await requestWithAuth(`/users/${id}`, { method: "DELETE" });
     card?.remove();
-    showMessage("Member removed.", "success");
+    showMessage(i18n("team.memberRemoved"), "success");
   } catch (error) {
     if (card) { card.style.opacity = "1"; card.style.transform = ""; }
-    showMessage(getErrorText(error, "Failed to remove member."), "error");
+    showMessage(getErrorText(error, i18n("team.failedRemoveMember")), "error");
   }
 }
 
@@ -225,9 +227,9 @@ async function handleInviteSubmit(event: Event): Promise<void> {
   const password = (document.getElementById("invite-password") as HTMLInputElement).value.trim();
 
   let valid = true;
-  if (!name) { setFieldError("invite-name", "Name is required."); valid = false; }
-  if (!email) { setFieldError("invite-email", "Email is required."); valid = false; }
-  if (!password || password.length < 6) { setFieldError("invite-password", "Password must be at least 6 characters."); valid = false; }
+  if (!name) { setFieldError("invite-name", i18n("team.validation.nameRequired")); valid = false; }
+  if (!email) { setFieldError("invite-email", i18n("team.validation.emailRequired")); valid = false; }
+  if (!password || password.length < 6) { setFieldError("invite-password", i18n("team.validation.passwordMinLength")); valid = false; }
   if (!valid) return;
 
   setInviteSubmitting(true);
@@ -239,10 +241,10 @@ async function handleInviteSubmit(event: Event): Promise<void> {
       body: JSON.stringify({ name, email, password }),
     });
     closeInviteModal();
-    showMessage(`${name} has been added to the team.`, "success");
+    showMessage(i18n("team.memberAdded", { name }), "success");
     await refreshMembers();
   } catch (error) {
-    document.getElementById("invite-form-message")!.textContent = getErrorText(error, "Failed to invite member.");
+    document.getElementById("invite-form-message")!.textContent = getErrorText(error, i18n("team.failedInviteMember"));
     (document.getElementById("invite-form-message")!).className = "form-message is-error";
     setInviteSubmitting(false);
   }
@@ -252,7 +254,7 @@ function setInviteSubmitting(submitting: boolean): void {
   const btn = document.getElementById("invite-submit-btn") as HTMLButtonElement | null;
   if (btn) {
     btn.disabled = submitting;
-    btn.textContent = submitting ? "Sending..." : "Send Invite";
+    btn.textContent = submitting ? i18n("team.sending") : i18n("team.sendInvite");
   }
 }
 
@@ -268,7 +270,7 @@ function applyTheme(theme: "light" | "dark"): void {
   document.body.dataset.theme = theme;
   const btn = document.getElementById("theme-toggle-btn") as HTMLButtonElement | null;
   if (btn) {
-    btn.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
+    btn.textContent = theme === "dark" ? i18n("theme.light") : i18n("theme.dark");
     btn.setAttribute("aria-pressed", String(theme === "dark"));
   }
 }
@@ -370,7 +372,7 @@ function getInitials(name: string): string {
 
 function formatDate(dateString: string): string {
   const d = new Date(dateString);
-  if (isNaN(d.getTime())) return "recently";
+  if (isNaN(d.getTime())) return i18n("team.joinedRecently");
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 

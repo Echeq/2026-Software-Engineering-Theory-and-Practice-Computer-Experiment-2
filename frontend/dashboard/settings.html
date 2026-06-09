@@ -3,27 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SPMP | Settings</title>
+  <title data-i18n-document-title="app.title.settings">SPMP | Settings</title>
   <link rel="stylesheet" href="../css/dashboard.css">
-  <script src="../js/i18n.js" defer></script>
 </head>
 <body>
   <div id="sidebar-backdrop" class="sidebar-backdrop" hidden data-close-sidebar="true"></div>
 
   <main class="dashboard-app">
-    <aside id="dashboard-sidebar" class="dashboard-sidebar" aria-label="Primary navigation">
+    <aside id="dashboard-sidebar" class="dashboard-sidebar" data-i18n-aria-label="app.aria.primaryNavigation" aria-label="Primary navigation">
       <div class="sidebar-top">
         <div class="sidebar-brand-wrap">
-          <a href="./index.html" class="sidebar-brand" aria-label="SPMP dashboard home">
+          <a href="./index.html" class="sidebar-brand" data-i18n-aria-label="app.aria.dashboardHome" aria-label="SPMP dashboard home">
             <span class="sidebar-logo">SP</span>
             <span class="sidebar-brand-copy">
               <strong>SPMP</strong>
-              <span>Project workspace</span>
+              <span data-i18n="app.brand.workspace">Project workspace</span>
             </span>
           </a>
         </div>
 
-        <nav class="sidebar-nav" aria-label="Workspace navigation">
+        <nav class="sidebar-nav" data-i18n-aria-label="app.aria.workspaceNavigation" aria-label="Workspace navigation">
           <a href="./index.html" class="sidebar-link">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="3" width="6" height="6" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="11.5" y="3" width="6" height="4" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="11.5" y="10" width="6" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="2.5" y="12" width="6" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
             <span data-i18n="sidebar.dashboard">Dashboard</span>
@@ -38,7 +37,7 @@
           </a>
           <a href="./team.html" class="sidebar-link">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="6.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2 17c0-3.04 2.46-5.5 5.5-5.5S13 13.96 13 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14.5" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M18 17c0-2.49-1.79-4.56-4.17-4.97" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-            <span>Team</span>
+            <span data-i18n="sidebar.team">Team</span>
           </a>
           <a href="./settings.html" class="sidebar-link is-active">
             <svg class="nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 10h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 14.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="13.5" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
@@ -50,7 +49,7 @@
       <div class="sidebar-footer">
         <div class="user-panel" aria-live="polite">
           <span id="user-avatar" class="user-avatar" aria-hidden="true">U</span>
-          <strong id="user-name" class="user-display">Loading...</strong>
+          <strong id="user-name" class="user-display"></strong>
         </div>
         <button id="logout-btn" type="button" class="secondary-button sidebar-logout"><svg class="button-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 3.5H5.5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2H8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 6.5 15 10l-4 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 10H7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span data-i18n="sidebar.logout">Log Out</span></button>
       </div>
@@ -65,6 +64,7 @@
             class="menu-toggle"
             aria-expanded="false"
             aria-controls="dashboard-sidebar"
+            data-i18n-aria-label="app.aria.openNavigationMenu"
             aria-label="Open navigation menu"
           >
             <span></span>
@@ -83,26 +83,18 @@
 
       <section class="overview-panel" aria-labelledby="settings-page-title">
         <div class="overview-copy">
-          <span class="brand-tag">SPMP</span>
-          <h1 id="settings-page-title" data-i18n="settings.title">Workspace Settings</h1>
-          <p class="subtitle">
-            Update your profile, change your password, and manage appearance preferences.
-          </p>
-        </div>
-
-        <div class="overview-actions">
-          <div class="overview-note">
-            <span class="overview-note-label">Current View</span>
-            <strong>Account Settings</strong>
-            <p>Changes to your profile and password are saved to the server.</p>
+          <div class="page-title-row">
+            <h1 id="settings-page-title" data-i18n="settings.title">Workspace Settings</h1>
           </div>
+          <p class="subtitle" data-i18n="settings.subtitle">
+            Manage your profile and preferences.
+          </p>
         </div>
       </section>
 
       <section class="projects-section settings-section" aria-labelledby="settings-section-title">
         <div class="section-header">
           <div class="section-copy">
-            <span class="section-tag" data-i18n="settings.sectionTag">Preferences</span>
             <h2 id="settings-section-title" data-i18n="settings.sectionTitle">Settings Form</h2>
             <p class="section-subtitle" data-i18n="settings.sectionSubtitle">Update local profile inputs, account actions, and appearance controls.</p>
           </div>
@@ -113,27 +105,29 @@
         <form id="settings-form" class="settings-form" novalidate>
           <article class="settings-card">
             <div class="settings-card-header">
-              <h3>Profile</h3>
-              <p>Update your display name. Email is read-only.</p>
+              <h3 data-i18n="settings.profileTitle">Profile</h3>
+              <p data-i18n="settings.profileText">Update your display name. Email is read-only.</p>
             </div>
 
             <div class="settings-field-grid">
               <label class="form-group" for="settings-name">
-                <span>Name</span>
+                <span data-i18n="settings.nameLabel">Name</span>
                 <input
                   id="settings-name"
                   type="text"
                   autocomplete="name"
+                  data-i18n-placeholder="settings.namePlaceholder"
                   placeholder="Your name"
                 >
               </label>
 
               <label class="form-group" for="settings-email">
-                <span>Email</span>
+                <span data-i18n="settings.emailLabel">Email</span>
                 <input
                   id="settings-email"
                   type="email"
                   autocomplete="email"
+                  data-i18n-placeholder="settings.emailPlaceholder"
                   placeholder="you@example.com"
                   readonly
                   style="opacity:0.7;cursor:default"
@@ -141,19 +135,19 @@
               </label>
             </div>
 
-            <div class="settings-actions" style="margin-top:16px">
-              <button id="save-profile-btn" type="button" class="submit-button">Save Profile</button>
+            <div class="settings-actions">
+              <button id="profile-save-btn" type="submit" class="submit-button" data-i18n="settings.profileSave">Save Changes</button>
             </div>
           </article>
 
           <article class="settings-card">
             <div class="settings-card-header">
-              <h3>Account</h3>
-              <p>Change your password. You will need your current password to confirm.</p>
+              <h3 data-i18n="settings.accountTitle">Account</h3>
+              <p data-i18n="settings.accountText">Change your password. You will need your current password to confirm.</p>
             </div>
 
             <div class="settings-actions">
-              <button id="change-password-btn" type="button" class="secondary-button">Change Password</button>
+              <button id="change-password-btn" type="button" class="secondary-button" data-i18n="settings.changePassword">Change Password</button>
             </div>
           </article>
 
@@ -224,7 +218,7 @@
 
               <button id="appearance-theme-switch" type="button" class="settings-theme-switch" role="switch" aria-checked="false">
                 <span class="settings-theme-switch-copy">
-                  <span id="appearance-theme-value" class="settings-theme-switch-value">Light Mode</span>
+                  <span id="appearance-theme-value" class="settings-theme-switch-value" data-i18n="theme.light">Light Mode</span>
                 </span>
                 <span class="settings-theme-switch-track" aria-hidden="true">
                   <span class="settings-theme-switch-thumb"></span>
@@ -268,32 +262,105 @@
 
   <div id="change-password-modal" class="modal" hidden aria-hidden="true">
     <div class="modal-scrim" data-close-modal="true"></div>
-    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pw-modal-title">
+
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="change-password-modal-title">
       <div class="modal-header">
         <div>
-          <span class="brand-tag">SPMP</span>
-          <h2 id="pw-modal-title">Change Password</h2>
-          <p class="subtitle">Enter your current password and choose a new one.</p>
+          <h2 id="change-password-modal-title" data-i18n="settings.passwordModalTitle">Change Password</h2>
+          <p class="subtitle" data-i18n="settings.passwordModalSubtitle">This frontend-only flow validates the form locally and does not contact the backend.</p>
         </div>
-        <button id="close-password-modal" type="button" class="close-btn" aria-label="Close">&times;</button>
+        <button
+          id="close-change-password-modal"
+          type="button"
+          class="close-btn"
+          data-i18n-aria-label="settings.passwordModalClose"
+          aria-label="Close change password dialog"
+        >&times;</button>
       </div>
-      <form id="password-change-form" class="project-form" novalidate>
+
+      <form id="change-password-form" class="change-password-form" novalidate>
         <div class="form-group">
-          <label for="current-password">Current Password</label>
-          <input id="current-password" name="currentPassword" type="password" placeholder="Your current password">
+          <label for="current-password-input" data-i18n="settings.currentPassword">Current Password</label>
+          <div class="password-input-row">
+            <input
+              id="current-password-input"
+              name="currentPassword"
+              type="password"
+              autocomplete="current-password"
+              placeholder="Enter your current password"
+              data-i18n-placeholder="settings.currentPasswordPlaceholder"
+            >
+            <button type="button" class="password-toggle-button" data-password-toggle="current-password-input" data-i18n="app.password.show">Show</button>
+          </div>
         </div>
+
         <div class="form-group">
-          <label for="new-password">New Password</label>
-          <input id="new-password" name="newPassword" type="password" placeholder="At least 6 characters">
+          <label for="new-password-input" data-i18n="settings.newPassword">New Password</label>
+          <div class="password-input-row">
+            <input
+              id="new-password-input"
+              name="newPassword"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Enter a new password"
+              data-i18n-placeholder="settings.newPasswordPlaceholder"
+            >
+            <button type="button" class="password-toggle-button" data-password-toggle="new-password-input" data-i18n="app.password.show">Show</button>
+          </div>
         </div>
+
         <div class="form-group">
-          <label for="confirm-password">Confirm New Password</label>
-          <input id="confirm-password" name="confirmPassword" type="password" placeholder="Repeat new password">
+          <label for="confirm-new-password-input" data-i18n="settings.confirmNewPassword">Confirm New Password</label>
+          <div class="password-input-row">
+            <input
+              id="confirm-new-password-input"
+              name="confirmNewPassword"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Re-enter the new password"
+              data-i18n-placeholder="settings.confirmNewPasswordPlaceholder"
+            >
+            <button type="button" class="password-toggle-button" data-password-toggle="confirm-new-password-input" data-i18n="app.password.show">Show</button>
+          </div>
         </div>
-        <p class="form-message" id="password-change-message" aria-live="polite"></p>
+
+        <p class="form-message" id="change-password-modal-message" aria-live="polite"></p>
+
         <div class="modal-actions">
-          <button id="cancel-password-btn" type="button" class="secondary-button">Cancel</button>
-          <button id="password-change-submit" type="submit" class="submit-button">Update Password</button>
+          <button id="cancel-change-password-btn" type="button" class="secondary-button" data-i18n="dashboard.cancel">Cancel</button>
+          <button id="change-password-save-btn" type="submit" class="submit-button" data-i18n="settings.passwordSave">Save</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="profile-confirm-modal" class="modal profile-confirm-modal" hidden aria-hidden="true">
+    <div class="modal-scrim" data-close-modal="true"></div>
+
+    <section class="modal-card profile-confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="profile-confirm-modal-title">
+      <div class="modal-header">
+        <div>
+          <h2 id="profile-confirm-modal-title" data-i18n="settings.profileConfirmTitle">Confirm your identity</h2>
+        </div>
+      </div>
+
+      <form id="profile-confirm-form" class="profile-confirm-form" novalidate>
+        <div class="form-group">
+          <label for="profile-confirm-password" data-i18n="settings.profileConfirmPassword">Password</label>
+          <input
+            id="profile-confirm-password"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Enter your password"
+            data-i18n-placeholder="settings.profileConfirmPasswordPlaceholder"
+          >
+        </div>
+
+        <p class="form-message" id="profile-confirm-message" aria-live="polite"></p>
+
+        <div class="modal-actions">
+          <button id="profile-confirm-cancel-btn" type="button" class="secondary-button" data-i18n="settings.profileConfirmCancel">Cancel</button>
+          <button id="profile-confirm-submit-btn" type="submit" class="submit-button" data-i18n="settings.profileConfirmConfirm">Confirm</button>
         </div>
       </form>
     </section>
