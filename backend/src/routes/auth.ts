@@ -161,9 +161,7 @@ router.post(
             );
 
             if (!passwordMatches) {
-                res.status(401).json({
-                    message: "Current password is incorrect",
-                });
+                res.status(401).json({ message: "Current password is incorrect" });
                 return;
             }
 
@@ -174,8 +172,7 @@ router.post(
 
             if (isSamePassword) {
                 res.status(400).json({
-                    message:
-                        "New password must be different from the current password",
+                    message: "New password must be different from the current password",
                 });
                 return;
             }
