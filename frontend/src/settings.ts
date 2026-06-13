@@ -1,9 +1,10 @@
 import "../css/dashboard.css";
 import "./i18n";
-import { getCurrentUser, isSessionError, logout } from "./core/services";
+import { ApiError, changePassword, getCurrentUser, isSessionError, logout, updateProfile } from "./core/services";
 
 namespace SettingsPage {
   const THEME_STORAGE_KEY = "dashboard-theme";
+  const LEGACY_THEME_STORAGE_KEY = "theme";
   const SETTINGS_STORAGE_KEY = "dashboard-settings-state";
   const MOBILE_SIDEBAR_BREAKPOINT = 960;
   const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
@@ -182,6 +183,8 @@ namespace SettingsPage {
 
   function hydrateState(): void {
     const stored = readStoredSettingsState();
+    const activeTheme = readStoredTheme() || settingsState.theme;
+
     if (stored) {
       settingsState = {
         profileName: stored.profileName,
@@ -189,9 +192,10 @@ namespace SettingsPage {
         emailNotifications: stored.emailNotifications,
         browserNotifications: stored.browserNotifications,
         defaultProjectView: stored.defaultProjectView,
-        theme: stored.theme
+        theme: activeTheme
       };
       applyTheme(settingsState.theme);
+      persistSettingsState();
       return;
     }
 
@@ -201,13 +205,14 @@ namespace SettingsPage {
       emailNotifications: true,
       browserNotifications: false,
       defaultProjectView: "grid",
-      theme: settingsState.theme
+      theme: activeTheme
     };
+    applyTheme(settingsState.theme);
     persistSettingsState();
   }
 
   function readStoredTheme(): SettingsTheme | "" {
-    const value = localStorage.getItem(THEME_STORAGE_KEY);
+    const value = localStorage.getItem(THEME_STORAGE_KEY) ?? localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
     return value === "light" || value === "dark" ? value : "";
   }
 
@@ -326,7 +331,7 @@ namespace SettingsPage {
     }
   }
 
-  function handleProfileConfirmSubmit(event: Event): void {
+  async function handleProfileConfirmSubmit(event: Event): Promise<void> {
     event.preventDefault();
 
     const password = profileConfirmPasswordInput?.value.trim() || "";
@@ -335,8 +340,33 @@ namespace SettingsPage {
       return;
     }
 
-    closeProfileConfirmModal();
-    showSettingsMessage(i18n("settings.profileSaveSuccess"), "success");
+    const name = nameInput?.value.trim() || "";
+    const email = emailInput?.value.trim() || "";
+
+    try {
+      const response = await updateProfile(name, email);
+
+      currentUser = response.user;
+      settingsState.profileName = response.user.name;
+      settingsState.profileEmail = response.user.email;
+      persistSettingsState();
+      renderSettingsState();
+
+      if (userNameElement) {
+        userNameElement.textContent = response.user.name;
+      }
+      updateUserAvatar(response.user.name);
+
+      closeProfileConfirmModal();
+      showSettingsMessage("Profile updated successfully", "success");
+    } catch (error) {
+      if (isSessionError(error)) {
+        redirectToLogin();
+        return;
+      }
+
+      showProfileConfirmMessage(getApiErrorMessage(error), "error");
+    }
   }
 
   function showProfileConfirmMessage(text: string, type: "success" | "error" | "" = ""): void {
@@ -351,6 +381,14 @@ namespace SettingsPage {
   function resetProfileConfirmModal(): void {
     profileConfirmFormElement?.reset();
     showProfileConfirmMessage("");
+  }
+
+  function getApiErrorMessage(error: unknown): string {
+    if (error instanceof ApiError) {
+      return error.message;
+    }
+
+    return i18n("common.error");
   }
 
   function handleNameInput(event: Event): void {
@@ -395,7 +433,7 @@ namespace SettingsPage {
 
   function applyTheme(theme: SettingsTheme): void {
     document.body.dataset.theme = theme;
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    persistTheme(theme);
 
     if (themeToggleButton) {
       const isDarkTheme = theme === "dark";
@@ -405,6 +443,11 @@ namespace SettingsPage {
     }
 
     renderSettingsState();
+  }
+
+  function persistTheme(theme: SettingsTheme): void {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    localStorage.setItem(LEGACY_THEME_STORAGE_KEY, theme);
   }
 
   function handleChangePasswordClick(): void {
@@ -445,7 +488,7 @@ namespace SettingsPage {
     }
   }
 
-  function handleChangePasswordSubmit(event: Event): void {
+  async function handleChangePasswordSubmit(event: Event): Promise<void> {
     event.preventDefault();
 
     const validation = validateChangePasswordForm();
@@ -454,11 +497,24 @@ namespace SettingsPage {
       return;
     }
 
-    showChangePasswordMessage(i18n("settings.passwordSuccess"), "success");
-    clearPasswordCloseTimer();
-    passwordCloseTimer = window.setTimeout(() => {
-      closeChangePasswordModal();
-    }, 2000);
+    const currentPassword = currentPasswordInput?.value.trim() || "";
+    const newPassword = newPasswordInput?.value || "";
+
+    try {
+      await changePassword(currentPassword, newPassword);
+      showChangePasswordMessage("Password changed successfully", "success");
+      clearPasswordCloseTimer();
+      passwordCloseTimer = window.setTimeout(() => {
+        closeChangePasswordModal();
+      }, 2000);
+    } catch (error) {
+      if (isSessionError(error)) {
+        void logout();
+        return;
+      }
+
+      showChangePasswordMessage(getChangePasswordErrorMessage(error), "error");
+    }
   }
 
   function validateChangePasswordForm(): { isValid: boolean; message: string } {
@@ -470,8 +526,12 @@ namespace SettingsPage {
       return { isValid: false, message: i18n("settings.passwordValidation.currentRequired") };
     }
 
-    if (newPassword.length < 8) {
-      return { isValid: false, message: i18n("settings.passwordValidation.newTooShort") };
+    if (newPassword.length < 6) {
+      return { isValid: false, message: "Password must be at least 6 characters" };
+    }
+
+    if (newPassword === currentPassword) {
+      return { isValid: false, message: "New password must be different" };
     }
 
     if (confirmNewPassword !== newPassword) {
@@ -542,6 +602,38 @@ namespace SettingsPage {
     }
   }
 
+  function getChangePasswordErrorMessage(error: unknown): string {
+    if (!(error instanceof ApiError)) {
+      return i18n("common.error");
+    }
+
+    if (error.status === 400) {
+      const normalizedMessage = error.message.trim().toLowerCase();
+
+      if (normalizedMessage.includes("current password")) {
+        return "Current password is incorrect";
+      }
+
+      if (
+        normalizedMessage.includes("at least 6") ||
+        normalizedMessage.includes("minimum 6") ||
+        normalizedMessage.includes("6 characters")
+      ) {
+        return "Password must be at least 6 characters";
+      }
+
+      if (
+        normalizedMessage.includes("different") ||
+        normalizedMessage.includes("same as current") ||
+        normalizedMessage.includes("must not match")
+      ) {
+        return "New password must be different";
+      }
+    }
+
+    return error.message || i18n("common.error");
+  }
+
   function renderPreferenceSwitch(
     button: HTMLButtonElement | null,
     valueElement: HTMLElement | null,
@@ -590,7 +682,7 @@ namespace SettingsPage {
     sidebarToggleButton.setAttribute("aria-expanded", String(isMobileViewport() && document.body.classList.contains("sidebar-open")));
     sidebarToggleButton.setAttribute(
       "aria-label",
-      document.body.classList.contains("sidebar-open") ? "Close navigation menu" : "Open navigation menu"
+      document.body.classList.contains("sidebar-open") ? i18n("app.aria.closeNavigationMenu") : i18n("app.aria.openNavigationMenu")
     );
     sidebarBackdropElement.hidden = !(isMobileViewport() && document.body.classList.contains("sidebar-open"));
   }

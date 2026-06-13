@@ -127,8 +127,8 @@ async function initializeDashboardCharts() {
 function cacheElements() {
     userNameElement = document.getElementById("user-name");
     userAvatarElement = document.getElementById("user-avatar");
-    greetingTitleElement = document.getElementById("local-greeting-title");
-    greetingDateElement = document.getElementById("local-greeting-date");
+    greetingTitleElement = document.getElementById("greeting-banner-title");
+    greetingDateElement = document.getElementById("greeting-banner-date");
     projectsMessageBox = document.getElementById("projects-message");
     projectsListElement = document.getElementById("projects-list");
     projectSearchInputElement = document.getElementById("project-search-input");
@@ -1064,7 +1064,7 @@ async function readProjectCompletionLookup(projects) {
         const totalByProjectId = new Map();
         const completedByProjectId = new Map();
         tasks.forEach((task) => {
-            const projectId = getProjectIdKey(task?.projectId);
+            const projectId = getTaskProjectId(task);
             if (!projectId || !lookup.has(projectId)) {
                 return;
             }
@@ -1139,6 +1139,12 @@ function getProjectIdKey(projectId) {
     }
     return String(projectId).trim();
 }
+function getTaskProjectId(task) {
+    if (!task || typeof task !== "object") {
+        return "";
+    }
+    return getProjectIdKey(task.projectId ?? task.project_id ?? task.projectID ?? task.project);
+}
 function createProjectCompletionSummary(totalTasks, completedTasks) {
     const safeTotalTasks = Math.max(0, totalTasks);
     const safeCompletedTasks = Math.min(Math.max(0, completedTasks), safeTotalTasks);
@@ -1164,7 +1170,11 @@ function getProjectCompletionTone(percentage) {
     return "high";
 }
 function isCompletedTaskStatus(status) {
-    return typeof status === "string" && status.trim().toLowerCase() === "done";
+    if (typeof status !== "string") {
+        return false;
+    }
+    const normalizedStatus = status.trim().toLowerCase();
+    return ["done", "completed", "complete", "closed", "finished"].includes(normalizedStatus);
 }
 function sortProjects(projects, sort) {
     const copy = [...projects];

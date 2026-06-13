@@ -60,6 +60,7 @@
     hx-get="/api/projects/fragment/cards"
     hx-trigger="load, input delay:250ms from:#project-search-input, projects:refresh from:body"
     hx-include="#project-search-input, #project-status-input, #project-language-input"
+    hx-vals='js:{lang: localStorage.getItem("app-language") || "en"}'
     hx-swap="innerHTML"
   ></div>
 </section>

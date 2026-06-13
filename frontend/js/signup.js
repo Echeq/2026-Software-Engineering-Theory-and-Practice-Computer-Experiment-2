@@ -1,8 +1,7 @@
 "use strict";
 (() => {
     const API_BASE_URL = `${window.location.origin}/api`;
-    const THEME_STORAGE_KEY = "theme";
-    const LEGACY_THEME_STORAGE_KEY = "dashboard-theme";
+    const THEME_STORAGE_KEY = "dashboard-theme";
     const i18n = (key, values) => window.I18n?.t(key, values) || key;
     const setDynamicText = (element, key, values) => {
         if (!element) {
@@ -35,12 +34,11 @@
     themeToggleButton?.addEventListener("click", toggleTheme);
     document.addEventListener("app-language-change", handleLanguageChange);
     function initializeTheme() {
-        const storedTheme = localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
+        const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
         const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
         const theme = storedTheme === "dark" || storedTheme === "light" ? storedTheme : preferredTheme;
         document.body.dataset.theme = theme;
         localStorage.setItem(THEME_STORAGE_KEY, theme);
-        localStorage.setItem(LEGACY_THEME_STORAGE_KEY, theme);
     }
     function initializeParticles() {
         if (typeof window.particlesJS !== "function" || !document.getElementById("particles-js")) {
@@ -127,7 +125,6 @@
         const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
         document.body.dataset.theme = nextTheme;
         localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
-        localStorage.setItem(LEGACY_THEME_STORAGE_KEY, nextTheme);
         refreshParticles();
         updateThemeToggle();
     }

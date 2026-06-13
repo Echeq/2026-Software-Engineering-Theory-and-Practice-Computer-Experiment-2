@@ -1,6 +1,7 @@
 (() => {
   const API_BASE_URL = `${window.location.origin}/api`;
-  const THEME_STORAGE_KEY = "dashboard-theme";
+  const THEME_STORAGE_KEY = "theme";
+  const LEGACY_THEME_STORAGE_KEY = "dashboard-theme";
   const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 
   interface RegisterResponse {
@@ -23,16 +24,23 @@
   document.addEventListener("app-language-change", updateThemeToggle);
 
   function initializeTheme(): void {
-    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY) ?? localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
     const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    document.body.dataset.theme = storedTheme === "dark" || storedTheme === "light" ? storedTheme : preferredTheme;
+    const theme = storedTheme === "dark" || storedTheme === "light" ? storedTheme : preferredTheme;
+    document.body.dataset.theme = theme;
+    persistTheme(theme);
   }
 
   function toggleTheme(): void {
     const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
     document.body.dataset.theme = nextTheme;
-    localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    persistTheme(nextTheme);
     updateThemeToggle();
+  }
+
+  function persistTheme(theme: "light" | "dark"): void {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    localStorage.setItem(LEGACY_THEME_STORAGE_KEY, theme);
   }
 
   function updateThemeToggle(): void {

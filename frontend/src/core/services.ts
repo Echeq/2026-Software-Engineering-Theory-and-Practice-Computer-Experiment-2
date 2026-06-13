@@ -10,6 +10,15 @@ interface RegisterResponse {
   message: string;
 }
 
+interface ChangePasswordResponse {
+  message: string;
+}
+
+interface UpdateProfileResponse {
+  message: string;
+  user: User;
+}
+
 interface UserResponse {
   user: User;
 }
@@ -42,7 +51,7 @@ export class ApiError extends Error {
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${getAppContext().routes.apiBase}${path}`, {
     ...init,
-    credentials: "same-origin",
+    credentials: init.credentials ?? "same-origin",
     headers: buildHeaders(init)
   });
   const payload = await response.json().catch(() => ({}));
@@ -110,11 +119,29 @@ export async function register(name: string, email: string, password: string): P
   });
 }
 
+export async function changePassword(currentPassword: string, newPassword: string): Promise<ChangePasswordResponse> {
+  return request<ChangePasswordResponse>("/auth/change-password", {
+    method: "POST",
+    credentials: "include",
+    body: JSON.stringify({ currentPassword, newPassword })
+  });
+}
+
+export async function updateProfile(name: string, email: string): Promise<UpdateProfileResponse> {
+  return request<UpdateProfileResponse>("/users/update-profile", {
+    method: "POST",
+    credentials: "include",
+    body: JSON.stringify({ name, email })
+  });
+}
+
 export async function logout(): Promise<void> {
   try {
     await request("/auth/logout", {
       method: "POST"
     });
+  } catch (_error) {
+    // Clear the local session and continue redirect flow even if the server logout request fails.
   } finally {
     clearSessionStorage();
   }

@@ -24,13 +24,13 @@
   </div>
 
   <p class="form-message" id="projects-message" aria-live="polite"></p>
-  <input id="projects-language-input" type="hidden" name="lang" value="en">
+  <input id="projects-language-input" class="language-input" type="hidden" name="lang" value="en">
   <div
     id="projects-board"
     class="kanban-board"
-    hx-get="/api/projects/fragment/board"
+    hx-get="/api/projects/fragment/cards"
     hx-trigger="load, projects:refresh from:body"
-    hx-include="#projects-language-input"
+    hx-vals='js:{lang: localStorage.getItem("app-language") || "en"}'
     hx-swap="innerHTML"
   ></div>
 </section>

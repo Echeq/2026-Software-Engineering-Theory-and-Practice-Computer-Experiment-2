@@ -38,6 +38,54 @@ router.post("/", requireManager, async (req: AuthRequest, res: Response) => {
     }
 });
 
+router.post("/update-profile", (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+
+    const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+
+    if (!name || !email) {
+        res.status(400).json({ message: "Name and email are required" });
+        return;
+    }
+
+    if (name.length < 2) {
+        res.status(400).json({ message: "Name must be at least 2 characters" });
+        return;
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+        res.status(400).json({ message: "Enter a valid email address" });
+        return;
+    }
+
+    const existingUser = UserModel.findByEmail(email);
+    if (existingUser && existingUser.id !== req.user.id) {
+        res.status(409).json({ message: "Email is already registered" });
+        return;
+    }
+
+    const updatedUser = UserModel.updateProfile(req.user.id, name, email);
+    if (!updatedUser) {
+        res.status(404).json({ message: "User not found" });
+        return;
+    }
+
+    res.json({
+        message: "Profile updated successfully",
+        user: {
+            id: updatedUser.id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            role: updatedUser.role
+        }
+    });
+});
+
 router.delete("/:id", requireManager, (req: AuthRequest, res: Response) => {
     if (!req.user) {
         res.status(401).json({ message: "Not authenticated" });

@@ -1,7 +1,7 @@
 "use strict";
 const LANGUAGE_STORAGE_KEY = "app-language";
 const DEFAULT_LANGUAGE = "en";
-const LANGUAGE_ORDER = ["en", "zh", "es"];
+const LANGUAGE_ORDER = ["en", "zh", "es", "ru"];
 const LANGUAGE_OPTIONS = {
     en: {
         label: "English",
@@ -14,6 +14,10 @@ const LANGUAGE_OPTIONS = {
     es: {
         label: "Espa\u00F1ol",
         flag: "\u{1F1EA}\u{1F1F8}"
+    },
+    ru: {
+        label: "\u0420\u0443\u0441\u0441\u043a\u0438\u0439",
+        flag: "\u{1F1F7}\u{1F1FA}"
     }
 };
 let languageMenuEventsBound = false;
@@ -1226,7 +1230,7 @@ function t(key, values) {
 }
 function getLanguage() {
     const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    return stored === "en" || stored === "zh" || stored === "es" ? stored : DEFAULT_LANGUAGE;
+    return stored === "en" || stored === "zh" || stored === "es" || stored === "ru" ? stored : DEFAULT_LANGUAGE;
 }
 function getLanguageOption(language) {
     return LANGUAGE_OPTIONS[language];
@@ -1315,7 +1319,7 @@ function updateSwitcherSelection() {
     const currentLanguage = getLanguage();
     document.querySelectorAll(".language-option").forEach((button) => {
         const language = button.dataset.language;
-        if (language !== "en" && language !== "zh" && language !== "es") {
+        if (language !== "en" && language !== "zh" && language !== "es" && language !== "ru") {
             return;
         }
         const option = getLanguageOption(language);
@@ -1414,7 +1418,7 @@ function upgradeExistingLanguageSwitcher(switcher) {
     const optionMarkup = buttons
         .map((button) => {
         const language = button.dataset.language;
-        if (language !== "en" && language !== "zh" && language !== "es") {
+        if (language !== "en" && language !== "zh" && language !== "es" && language !== "ru") {
             return "";
         }
         const option = getLanguageOption(language);
@@ -1447,7 +1451,7 @@ function upgradeExistingLanguageSwitcher(switcher) {
     switcher.querySelectorAll(".language-option").forEach((button) => {
         button.addEventListener("click", () => {
             const language = button.dataset.language;
-            if (language === "en" || language === "zh" || language === "es") {
+            if (language === "en" || language === "zh" || language === "es" || language === "ru") {
                 setLanguage(language);
                 setLanguageMenuOpen(switcher, false);
             }
@@ -1633,8 +1637,7 @@ function upgradeDashboardLanguageSwitcher() {
     upgradeExistingLanguageSwitcher(topbarActions?.querySelector(".language-switcher") || null);
 }
 function upgradeLoginLanguageSwitcher() {
-    // Keep the login page switcher as the same fixed button group used on signup.
-    return;
+    upgradeExistingLanguageSwitcher(document.querySelector(".auth-page-controls .language-switcher"));
 }
 function injectLanguageSwitcher() {
     const existing = document.querySelector(".language-switcher");
@@ -1651,9 +1654,9 @@ function injectLanguageSwitcher() {
     wrapper.querySelectorAll(".language-option").forEach((button) => {
         button.addEventListener("click", () => {
             const language = button.dataset.language;
-            if (language === "en" || language === "zh" || language === "es") {
-                setLanguage(language);
-            }
+        if (language === "en" || language === "zh" || language === "es" || language === "ru") {
+            setLanguage(language);
+        }
         });
     });
     const authPageControls = document.querySelector(".auth-page-controls");
@@ -1663,6 +1666,7 @@ function injectLanguageSwitcher() {
     }
     else if (authPageControls) {
         authPageControls.appendChild(wrapper);
+        upgradeExistingLanguageSwitcher(wrapper);
     }
     else {
         const loginPage = document.querySelector(".login-page");

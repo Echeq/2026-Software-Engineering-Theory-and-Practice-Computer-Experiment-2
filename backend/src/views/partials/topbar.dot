@@ -6,6 +6,7 @@
       class="menu-toggle"
       aria-expanded="false"
       aria-controls="dashboard-sidebar"
+      data-i18n-aria-label="app.aria.openNavigationMenu"
       aria-label="Open navigation menu"
     >
       <span></span>

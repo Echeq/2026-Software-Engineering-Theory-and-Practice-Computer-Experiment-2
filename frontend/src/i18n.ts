@@ -119,6 +119,7 @@ const translations: Record<Language, TranslationDictionary> = {
     "app.aria.primaryNavigation": "Primary navigation",
     "app.aria.workspaceNavigation": "Workspace navigation",
     "app.aria.openNavigationMenu": "Open navigation menu",
+    "app.aria.closeNavigationMenu": "Close navigation menu",
     "app.aria.projectSearchFilters": "Project search and filters",
     "app.aria.projectStatusFilters": "Filter projects by status",
     "app.aria.dailyGreeting": "Daily greeting",
@@ -151,6 +152,9 @@ const translations: Record<Language, TranslationDictionary> = {
     "dashboard.taskOverviewChartAriaLabel": "Task overview chart",
     "dashboard.closeProjectDialog": "Close create project dialog",
     "dashboard.greetingMorningFallback": "Good morning",
+    "dashboard.greetingAfternoonFallback": "Good afternoon",
+    "dashboard.greetingEveningFallback": "Good evening",
+    "dashboard.greetingNightFallback": "Good night",
     "dashboard.title": "Projects Dashboard",
     "dashboard.subtitle": "A focused workspace for tracking projects, planning new work, and staying organized across your study flow.",
     "dashboard.currentView": "Current View",
@@ -201,6 +205,8 @@ const translations: Record<Language, TranslationDictionary> = {
     "projects.boardMode": "Board Mode",
     "projects.boardModeName": "Projects Pipeline",
     "projects.boardModeText": "Open any project card to continue into the tasks view.",
+    "projects.description": "Description",
+    "projects.noDescriptionYet": "No description yet.",
     "projects.kanbanTag": "Pipeline",
     "projects.flowTitle": "Project Flow",
     "projects.flowSubtitle": "Each column groups projects by their current delivery phase.",
@@ -224,8 +230,12 @@ const translations: Record<Language, TranslationDictionary> = {
     "tasks.sectionTag": "Tasks",
     "tasks.sectionTitle": "Task Board Placeholder",
     "tasks.sectionSubtitle": "This page is ready as the navigation target for project cards.",
+    "tasks.backToProjects": "Back to Projects",
+    "tasks.composeSubtitle": "Add a task to the selected project.",
     "tasks.detailText": "The selected project context is loaded from the projects board. This keeps the click-through flow working now and leaves room for a fuller task board later.",
     "tasks.subtitleProject": "Continue planning and delivery for {projectName}.",
+    "tasks.emptyStateTitle": "Select a project",
+    "tasks.emptyStateText": "Choose a project from the dropdown to view its tasks.",
     "tasks.localStorageTag": "Local Tasks",
     "tasks.localBoardTitle": "Local Task Board",
     "tasks.localBoardSubtitle": "Your local task board powered by IndexedDB.",
@@ -260,13 +270,32 @@ const translations: Record<Language, TranslationDictionary> = {
     "tasks.form.project": "Project",
     "tasks.saveTask": "Save Task",
     "tasks.cancel": "Cancel",
-    "tasks.formTitle": "Title",
-    "tasks.formDescription": "Description",
+    "tasks.formTitle": "Task title",
+    "tasks.formTitlePlaceholder": "Prepare sprint review",
+    "tasks.formDescription": "Optional description",
+    "tasks.formDescriptionPlaceholder": "Describe the task outcome",
     "tasks.formProject": "Project",
     "tasks.formAssignee": "Assignee",
+    "tasks.formPriority": "Priority",
     "tasks.formDueDate": "Due Date",
+    "tasks.formDueDatePlaceholder": "YYYY-MM-DD",
     "tasks.formEstHours": "Est. Hours",
+    "tasks.hoursShort": "h",
     "tasks.formCategories": "Categories",
+    "tasks.category.design": "Design",
+    "tasks.category.frontend": "Frontend",
+    "tasks.category.backend": "Backend",
+    "tasks.category.database": "Database",
+    "tasks.category.api": "API",
+    "tasks.category.testing": "Testing",
+    "tasks.category.bugfix": "Bugfix",
+    "tasks.category.refactoring": "Refactoring",
+    "tasks.category.documentation": "Documentation",
+    "tasks.category.devops": "DevOps",
+    "tasks.category.performance": "Performance",
+    "tasks.category.security": "Security",
+    "tasks.category.research": "Research",
+    "tasks.category.chore": "Chore",
     "tasks.status.inReview": "In Review",
     "tasks.noTasks": "No tasks",
     "tasks.unknown": "Unknown",
@@ -406,6 +435,9 @@ const translations: Record<Language, TranslationDictionary> = {
     "common.tasksCount": "{count} tasks",
     "common.createdRecently": "Created recently",
     "common.createdDate": "Created {date}",
+    "common.percentComplete": "{percent}% complete",
+    "common.tasksCompletedCounter": "{completed} of {total} tasks completed",
+    "common.noTasksYet": "No tasks yet",
     "auth.sessionExpired": "Your session has expired. Please log in again."
   },
   zh: {
@@ -457,6 +489,11 @@ const translations: Record<Language, TranslationDictionary> = {
     "signup.validation.confirmRequired": "请确认密码。",
     "signup.validation.confirmMismatch": "两次输入的密码不一致。",
     "sidebar.workspace": "项目工作区",
+    "app.aria.dashboardHome": "SPMP 仪表盘首页",
+    "app.aria.primaryNavigation": "主导航",
+    "app.aria.workspaceNavigation": "工作区导航",
+    "app.aria.openNavigationMenu": "打开导航菜单",
+    "app.aria.closeNavigationMenu": "关闭导航菜单",
     "sidebar.dashboard": "仪表盘",
     "sidebar.projects": "项目",
     "sidebar.tasks": "任务",
@@ -478,6 +515,9 @@ const translations: Record<Language, TranslationDictionary> = {
     "dashboard.taskOverviewTitle": "任务概览",
     "dashboard.taskOverviewChartAriaLabel": "任务概览图表",
     "dashboard.greetingMorningFallback": "早上好",
+    "dashboard.greetingAfternoonFallback": "下午好",
+    "dashboard.greetingEveningFallback": "晚上好",
+    "dashboard.greetingNightFallback": "夜深了，晚安",
     "dashboard.title": "项目仪表盘",
     "dashboard.subtitle": "一个专注的工作区，用于跟踪项目、规划工作，并让学习流程保持有序。",
     "dashboard.currentView": "当前视图",
@@ -528,6 +568,8 @@ const translations: Record<Language, TranslationDictionary> = {
     "projects.boardMode": "看板模式",
     "projects.boardModeName": "项目流程",
     "projects.boardModeText": "打开任意项目卡片以继续进入任务视图。",
+    "projects.description": "描述",
+    "projects.noDescriptionYet": "暂无描述。",
     "projects.kanbanTag": "看板",
     "projects.flowTitle": "项目流",
     "projects.flowSubtitle": "每一列按当前交付阶段对项目进行分组。",
@@ -551,8 +593,12 @@ const translations: Record<Language, TranslationDictionary> = {
     "tasks.sectionTag": "任务",
     "tasks.sectionTitle": "任务看板占位区",
     "tasks.sectionSubtitle": "此页面已准备好作为项目卡片的导航目标。",
+    "tasks.backToProjects": "返回项目",
+    "tasks.composeSubtitle": "将任务添加到所选项目中。",
     "tasks.detailText": "所选项目的上下文来自项目看板。这保证了当前点击跳转流程可用，并为后续更完整的任务看板预留空间。",
     "tasks.subtitleProject": "继续为 {projectName} 规划和推进工作。",
+    "tasks.emptyStateTitle": "选择一个项目",
+    "tasks.emptyStateText": "从下拉列表中选择一个项目以查看其任务。",
     "tasks.addTask": "添加任务",
     "tasks.filters.priority": "优先级",
     "tasks.filters.status": "状态",
@@ -564,13 +610,32 @@ const translations: Record<Language, TranslationDictionary> = {
     "tasks.sort.priorityDesc": "优先级：高到低",
     "tasks.clearFilters": "清除筛选",
     "tasks.cancel": "取消",
-    "tasks.formTitle": "标题",
-    "tasks.formDescription": "描述",
+    "tasks.formTitle": "任务标题",
+    "tasks.formTitlePlaceholder": "准备冲刺评审",
+    "tasks.formDescription": "可选描述",
+    "tasks.formDescriptionPlaceholder": "描述任务成果",
     "tasks.formProject": "项目",
     "tasks.formAssignee": "负责人",
+    "tasks.formPriority": "优先级",
     "tasks.formDueDate": "截止日期",
+    "tasks.formDueDatePlaceholder": "YYYY-MM-DD",
     "tasks.formEstHours": "预计工时",
+    "tasks.hoursShort": "小时",
     "tasks.formCategories": "分类",
+    "tasks.category.design": "设计",
+    "tasks.category.frontend": "前端",
+    "tasks.category.backend": "后端",
+    "tasks.category.database": "数据库",
+    "tasks.category.api": "API",
+    "tasks.category.testing": "测试",
+    "tasks.category.bugfix": "缺陷修复",
+    "tasks.category.refactoring": "重构",
+    "tasks.category.documentation": "文档",
+    "tasks.category.devops": "DevOps",
+    "tasks.category.performance": "性能",
+    "tasks.category.security": "安全",
+    "tasks.category.research": "调研",
+    "tasks.category.chore": "杂项",
     "tasks.status.inReview": "评审中",
     "tasks.noTasks": "没有任务",
     "tasks.unknown": "未知",
@@ -689,6 +754,9 @@ const translations: Record<Language, TranslationDictionary> = {
     "common.tasksCount": "{count} 个任务",
     "common.createdRecently": "最近创建",
     "common.createdDate": "创建于 {date}",
+    "common.percentComplete": "已完成 {percent}%",
+    "common.tasksCompletedCounter": "已完成 {total} 个任务中的 {completed} 个",
+    "common.noTasksYet": "还没有任务",
     "auth.sessionExpired": "登录已过期，请重新登录。"
   },
   es: {
@@ -740,6 +808,11 @@ const translations: Record<Language, TranslationDictionary> = {
     "signup.validation.confirmRequired": "Confirma tu contraseña.",
     "signup.validation.confirmMismatch": "Las contraseñas no coinciden.",
     "sidebar.workspace": "Espacio de proyectos",
+    "app.aria.dashboardHome": "Inicio del panel de SPMP",
+    "app.aria.primaryNavigation": "Navegacion principal",
+    "app.aria.workspaceNavigation": "Navegacion del espacio de trabajo",
+    "app.aria.openNavigationMenu": "Abrir menu de navegacion",
+    "app.aria.closeNavigationMenu": "Cerrar menu de navegacion",
     "sidebar.dashboard": "Panel",
     "sidebar.projects": "Proyectos",
     "sidebar.tasks": "Tareas",
@@ -761,6 +834,9 @@ const translations: Record<Language, TranslationDictionary> = {
     "dashboard.taskOverviewTitle": "Resumen de tareas",
     "dashboard.taskOverviewChartAriaLabel": "Gráfico de resumen de tareas",
     "dashboard.greetingMorningFallback": "Buenos días",
+    "dashboard.greetingAfternoonFallback": "Buenas tardes",
+    "dashboard.greetingEveningFallback": "Buenas noches",
+    "dashboard.greetingNightFallback": "Buenas noches",
     "dashboard.title": "Panel de proyectos",
     "dashboard.subtitle": "Un espacio enfocado para seguir proyectos, planificar trabajo nuevo y mantener todo organizado.",
     "dashboard.currentView": "Vista actual",
@@ -811,6 +887,8 @@ const translations: Record<Language, TranslationDictionary> = {
     "projects.boardMode": "Modo tablero",
     "projects.boardModeName": "Flujo de proyectos",
     "projects.boardModeText": "Abre cualquier tarjeta de proyecto para continuar en la vista de tareas.",
+    "projects.description": "Descripción",
+    "projects.noDescriptionYet": "Sin descripción todavía.",
     "projects.kanbanTag": "Pipeline",
     "projects.flowTitle": "Flujo del proyecto",
     "projects.flowSubtitle": "Cada columna agrupa proyectos por su fase actual.",
@@ -834,8 +912,12 @@ const translations: Record<Language, TranslationDictionary> = {
     "tasks.sectionTag": "Tareas",
     "tasks.sectionTitle": "Marcador de tablero de tareas",
     "tasks.sectionSubtitle": "Esta página está lista como destino de navegación para las tarjetas de proyecto.",
+    "tasks.backToProjects": "Volver a proyectos",
+    "tasks.composeSubtitle": "Añade una tarea al proyecto seleccionado.",
     "tasks.detailText": "El contexto del proyecto seleccionado se carga desde el tablero de proyectos. Esto mantiene el flujo actual y deja espacio para un tablero de tareas más completo más adelante.",
     "tasks.subtitleProject": "Continúa planificando y ejecutando para {projectName}.",
+    "tasks.emptyStateTitle": "Selecciona un proyecto",
+    "tasks.emptyStateText": "Elige un proyecto del desplegable para ver sus tareas.",
     "tasks.addTask": "Añadir tarea",
     "tasks.filters.priority": "Prioridad",
     "tasks.filters.status": "Estado",
@@ -847,13 +929,32 @@ const translations: Record<Language, TranslationDictionary> = {
     "tasks.sort.priorityDesc": "Prioridad: alta a baja",
     "tasks.clearFilters": "Limpiar filtros",
     "tasks.cancel": "Cancelar",
-    "tasks.formTitle": "Título",
-    "tasks.formDescription": "Descripción",
+    "tasks.formTitle": "Título de la tarea",
+    "tasks.formTitlePlaceholder": "Prepara la revisión del sprint",
+    "tasks.formDescription": "Descripción opcional",
+    "tasks.formDescriptionPlaceholder": "Describe el resultado de la tarea",
     "tasks.formProject": "Proyecto",
     "tasks.formAssignee": "Asignado",
+    "tasks.formPriority": "Prioridad",
     "tasks.formDueDate": "Fecha de vencimiento",
+    "tasks.formDueDatePlaceholder": "YYYY-MM-DD",
     "tasks.formEstHours": "Horas est.",
+    "tasks.hoursShort": "h",
     "tasks.formCategories": "Categorías",
+    "tasks.category.design": "Diseño",
+    "tasks.category.frontend": "Frontend",
+    "tasks.category.backend": "Backend",
+    "tasks.category.database": "Base de datos",
+    "tasks.category.api": "API",
+    "tasks.category.testing": "Pruebas",
+    "tasks.category.bugfix": "Corrección de errores",
+    "tasks.category.refactoring": "Refactorización",
+    "tasks.category.documentation": "Documentación",
+    "tasks.category.devops": "DevOps",
+    "tasks.category.performance": "Rendimiento",
+    "tasks.category.security": "Seguridad",
+    "tasks.category.research": "Investigación",
+    "tasks.category.chore": "Tarea menor",
     "tasks.status.inReview": "En revisión",
     "tasks.noTasks": "Sin tareas",
     "tasks.unknown": "Desconocido",
@@ -972,6 +1073,9 @@ const translations: Record<Language, TranslationDictionary> = {
     "common.tasksCount": "{count} tareas",
     "common.createdRecently": "Creado recientemente",
     "common.createdDate": "Creado {date}",
+    "common.percentComplete": "{percent}% completado",
+    "common.tasksCompletedCounter": "{completed} de {total} tareas completadas",
+    "common.noTasksYet": "Aún no hay tareas",
     "auth.sessionExpired": "Tu sesión ha expirado. Inicia sesión de nuevo."
   },
   ru: {
@@ -990,6 +1094,7 @@ const translations: Record<Language, TranslationDictionary> = {
     "app.aria.primaryNavigation": "Основная навигация",
     "app.aria.workspaceNavigation": "Навигация по рабочему пространству",
     "app.aria.openNavigationMenu": "Открыть меню навигации",
+    "app.aria.closeNavigationMenu": "Закрыть меню навигации",
     "app.aria.projectSearchFilters": "Поиск и фильтры проектов",
     "app.aria.projectStatusFilters": "Фильтровать проекты по статусу",
     "app.aria.dailyGreeting": "Ежедневное приветствие",
@@ -1022,6 +1127,9 @@ const translations: Record<Language, TranslationDictionary> = {
     "dashboard.closeProjectDialog": "Закрыть диалог создания проекта",
     "dashboard.greetingMorning": "Доброе утро, {name}",
     "dashboard.greetingMorningFallback": "Доброе утро",
+    "dashboard.greetingAfternoonFallback": "Добрый день",
+    "dashboard.greetingEveningFallback": "Добрый вечер",
+    "dashboard.greetingNightFallback": "Доброй ночи",
     "dashboard.title": "Панель проектов",
     "dashboard.subtitle": "Сфокусированное пространство для отслеживания проектов.",
     "dashboard.currentView": "Текущий вид",
@@ -1072,6 +1180,8 @@ const translations: Record<Language, TranslationDictionary> = {
     "projects.boardMode": "Режим доски",
     "projects.boardModeName": "Конвейер проектов",
     "projects.boardModeText": "Откройте карточку для просмотра задач.",
+    "projects.description": "Описание",
+    "projects.noDescriptionYet": "Описание пока отсутствует.",
     "projects.kanbanTag": "Конвейер",
     "projects.flowTitle": "Поток проектов",
     "projects.flowSubtitle": "Колонки группируют проекты по фазе.",
@@ -1095,8 +1205,12 @@ const translations: Record<Language, TranslationDictionary> = {
     "tasks.sectionTag": "Задачи",
     "tasks.sectionTitle": "Доска задач",
     "tasks.sectionSubtitle": "Страница для навигации по проектам.",
+    "tasks.backToProjects": "Назад к проектам",
+    "tasks.composeSubtitle": "Добавьте задачу в выбранный проект.",
     "tasks.detailText": "Контекст загружается с доски проектов.",
     "tasks.subtitleProject": "Планирование для {projectName}.",
+    "tasks.emptyStateTitle": "Выберите проект",
+    "tasks.emptyStateText": "Выберите проект из списка, чтобы просмотреть его задачи.",
     "tasks.addTask": "Добавить задачу",
     "tasks.filters.priority": "Приоритет",
     "tasks.filters.status": "Статус",
@@ -1128,13 +1242,32 @@ const translations: Record<Language, TranslationDictionary> = {
     "tasks.form.project": "Проект",
     "tasks.saveTask": "Сохранить задачу",
     "tasks.cancel": "Отмена",
-    "tasks.formTitle": "Название",
-    "tasks.formDescription": "Описание",
+    "tasks.formTitle": "Название задачи",
+    "tasks.formTitlePlaceholder": "Подготовьте обзор спринта",
+    "tasks.formDescription": "Необязательное описание",
+    "tasks.formDescriptionPlaceholder": "Опишите результат задачи",
     "tasks.formProject": "Проект",
     "tasks.formAssignee": "Исполнитель",
+    "tasks.formPriority": "Приоритет",
     "tasks.formDueDate": "Срок",
+    "tasks.formDueDatePlaceholder": "ГГГГ-ММ-ДД",
     "tasks.formEstHours": "Часы",
+    "tasks.hoursShort": "ч",
     "tasks.formCategories": "Категории",
+    "tasks.category.design": "Дизайн",
+    "tasks.category.frontend": "Фронтенд",
+    "tasks.category.backend": "Бэкенд",
+    "tasks.category.database": "База данных",
+    "tasks.category.api": "API",
+    "tasks.category.testing": "Тестирование",
+    "tasks.category.bugfix": "Исправление ошибок",
+    "tasks.category.refactoring": "Рефакторинг",
+    "tasks.category.documentation": "Документация",
+    "tasks.category.devops": "DevOps",
+    "tasks.category.performance": "Производительность",
+    "tasks.category.security": "Безопасность",
+    "tasks.category.research": "Исследование",
+    "tasks.category.chore": "Рутина",
     "tasks.status.inReview": "На проверке",
     "tasks.noTasks": "Нет задач",
     "tasks.unknown": "Неизвестно",
@@ -1272,9 +1405,70 @@ const translations: Record<Language, TranslationDictionary> = {
     "common.tasksCount": "{count} задач",
     "common.createdRecently": "Недавно",
     "common.createdDate": "Создано {date}",
+    "common.percentComplete": "{percent}% завершено",
+    "common.tasksCompletedCounter": "{completed} из {total} задач завершено",
+    "common.noTasksYet": "Задач пока нет",
     "auth.sessionExpired": "Сессия истекла. Войдите снова."
   }
 };
+
+Object.assign(translations.ru, {
+  "language.english": "English",
+  "language.chinese": "中文",
+  "language.spanish": "Español",
+  "language.russian": "Русский",
+  "language.current": "Язык: {language}",
+  "login.title": "Вход",
+  "login.subtitle": "Платформа для управления проектами и задачами.",
+  "login.email": "Email",
+  "login.emailPlaceholder": "student@example.com",
+  "login.password": "Пароль",
+  "login.passwordPlaceholder": "Введите пароль",
+  "login.submit": "Войти",
+  "login.submitting": "Вход...",
+  "login.noAccount": "Нет аккаунта?",
+  "login.signUpLink": "Регистрация",
+  "login.success": "Вход выполнен. Перенаправление на панель...",
+  "login.failed": "Ошибка входа.",
+  "login.failedDefault": "Не удалось войти. Проверьте данные или состояние сервера.",
+  "login.validation.fix": "Исправьте ошибки формы и попробуйте снова.",
+  "login.validation.emailRequired": "Email обязателен.",
+  "login.validation.emailInvalid": "Введите корректный email.",
+  "login.validation.passwordRequired": "Пароль обязателен.",
+  "login.validation.passwordShort": "Пароль должен содержать не менее 6 символов.",
+  "signup.title": "Регистрация",
+  "signup.subtitle": "Создайте аккаунт, чтобы управлять проектами и задачами.",
+  "signup.name": "Полное имя",
+  "signup.namePlaceholder": "Regular User",
+  "signup.email": "Email",
+  "signup.emailPlaceholder": "student@example.com",
+  "signup.password": "Пароль",
+  "signup.passwordPlaceholder": "Придумайте пароль",
+  "signup.confirmPassword": "Подтвердите пароль",
+  "signup.confirmPasswordPlaceholder": "Повторите пароль",
+  "signup.submit": "Зарегистрироваться",
+  "signup.submitting": "Создание аккаунта...",
+  "signup.haveAccount": "Уже есть аккаунт?",
+  "signup.loginLink": "Войти",
+  "signup.success": "Аккаунт создан. Перенаправление на страницу входа...",
+  "signup.failed": "Ошибка регистрации.",
+  "signup.failedDefault": "Не удалось зарегистрироваться. Проверьте данные или состояние сервера.",
+  "signup.validation.fix": "Исправьте ошибки формы и попробуйте снова.",
+  "signup.validation.nameRequired": "Имя обязательно.",
+  "signup.validation.nameShort": "Имя должно содержать не менее 2 символов.",
+  "signup.validation.emailRequired": "Email обязателен.",
+  "signup.validation.emailInvalid": "Введите корректный email.",
+  "signup.validation.passwordRequired": "Пароль обязателен.",
+  "signup.validation.passwordShort": "Пароль должен содержать не менее 6 символов.",
+  "signup.validation.confirmRequired": "Подтвердите пароль.",
+  "signup.validation.confirmMismatch": "Пароли не совпадают.",
+  "theme.dark": "Тёмная тема",
+  "theme.light": "Светлая тема",
+  "theme.toDark": "Переключить на тёмную тему",
+  "theme.toLight": "Переключить на светлую тему",
+  "app.title.login": "SPMP | Вход",
+  "app.title.signup": "SPMP | Регистрация"
+});
 
 function interpolate(template: string, values: TranslationValues = {}): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => String(values[key] ?? ""));
@@ -1321,6 +1515,22 @@ function getLanguageOption(language: Language): { label: string; flag: string } 
 function applyTranslations(root: ParentNode = document): void {
   root.querySelectorAll<HTMLElement>("[data-i18n]").forEach((element) => {
     element.textContent = t(element.dataset.i18n || "");
+  });
+
+  root.querySelectorAll<HTMLElement>("[data-i18n-created-at]").forEach((element) => {
+    const date = new Date(element.dataset.i18nCreatedAt || "");
+    if (Number.isNaN(date.getTime())) {
+      element.textContent = t("common.createdRecently");
+      return;
+    }
+
+    const language = getLanguage();
+    const formattedDate = date.toLocaleDateString(language === "zh" ? "zh-CN" : language === "es" ? "es-ES" : language === "ru" ? "ru-RU" : "en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    element.textContent = t("common.createdDate", { date: formattedDate });
   });
 
   root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("[data-i18n-placeholder]").forEach((element) => {
@@ -1662,8 +1872,21 @@ function upgradeDashboardLanguageSwitcher(): void {
 }
 
 function upgradeLoginLanguageSwitcher(): void {
-  // Keep the login page switcher as the same fixed button group used on signup.
-  return;
+  const switcher = document.querySelector<HTMLElement>(".auth-page-controls .language-switcher");
+  if (!switcher) {
+    return;
+  }
+
+  if (!switcher.querySelector(".language-option") && !switcher.querySelector(".language-switcher-trigger")) {
+    switcher.innerHTML = `
+      <button type="button" class="language-option" data-language="en">English</button>
+      <button type="button" class="language-option" data-language="zh">中文</button>
+      <button type="button" class="language-option" data-language="es">Español</button>
+      <button type="button" class="language-option" data-language="ru">Русский</button>
+    `;
+  }
+
+  upgradeExistingLanguageSwitcher(switcher);
 }
 
 function injectLanguageSwitcher(): void {
@@ -1696,6 +1919,7 @@ function injectLanguageSwitcher(): void {
     dashboardTopbarActions.appendChild(wrapper);
   } else if (authPageControls) {
     authPageControls.appendChild(wrapper);
+    upgradeExistingLanguageSwitcher(wrapper);
   } else {
     const loginPage = document.querySelector(".login-page");
     if (loginPage?.parentElement) {
@@ -1715,6 +1939,11 @@ function initializeI18n(): void {
   upgradeDashboardLanguageSwitcher();
   upgradeLoginLanguageSwitcher();
   applyTranslations();
+  document.addEventListener("htmx:afterSwap", (event) => {
+    if (event.target instanceof Element) {
+      applyTranslations(event.target);
+    }
+  });
 }
 
 window.I18n = {

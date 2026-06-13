@@ -8,7 +8,7 @@
         <h2 id="project-modal-title" data-i18n="dashboard.projectModalTitle">Create New Project</h2>
         <p class="subtitle" data-i18n="dashboard.projectModalSubtitle">Add a new project to your dashboard.</p>
       </div>
-      <button id="close-project-modal" type="button" class="close-btn" aria-label="Close create project dialog">&times;</button>
+      <button id="close-project-modal" type="button" class="close-btn" data-i18n-aria-label="dashboard.closeProjectDialog" aria-label="Close create project dialog">&times;</button>
     </div>
 
     <form id="project-form" class="project-form" novalidate>

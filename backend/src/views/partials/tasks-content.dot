@@ -18,47 +18,67 @@
   <div class="section-header">
     <div class="section-copy">
       <span class="section-tag" data-i18n="tasks.sectionTag">Tasks</span>
-      <h2 id="task-detail-title">Task Board</h2>
-      <p class="section-subtitle">Create tasks and track them by status for the selected project.</p>
+      <h2 id="task-detail-title" data-i18n="tasks.sectionTitle">Task Board</h2>
+      <p class="section-subtitle" data-i18n="tasks.sectionSubtitle">Create tasks and track them by status for the selected project.</p>
     </div>
-    <a href="{{=it.routes.projects}}" class="secondary-button">Back to Projects</a>
+    <a href="{{=it.routes.projects}}" class="secondary-button" data-i18n="tasks.backToProjects">Back to Projects</a>
   </div>
 
   <form id="task-form" class="settings-form" novalidate>
     <article class="settings-card">
       <div class="settings-card-header">
-        <h3>Create Task</h3>
-        <p>Add a task to the selected project.</p>
+        <h3 data-i18n="tasks.createTask">Create Task</h3>
+        <p data-i18n="tasks.composeSubtitle">Add a task to the selected project.</p>
       </div>
 
       <div class="settings-field-grid task-compose-grid">
-        <label class="form-group" for="task-title">
-          <span>Title</span>
-          <input id="task-title" type="text" placeholder="Prepare sprint review">
+        <label class="form-group" for="task-title-input">
+          <span data-i18n="tasks.formTitle">Task title</span>
+          <input id="task-title-input" type="text" data-i18n-placeholder="tasks.formTitlePlaceholder" placeholder="Prepare sprint review">
         </label>
 
-        <label class="form-group" for="task-priority">
-          <span>Priority</span>
-          <select id="task-priority">
-            <option value="low">Low</option>
-            <option value="medium" selected>Medium</option>
-            <option value="high">High</option>
+        <label class="form-group" for="task-priority-select">
+          <span data-i18n="tasks.formPriority">Priority</span>
+          <select id="task-priority-select">
+            <option value="low" data-i18n="tasks.priority.low">Low</option>
+            <option value="medium" selected data-i18n="tasks.priority.medium">Medium</option>
+            <option value="high" data-i18n="tasks.priority.high">High</option>
           </select>
         </label>
       </div>
 
-      <label class="form-group" for="task-description">
-        <span>Description</span>
-        <textarea id="task-description" rows="3" placeholder="Describe the task outcome"></textarea>
+      <label class="form-group" for="task-desc-input">
+        <span data-i18n="tasks.formDescription">Optional description</span>
+        <textarea id="task-desc-input" rows="3" data-i18n-placeholder="tasks.formDescriptionPlaceholder" placeholder="Describe the task outcome"></textarea>
       </label>
 
-      <label class="form-group" for="task-due-date">
-        <span>Due date</span>
-        <input id="task-due-date" type="date">
+      <label class="form-group" for="task-due-date-input">
+        <span data-i18n="tasks.formDueDate">Due date</span>
+        <input id="task-due-date-input" type="date" data-i18n-placeholder="tasks.formDueDatePlaceholder" placeholder="YYYY-MM-DD">
+      </label>
+
+      <div class="form-group">
+        <span data-i18n="tasks.formCategories">Categories</span>
+        <div id="task-tags-container" class="task-tags-container"></div>
+      </div>
+
+      <label class="form-group" for="task-est-hours-input">
+        <span data-i18n="tasks.formEstHours">Est. hours</span>
+        <input id="task-est-hours-input" type="number" min="0" step="0.5" value="0">
+      </label>
+
+      <label class="form-group" for="task-project-select">
+        <span data-i18n="tasks.formProject">Project</span>
+        <select id="task-project-select"></select>
+      </label>
+
+      <label class="form-group" for="task-assignee-select">
+        <span data-i18n="tasks.formAssignee">Assignee</span>
+        <select id="task-assignee-select"></select>
       </label>
 
       <div class="modal-actions">
-        <button type="submit" class="submit-button">Create Task</button>
+        <button type="submit" class="submit-button" data-i18n="tasks.saveTask">Save Task</button>
       </div>
     </article>
   </form>

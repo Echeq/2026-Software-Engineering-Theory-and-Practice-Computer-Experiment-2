@@ -3,9 +3,28 @@ import "./i18n";
 import { getCurrentUser, getProjects, getProjectTasks, createTask, updateTask, deleteTask, isSessionError, logout } from "./core/services";
 
 const THEME_STORAGE_KEY = "dashboard-theme";
+const LEGACY_THEME_STORAGE_KEY = "theme";
+const SETTINGS_STORAGE_KEY = "dashboard-settings-state";
 const MOBILE_SIDEBAR_BREAKPOINT = 960;
 const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 const TASK_CATEGORIES = ["design", "frontend", "backend", "database", "api", "testing", "bugfix", "refactoring", "documentation", "devops", "performance", "security", "research", "chore"];
+const TASK_CATEGORY_LABEL_KEYS: Record<string, string> = {
+  design: "tasks.category.design",
+  frontend: "tasks.category.frontend",
+  backend: "tasks.category.backend",
+  database: "tasks.category.database",
+  api: "tasks.category.api",
+  testing: "tasks.category.testing",
+  bugfix: "tasks.category.bugfix",
+  refactoring: "tasks.category.refactoring",
+  documentation: "tasks.category.documentation",
+  devops: "tasks.category.devops",
+  performance: "tasks.category.performance",
+  security: "tasks.category.security",
+  research: "tasks.category.research",
+  chore: "tasks.category.chore",
+};
+type TaskView = "grid" | "list";
 
 interface CurrentUser {
   id: string; name: string; email: string;
@@ -37,6 +56,7 @@ let members: TeamMember[] = [];
 let currentProjectId = "";
 let tasks: TaskItem[] = [];
 let editingTaskId: string | null = null;
+let currentTaskView: TaskView = "grid";
 
 let userNameElement: HTMLElement | null;
 let userAvatarElement: HTMLElement | null;
@@ -71,6 +91,7 @@ document.addEventListener("DOMContentLoaded", () => void initializeTasksPage());
 async function initializeTasksPage(): Promise<void> {
   cacheElements();
   initTheme();
+  initializeTaskView();
   syncSidebar();
   setupListeners();
 
@@ -158,6 +179,24 @@ function setupListeners(): void {
   });
 }
 
+function initializeTaskView(): void {
+  currentTaskView = readStoredTaskView();
+}
+
+function readStoredTaskView(): TaskView {
+  const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+  if (!raw) {
+    return "grid";
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as { defaultProjectView?: unknown };
+    return parsed.defaultProjectView === "list" ? "list" : "grid";
+  } catch (_error) {
+    return "grid";
+  }
+}
+
 async function fetchMembers(): Promise<TeamMember[]> {
   try {
     const resp = await fetch("/api/users", { credentials: "same-origin" });
@@ -196,7 +235,7 @@ async function loadTasks(): Promise<void> {
 function renderKanban(): void {
   if (!tasksBoard) return;
   if (!currentProjectId) {
-    tasksBoard.innerHTML = `<article class="state-card"><h3>Select a project</h3><p>Choose a project from the dropdown to view its tasks.</p></article>`;
+    tasksBoard.innerHTML = `<article class="state-card"><h3>${escapeHtml(i18n("tasks.emptyStateTitle"))}</h3><p>${escapeHtml(i18n("tasks.emptyStateText"))}</p></article>`;
     return;
   }
   const priorityFilter = (document.getElementById("task-filter-priority") as HTMLSelectElement)?.value || "all";
@@ -229,7 +268,7 @@ function renderKanban(): void {
     { status: "done", title: i18n("tasks.status.done") },
   ];
 
-  let html = `<div class="kanban-board">`;
+  let html = `<div class="kanban-board ${currentTaskView === "list" ? "tasks-view-list" : "tasks-view-grid"}">`;
   for (const col of columns) {
     const colTasks = filtered.filter(t => t.status === col.status || (!col.status && !t.status));
     html += `<div class="kanban-column" data-column-status="${col.status}" style="background:var(--surface);border-radius:12px;padding:16px;">
@@ -264,16 +303,16 @@ function renderTaskCard(t: TaskItem, memberMap: Map<string, string>): string {
     <article class="project-card task-card-draggable" draggable="true" data-task-id="${t.id}" style="margin-bottom:12px;cursor:grab;padding:14px;">
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
         <h4 style="margin:0;font-size:14px;flex:1;">${escapeHtml(t.title)}</h4>
-        <span style="background:${priorityColors[t.priority?.toLowerCase()] || "#94a3b8"};color:#fff;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;white-space:nowrap;">${escapeHtml(t.priority || "medium")}</span>
+        <span style="background:${priorityColors[t.priority?.toLowerCase()] || "#94a3b8"};color:#fff;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;white-space:nowrap;">${escapeHtml(i18n(`tasks.priority.${(t.priority || "medium").toLowerCase()}`))}</span>
       </div>
       ${t.description ? `<p style="font-size:13px;color:var(--muted);margin:0 0 8px;">${escapeHtml(t.description)}</p>` : ""}
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
-        ${tags.map(tag => `<span style="background:var(--surface-border);border-radius:4px;padding:1px 8px;font-size:11px;">${escapeHtml(tag)}</span>`).join("")}
+        ${tags.map(tag => `<span style="background:var(--surface-border);border-radius:4px;padding:1px 8px;font-size:11px;">${escapeHtml(i18n(TASK_CATEGORY_LABEL_KEYS[tag] || tag))}</span>`).join("")}
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);">
         <span>👤 ${escapeHtml(assigneeName)}</span>
         ${t.due_date ? `<span>📅 ${escapeHtml(t.due_date)}</span>` : ""}
-        ${t.estimated_hours > 0 ? `<span>⏱ ${t.estimated_hours}h</span>` : ""}
+        ${t.estimated_hours > 0 ? `<span>⏱ ${t.estimated_hours}${escapeHtml(i18n("tasks.hoursShort"))}</span>` : ""}
       </div>
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
         <button class="secondary-button task-edit-btn" data-task-id="${t.id}" style="font-size:11px;padding:2px 8px;">${i18n("tasks.edit")}</button>
@@ -334,9 +373,9 @@ function attachMobilePicker(): void {
     sheet.style.cssText = "background:var(--surface,#fff);border-radius:20px 20px 0 0;padding:24px 20px;width:100%;max-width:480px;box-shadow:0 -4px 24px rgba(0,0,0,0.15);";
     sheet.innerHTML = `<h3 style="margin:0 0 16px;font-size:18px;font-weight:600;">${i18n("tasks.changeStatus")}</h3>`;
     const statuses = [
-      { status: "pending", label: i18n("tasks.status.todo"), color: "#6366f1" },
-      { status: "in-progress", label: i18n("tasks.status.inProgress"), color: "#f59e0b" },
-      { status: "in review", label: i18n("tasks.status.inReview"), color: "#8b5cf6" },
+      { status: "pending", label: i18n("tasks.status.todo"), color: "#ef4444" },
+      { status: "in-progress", label: i18n("tasks.status.inProgress"), color: "#eab308" },
+      { status: "in review", label: i18n("tasks.status.inReview"), color: "#3b82f6" },
       { status: "done", label: i18n("tasks.status.done"), color: "#22c55e" },
     ];
     for (const s of statuses) {
@@ -361,7 +400,7 @@ function attachMobilePicker(): void {
         if (status && taskId) void moveTask(taskId, status);
         pickerEl!.style.display = "none";
         pickerEl!.dataset.taskId = "";
-      } else if ((e.target as HTMLElement) === pickerEl || (e.target as HTMLElement).textContent === "Cancel") {
+      } else if ((e.target as HTMLElement) === pickerEl || (e.target as HTMLElement).textContent === i18n("tasks.cancel")) {
         pickerEl!.style.display = "none";
         pickerEl!.dataset.taskId = "";
       }
@@ -467,7 +506,7 @@ function renderTagCheckboxes(): void {
   taskTagsContainer.innerHTML = TASK_CATEGORIES.map(tag => `
     <label style="display:inline-flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;">
       <input type="checkbox" value="${tag}" ${selectedTags.has(tag) ? "checked" : ""} style="accent-color:#6366f1;">
-      ${escapeHtml(tag)}
+      ${escapeHtml(i18n(TASK_CATEGORY_LABEL_KEYS[tag] || tag))}
     </label>
   `).join("");
   taskTagsContainer.querySelectorAll<HTMLInputElement>("input[type=checkbox]").forEach(cb => {
@@ -519,7 +558,7 @@ function showMessage(text: string, type: "success" | "error"): void {
   const closeBtn = document.createElement("button");
   closeBtn.className = "notification-close";
   closeBtn.textContent = "\u00d7";
-  closeBtn.setAttribute("aria-label", "Dismiss notification");
+  closeBtn.setAttribute("aria-label", i18n("notifications.dismiss"));
   item.appendChild(span);
   item.appendChild(closeBtn);
   tasksMessage.appendChild(item);
@@ -560,18 +599,24 @@ function closeSidebarFn(): void { document.body.classList.remove("sidebar-open")
 function toggleSidebarFn(): void { document.body.classList.contains("sidebar-open") ? closeSidebarFn() : openSidebarFn(); }
 
 function initTheme(): void {
-  const stored = localStorage.getItem(THEME_STORAGE_KEY);
+  const stored = localStorage.getItem(THEME_STORAGE_KEY) ?? localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
   const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   applyTheme((stored === "dark" || stored === "light" ? stored : preferred) as "light" | "dark");
 }
 function applyTheme(theme: "light" | "dark"): void {
   document.body.dataset.theme = theme;
+  persistTheme(theme);
   if (!themeToggleButton) return;
   themeToggleButton.textContent = theme === "dark" ? i18n("theme.light") : i18n("theme.dark");
   themeToggleButton.setAttribute("aria-pressed", String(theme === "dark"));
+  themeToggleButton.setAttribute("aria-label", theme === "dark" ? i18n("theme.toLight") : i18n("theme.toDark"));
 }
 function toggleTheme(): void {
   const next = document.body.dataset.theme === "dark" ? "light" : "dark";
   applyTheme(next as "light" | "dark");
-  localStorage.setItem(THEME_STORAGE_KEY, next);
+}
+
+function persistTheme(theme: "light" | "dark"): void {
+  localStorage.setItem(THEME_STORAGE_KEY, theme);
+  localStorage.setItem(LEGACY_THEME_STORAGE_KEY, theme);
 }

@@ -522,7 +522,7 @@ async function refreshProjectCardsFromIndexedDb() {
             const totalByProjectId = new Map();
             const completedByProjectId = new Map();
             tasks.forEach((task) => {
-                const projectId = getProjectIdKey(task?.projectId);
+                const projectId = getTaskProjectId(task);
                 if (!projectId || !lookup.has(projectId)) {
                     return;
                 }
@@ -597,6 +597,12 @@ async function refreshProjectCardsFromIndexedDb() {
         }
         return String(projectId).trim();
     }
+    function getTaskProjectId(task) {
+        if (!task || typeof task !== "object") {
+            return "";
+        }
+        return getProjectIdKey(task.projectId ?? task.project_id ?? task.projectID ?? task.project);
+    }
 function createProjectCompletionSummary(totalTasks, completedTasks) {
     const safeTotalTasks = Math.max(0, totalTasks);
     const safeCompletedTasks = Math.min(Math.max(0, completedTasks), safeTotalTasks);
@@ -631,7 +637,11 @@ function formatProjectCompletionCounter(completedTasks, totalTasks) {
     return i18n("common.tasksCompletedCounter", { completed: completedTasks, total: totalTasks });
 }
     function isCompletedTaskStatus(status) {
-        return typeof status === "string" && status.trim().toLowerCase() === "done";
+        if (typeof status !== "string") {
+            return false;
+        }
+        const normalizedStatus = status.trim().toLowerCase();
+        return ["done", "completed", "complete", "closed", "finished"].includes(normalizedStatus);
     }
     function getStoredToken() {
         return localStorage.getItem("spmp-csrf-token")?.trim() || "";

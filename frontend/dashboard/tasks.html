@@ -4,44 +4,44 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n-document-title="app.title.tasks">SPMP | Tasks</title>
+  <link rel="icon" type="image/png" href="../final_icon_rounded.png">
+  <script>
+    (function () {
+      var THEME_STORAGE_KEY = "dashboard-theme";
+      var LEGACY_THEME_STORAGE_KEY = "theme";
+      var storedTheme = localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
+      var theme = storedTheme === "dark" || storedTheme === "light"
+        ? storedTheme
+        : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+      localStorage.setItem(LEGACY_THEME_STORAGE_KEY, theme);
+      document.documentElement.setAttribute("data-theme", theme);
+    }());
+  </script>
   <link rel="stylesheet" href="../css/dashboard.css">
   <style>
-    .kanban-board {
-      display: list-item;
+    #tasks-board {
       width: 100%;
     }
-    .kanban-board thead,
-    .kanban-board tbody,
-    .kanban-board tr {
-      display: block;
-    }
-    .kanban-board thead tr,
-    .kanban-board tbody tr {
-      display: flex;
+    .kanban-board.tasks-view-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 16px;
+      align-items: start;
     }
-    .kanban-board th,
-    .kanban-board td {
-      flex: 1;
-      display: block;
+    .kanban-board.tasks-view-list {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
     }
-    .kanban-board thead th {
-      font-size: 15px;
-      font-weight: 600;
-      text-align: left;
-      padding: 12px 16px;
-      background: var(--surface);
-      border-radius: 12px 12px 0 0;
-      border-bottom: 2px solid var(--surface-border);
+    .kanban-board.tasks-view-list .kanban-column {
+      gap: 14px;
     }
-    .kanban-board tbody td {
-      background: var(--surface);
-      border-radius: 0 0 12px 12px;
-      padding: 12px 16px;
-      transition: background 0.15s;
-      vertical-align: top;
+    .kanban-board.tasks-view-list .task-card-draggable {
+      margin-bottom: 0 !important;
     }
-    .kanban-board tbody td.kanban-column-drag-over {
+    .kanban-column-drag-over {
       background: var(--accent-glass, rgba(99, 102, 241, 0.08)) !important;
       outline: 2px dashed var(--accent, #6366f1);
       outline-offset: -2px;
@@ -100,9 +100,9 @@
       to { opacity: 1; transform: translateX(0); }
     }
     @media (max-width: 960px) {
-      .kanban-board thead tr,
-      .kanban-board tbody tr {
-        flex-direction: column;
+      .kanban-board.tasks-view-grid,
+      .kanban-board.tasks-view-list {
+        grid-template-columns: minmax(0, 1fr);
       }
       #tasks-message {
         left: 16px;
@@ -114,6 +114,14 @@
   </style>
 </head>
 <body>
+  <script>
+    (function () {
+      var theme = localStorage.getItem("dashboard-theme");
+      if (theme === "dark" || theme === "light") {
+        document.body.dataset.theme = theme;
+      }
+    }());
+  </script>
   <div id="sidebar-backdrop" class="sidebar-backdrop" hidden data-close-sidebar="true"></div>
 
   <main class="dashboard-app">

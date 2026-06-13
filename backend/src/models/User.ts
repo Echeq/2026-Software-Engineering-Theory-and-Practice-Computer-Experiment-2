@@ -70,6 +70,14 @@ export class UserModel {
     return this.findById(id);
   }
 
+  static updateProfile(id: string, name: string, email: string): User | null {
+    run(
+      'UPDATE users SET name = ?, email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [name, email, id]
+    );
+    return this.findById(id);
+  }
+
   static delete(id: string): void {
     run('UPDATE tasks SET assigned_to = NULL WHERE assigned_to = ?', [id]);
     run('DELETE FROM sessions WHERE user_id = ?', [id]);

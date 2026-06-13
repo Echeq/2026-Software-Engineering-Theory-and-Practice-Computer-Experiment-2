@@ -1,22 +1,28 @@
 import "../css/dashboard.css";
 import "./i18n";
-import { getCurrentUser, isSessionError, logout } from "./core/services";
+import { getCurrentUser, getProjectTasks, isSessionError, logout } from "./core/services";
 
 type ProjectsTheme = "light" | "dark";
+type ProjectView = "grid" | "list";
 
 const THEME_STORAGE_KEY = "dashboard-theme";
+const LEGACY_THEME_STORAGE_KEY = "theme";
+const SETTINGS_STORAGE_KEY = "dashboard-settings-state";
 const MOBILE_SIDEBAR_BREAKPOINT = 960;
 const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 
 let userNameElement: HTMLElement | null = null;
 let userAvatarElement: HTMLElement | null = null;
 let projectsMessageBox: HTMLElement | null = null;
+let projectsBoardElement: HTMLElement | null = null;
 let logoutButton: HTMLButtonElement | null = null;
 let themeToggleButton: HTMLButtonElement | null = null;
 let sidebarToggleButton: HTMLButtonElement | null = null;
 let sidebarElement: HTMLElement | null = null;
 let sidebarBackdropElement: HTMLElement | null = null;
 let projectsLanguageInput: HTMLInputElement | null = null;
+let projectViewButtons: NodeListOf<HTMLButtonElement>;
+let currentProjectView: ProjectView = "grid";
 
 document.addEventListener("DOMContentLoaded", () => {
   void initializeProjectsPage();
@@ -25,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
 async function initializeProjectsPage(): Promise<void> {
   cacheElements();
   initializeTheme();
+  initializeProjectView();
   syncSidebarState();
   syncLanguageInput();
   setupEventListeners();
@@ -37,12 +44,14 @@ function cacheElements(): void {
   userNameElement = document.getElementById("user-name");
   userAvatarElement = document.getElementById("user-avatar");
   projectsMessageBox = document.getElementById("projects-message");
+  projectsBoardElement = document.getElementById("projects-board");
   logoutButton = document.getElementById("logout-btn") as HTMLButtonElement | null;
   themeToggleButton = document.getElementById("theme-toggle-btn") as HTMLButtonElement | null;
   sidebarToggleButton = document.getElementById("sidebar-toggle-btn") as HTMLButtonElement | null;
   sidebarElement = document.getElementById("dashboard-sidebar");
   sidebarBackdropElement = document.getElementById("sidebar-backdrop");
   projectsLanguageInput = document.getElementById("projects-language-input") as HTMLInputElement | null;
+  projectViewButtons = document.querySelectorAll("[data-project-view]");
 }
 
 function setupEventListeners(): void {
@@ -53,6 +62,26 @@ function setupEventListeners(): void {
   window.addEventListener("resize", syncSidebarState);
   document.addEventListener("keydown", handleEscapeKey);
   document.addEventListener("app-language-change", handleLanguageChange);
+  document.addEventListener("htmx:afterSwap", handleProjectsAfterSwap as EventListener);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      void refreshProjectCardsFromApi();
+    }
+  });
+  window.addEventListener("focus", () => {
+    void refreshProjectCardsFromApi();
+  });
+  window.addEventListener("pageshow", () => {
+    void refreshProjectCardsFromApi();
+  });
+  projectViewButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const view = button.dataset.projectView;
+      if (view === "grid" || view === "list") {
+        setProjectView(view);
+      }
+    });
+  });
 
   document.querySelectorAll(".sidebar-link").forEach((link) => {
     link.addEventListener("click", () => {
@@ -69,19 +98,24 @@ function initializeTheme(): void {
   applyTheme(storedTheme || preferredTheme);
 }
 
+function initializeProjectView(): void {
+  currentProjectView = readStoredProjectView();
+  renderProjectView();
+}
+
 function readStoredTheme(): ProjectsTheme | "" {
-  const value = localStorage.getItem(THEME_STORAGE_KEY);
+  const value = localStorage.getItem(THEME_STORAGE_KEY) ?? localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
   return value === "light" || value === "dark" ? value : "";
 }
 
 function toggleTheme(): void {
   const nextTheme: ProjectsTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
   applyTheme(nextTheme);
-  localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
 }
 
 function applyTheme(theme: ProjectsTheme): void {
   document.body.dataset.theme = theme;
+  persistTheme(theme);
 
   if (!themeToggleButton) {
     return;
@@ -91,6 +125,11 @@ function applyTheme(theme: ProjectsTheme): void {
   themeToggleButton.textContent = isDarkTheme ? i18n("theme.light") : i18n("theme.dark");
   themeToggleButton.setAttribute("aria-pressed", String(isDarkTheme));
   themeToggleButton.setAttribute("aria-label", isDarkTheme ? i18n("theme.toLight") : i18n("theme.toDark"));
+}
+
+function persistTheme(theme: ProjectsTheme): void {
+  localStorage.setItem(THEME_STORAGE_KEY, theme);
+  localStorage.setItem(LEGACY_THEME_STORAGE_KEY, theme);
 }
 
 function isMobileViewport(): boolean {
@@ -111,7 +150,7 @@ function syncSidebarState(): void {
   sidebarToggleButton.setAttribute("aria-expanded", String(isMobileViewport() && document.body.classList.contains("sidebar-open")));
   sidebarToggleButton.setAttribute(
     "aria-label",
-    document.body.classList.contains("sidebar-open") ? "Close navigation menu" : "Open navigation menu"
+    document.body.classList.contains("sidebar-open") ? i18n("app.aria.closeNavigationMenu") : i18n("app.aria.openNavigationMenu")
   );
   sidebarBackdropElement.hidden = !(isMobileViewport() && document.body.classList.contains("sidebar-open"));
 }
@@ -202,7 +241,20 @@ function getInitials(name: string): string {
 
 function handleLanguageChange(): void {
   syncLanguageInput();
+  renderProjectView();
   refreshProjectsBoard();
+  void refreshProjectCardsFromApi();
+}
+
+function handleProjectsAfterSwap(event: Event): void {
+  const customEvent = event as CustomEvent;
+
+  if (!(customEvent.target instanceof HTMLElement) || customEvent.target.id !== "projects-board") {
+    return;
+  }
+
+  renderProjectView();
+  void refreshProjectCardsFromApi();
 }
 
 function syncLanguageInput(): void {
@@ -232,6 +284,149 @@ function renderBoardLoading(): void {
   `;
 }
 
+function formatProjectCompletionLabel(percentage: number): string {
+  return i18n("common.percentComplete", { percent: percentage });
+}
+
+function formatProjectCompletionCounter(completedTasks: number, totalTasks: number): string {
+  if (totalTasks <= 0) {
+    return i18n("common.noTasksYet");
+  }
+
+  return `${completedTasks}/${totalTasks}`;
+}
+
+function getProjectCompletionTone(percentage: number): "low" | "medium" | "high" {
+  if (percentage <= 30) {
+    return "low";
+  }
+
+  if (percentage <= 60) {
+    return "medium";
+  }
+
+  return "high";
+}
+
+function createProjectCompletionSummary(totalTasks: number, completedTasks: number) {
+  const safeTotalTasks = Math.max(0, totalTasks);
+  const safeCompletedTasks = Math.min(Math.max(0, completedTasks), safeTotalTasks);
+  const percentage = safeTotalTasks > 0
+    ? Math.round((safeCompletedTasks / safeTotalTasks) * 100)
+    : 0;
+
+  return {
+    percentage,
+    tone: getProjectCompletionTone(percentage),
+    label: formatProjectCompletionLabel(percentage),
+    totalTasks: safeTotalTasks,
+    completedTasks: safeCompletedTasks,
+    counterLabel: formatProjectCompletionCounter(safeCompletedTasks, safeTotalTasks)
+  };
+}
+
+function isCompletedTaskStatus(status: unknown): boolean {
+  return typeof status === "string" && status.trim().toLowerCase() === "done";
+}
+
+function getProjectIdKey(projectId: unknown): string {
+  if (projectId === null || projectId === undefined) {
+    return "";
+  }
+
+  return String(projectId).trim();
+}
+
+function applyProjectCompletionSummaryToCard(
+  card: HTMLElement,
+  summary: ReturnType<typeof createProjectCompletionSummary>
+): void {
+  const taskCountElement = card.querySelector<HTMLElement>(".project-task-count");
+  const metaElement = card.querySelector<HTMLElement>(".project-meta");
+  let progressRow = card.querySelector<HTMLElement>(".project-progress-row");
+  let progressTrack = card.querySelector<HTMLElement>(".project-progress-track");
+  let progressFill = card.querySelector<HTMLElement>(".project-progress-fill");
+  let progressText = card.querySelector<HTMLElement>(".project-progress-text");
+  let progressCounter = card.querySelector<HTMLElement>(".project-progress-counter");
+
+  if (!progressRow && metaElement) {
+    progressRow = document.createElement("div");
+    progressTrack = document.createElement("div");
+    progressFill = document.createElement("span");
+    progressText = document.createElement("span");
+    progressCounter = document.createElement("p");
+
+    progressRow.className = "project-progress-row";
+    progressTrack.className = "project-progress-track";
+    progressFill.className = "project-progress-fill";
+    progressText.className = "project-progress-text";
+    progressCounter.className = "project-progress-counter";
+
+    progressTrack.setAttribute("role", "progressbar");
+    progressTrack.setAttribute("aria-valuemin", "0");
+    progressTrack.setAttribute("aria-valuemax", "100");
+
+    progressTrack.appendChild(progressFill);
+    progressRow.appendChild(progressTrack);
+    progressRow.appendChild(progressText);
+    metaElement.insertAdjacentElement("afterend", progressRow);
+    progressRow.insertAdjacentElement("afterend", progressCounter);
+  }
+
+  if (taskCountElement) {
+    taskCountElement.textContent = i18n("common.tasksCount", { count: summary.totalTasks });
+  }
+
+  if (progressRow) {
+    progressRow.className = `project-progress-row project-progress-tone-${summary.tone}`;
+  }
+
+  if (progressTrack) {
+    progressTrack.setAttribute("aria-valuenow", String(summary.percentage));
+    progressTrack.setAttribute("aria-label", summary.label);
+  }
+
+  if (progressFill) {
+    progressFill.style.width = `${summary.percentage}%`;
+  }
+
+  if (progressText) {
+    progressText.textContent = summary.label;
+  }
+
+  if (progressCounter) {
+    progressCounter.textContent = summary.counterLabel;
+  }
+}
+
+async function refreshProjectCardsFromApi(): Promise<void> {
+  if (!projectsBoardElement) {
+    return;
+  }
+
+  const projectCards = Array.from(projectsBoardElement.querySelectorAll<HTMLElement>(".project-card-link[data-project-id]"));
+  if (projectCards.length === 0) {
+    return;
+  }
+
+  try {
+    await Promise.all(projectCards.map(async (card) => {
+      const projectId = getProjectIdKey(card.getAttribute("data-project-id") || "");
+      if (!projectId) {
+        return;
+      }
+
+      const tasks = await getProjectTasks(projectId);
+      const totalTasks = tasks.length;
+      const completedTasks = tasks.filter((task) => isCompletedTaskStatus(task.status)).length;
+      const summary = createProjectCompletionSummary(totalTasks, completedTasks);
+      applyProjectCompletionSummaryToCard(card, summary);
+    }));
+  } catch (error) {
+    console.warn("Error reading project completion from API:", error);
+  }
+}
+
 function showProjectsMessage(text: string, type?: "error" | "success"): void {
   if (!projectsMessageBox) {
     return;
@@ -243,6 +438,104 @@ function showProjectsMessage(text: string, type?: "error" | "success"): void {
 
 function clearProjectsMessage(): void {
   showProjectsMessage("");
+}
+
+function readStoredProjectView(): ProjectView {
+  const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+  if (!raw) {
+    return "grid";
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as { defaultProjectView?: unknown };
+    return parsed.defaultProjectView === "list" ? "list" : "grid";
+  } catch (_error) {
+    return "grid";
+  }
+}
+
+function setProjectView(view: ProjectView): void {
+  if (currentProjectView === view) {
+    return;
+  }
+
+  currentProjectView = view;
+  persistProjectView(view);
+  renderProjectView();
+}
+
+function renderProjectView(): void {
+  if (projectsBoardElement) {
+    projectsBoardElement.className = currentProjectView === "list"
+      ? "projects-grid projects-view-list"
+      : "projects-grid projects-view-grid";
+  }
+
+  projectViewButtons.forEach((button) => {
+    const isActive = button.dataset.projectView === currentProjectView;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
+function persistProjectView(view: ProjectView): void {
+  const nextState = readStoredSettingsState();
+  nextState.defaultProjectView = view;
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(nextState));
+}
+
+function readStoredSettingsState(): {
+  profileName: string;
+  profileEmail: string;
+  emailNotifications: boolean;
+  browserNotifications: boolean;
+  defaultProjectView: ProjectView;
+  theme: "light" | "dark";
+} {
+  const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+  if (!raw) {
+    return createDefaultSettingsState();
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<{
+      profileName: string;
+      profileEmail: string;
+      emailNotifications: boolean;
+      browserNotifications: boolean;
+      defaultProjectView: ProjectView;
+      theme: "light" | "dark";
+    }>;
+
+    return {
+      profileName: typeof parsed.profileName === "string" ? parsed.profileName : "",
+      profileEmail: typeof parsed.profileEmail === "string" ? parsed.profileEmail : "",
+      emailNotifications: typeof parsed.emailNotifications === "boolean" ? parsed.emailNotifications : true,
+      browserNotifications: typeof parsed.browserNotifications === "boolean" ? parsed.browserNotifications : false,
+      defaultProjectView: parsed.defaultProjectView === "list" ? "list" : "grid",
+      theme: parsed.theme === "dark" ? "dark" : "light"
+    };
+  } catch (_error) {
+    return createDefaultSettingsState();
+  }
+}
+
+function createDefaultSettingsState(): {
+  profileName: string;
+  profileEmail: string;
+  emailNotifications: boolean;
+  browserNotifications: boolean;
+  defaultProjectView: ProjectView;
+  theme: "light" | "dark";
+} {
+  return {
+    profileName: "",
+    profileEmail: "",
+    emailNotifications: true,
+    browserNotifications: false,
+    defaultProjectView: "grid",
+    theme: "light"
+  };
 }
 
 async function handleLogout(): Promise<void> {

@@ -5,7 +5,11 @@ import { createProject, getCurrentUser, getProjectTasks, getProjects, isSessionE
 
 /* Original pre-sidebar layout backed up in ./dashboard.layout-backup.ts */
 const THEME_STORAGE_KEY = "dashboard-theme";
+const LEGACY_THEME_STORAGE_KEY = "theme";
 const MOBILE_SIDEBAR_BREAKPOINT = 960;
+const DB_NAME = "SPMP_DB";
+const DB_VERSION = 1;
+const TASKS_STORE_NAME = "tasks";
 const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 
 interface User {
@@ -104,6 +108,17 @@ function setupEventListeners(): void {
   document.addEventListener("app-language-change", refreshGreetingBanner);
   document.addEventListener("app-language-change", handleLanguageChange);
   document.addEventListener("htmx:afterSwap", handleProjectsAfterSwap as EventListener);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      void refreshProjectCardsFromIndexedDb();
+    }
+  });
+  window.addEventListener("focus", () => {
+    void refreshProjectCardsFromIndexedDb();
+  });
+  window.addEventListener("pageshow", () => {
+    void refreshProjectCardsFromIndexedDb();
+  });
   document.querySelectorAll<HTMLButtonElement>(".filter-button").forEach((button) => {
     button.addEventListener("click", () => handleFilterButtonClick(button));
   });
@@ -124,7 +139,7 @@ function initializeTheme(): void {
 }
 
 function readStoredTheme(): DashboardTheme | "" {
-  const value = localStorage.getItem(THEME_STORAGE_KEY);
+  const value = localStorage.getItem(THEME_STORAGE_KEY) ?? localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
 
   if (value === "light" || value === "dark") {
     return value;
@@ -136,11 +151,11 @@ function readStoredTheme(): DashboardTheme | "" {
 function toggleTheme(): void {
   const nextTheme: DashboardTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
   applyTheme(nextTheme);
-  localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
 }
 
 function applyTheme(theme: DashboardTheme): void {
   document.body.dataset.theme = theme;
+  persistTheme(theme);
 
   if (!themeToggleButton) {
     return;
@@ -150,6 +165,11 @@ function applyTheme(theme: DashboardTheme): void {
   themeToggleButton.textContent = isDarkTheme ? i18n("theme.light") : i18n("theme.dark");
   themeToggleButton.setAttribute("aria-pressed", String(isDarkTheme));
   themeToggleButton.setAttribute("aria-label", isDarkTheme ? i18n("theme.toLight") : i18n("theme.toDark"));
+}
+
+function persistTheme(theme: DashboardTheme): void {
+  localStorage.setItem(THEME_STORAGE_KEY, theme);
+  localStorage.setItem(LEGACY_THEME_STORAGE_KEY, theme);
 }
 
 function isMobileViewport(): boolean {
@@ -171,7 +191,7 @@ function syncSidebarState(): void {
   sidebarToggleButton.setAttribute("aria-expanded", String(isMobileViewport() && document.body.classList.contains("sidebar-open")));
   sidebarToggleButton.setAttribute(
     "aria-label",
-    document.body.classList.contains("sidebar-open") ? "Close navigation menu" : "Open navigation menu"
+    document.body.classList.contains("sidebar-open") ? i18n("app.aria.closeNavigationMenu") : i18n("app.aria.openNavigationMenu")
   );
   sidebarBackdropElement.hidden = !(isMobileViewport() && document.body.classList.contains("sidebar-open"));
 }
@@ -442,28 +462,47 @@ function handleProjectsAfterSwap(event: Event): void {
 
   document.getElementById("empty-state-create-project-btn")?.addEventListener("click", openProjectModal, { once: true });
   sortRenderedProjectCards();
+  void refreshProjectCardsFromIndexedDb();
 }
 
 function handleLanguageChange(): void {
   refreshGreetingBanner();
   syncLanguageInput();
   refreshProjectsList();
+  void refreshProjectCardsFromIndexedDb();
 }
 
 function refreshGreetingBanner(): void {
   const today = new Date();
   const displayName = currentUser?.name.trim() || "";
+  const greeting = i18n(getGreetingFallbackKey(today.getHours()));
 
   if (greetingTitleElement) {
     greetingTitleElement.textContent = displayName
-      ? i18n("dashboard.greetingMorning", { name: displayName })
-      : i18n("dashboard.greetingMorningFallback");
+      ? `${greeting}, ${displayName}`
+      : greeting;
   }
 
   if (greetingDateElement) {
     greetingDateElement.textContent = formatGreetingDate(today);
     greetingDateElement.dateTime = today.toISOString().slice(0, 10);
   }
+}
+
+function getGreetingFallbackKey(hour: number): string {
+  if (hour >= 5 && hour < 12) {
+    return "dashboard.greetingMorningFallback";
+  }
+
+  if (hour >= 12 && hour < 18) {
+    return "dashboard.greetingAfternoonFallback";
+  }
+
+  if (hour >= 18 && hour < 22) {
+    return "dashboard.greetingEveningFallback";
+  }
+
+  return "dashboard.greetingNightFallback";
 }
 
 function updateUserAvatar(name: string): void {
@@ -625,6 +664,10 @@ function formatGreetingDate(date: Date): string {
 function getCurrentLocale(): string {
   const language = window.I18n?.getLanguage();
 
+  if (language === "ru") {
+    return "ru-RU";
+  }
+
   if (language === "zh") {
     return "zh-CN";
   }
@@ -636,10 +679,163 @@ function getCurrentLocale(): string {
   return "en-US";
 }
 
+function getChartThemeColors(): { textColor: string; gridColor: string; segmentBorderColor: string } {
+  const isDarkTheme = document.body.dataset.theme === "dark";
+
+  return {
+    textColor: isDarkTheme ? "#e2e8f0" : "#334155",
+    gridColor: isDarkTheme ? "rgba(148, 163, 184, 0.18)" : "rgba(148, 163, 184, 0.28)",
+    segmentBorderColor: isDarkTheme ? "rgba(15, 23, 42, 0.92)" : "rgba(248, 250, 252, 0.92)"
+  };
+}
+
+function formatProjectCompletionLabel(percentage: number): string {
+  return i18n("common.percentComplete", { percent: percentage });
+}
+
+function formatProjectCompletionCounter(completedTasks: number, totalTasks: number): string {
+  if (totalTasks <= 0) {
+    return i18n("common.noTasksYet");
+  }
+
+  return `${completedTasks}/${totalTasks}`;
+}
+
 function escapeHtml(text: string): string {
   const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
+}
+
+async function refreshProjectCardsFromIndexedDb(): Promise<void> {
+  if (!projectsListElement) {
+    return;
+  }
+
+  const projectCards = Array.from(projectsListElement.querySelectorAll<HTMLElement>(".project-card-link[data-project-id]"));
+  if (projectCards.length === 0) {
+    return;
+  }
+
+  try {
+    await Promise.all(projectCards.map(async (card) => {
+      const projectId = getProjectIdKey(card.getAttribute("data-project-id") || "");
+      if (!projectId) {
+        return;
+      }
+
+      const tasks = await getProjectTasks(projectId);
+      const totalTasks = tasks.length;
+      const completedTasks = tasks.filter((task) => isCompletedTaskStatus(task.status)).length;
+      const summary = createProjectCompletionSummary(totalTasks, completedTasks);
+      applyProjectCompletionSummaryToCard(card, summary);
+    }));
+  } catch (error) {
+    console.warn("Error reading project completion from API:", error);
+  }
+}
+
+function applyProjectCompletionSummaryToCard(
+  card: HTMLElement,
+  summary: ReturnType<typeof createProjectCompletionSummary>
+): void {
+  const taskCountElement = card.querySelector<HTMLElement>(".project-task-count");
+  const metaElement = card.querySelector<HTMLElement>(".project-meta");
+  let progressRow = card.querySelector<HTMLElement>(".project-progress-row");
+  let progressTrack = card.querySelector<HTMLElement>(".project-progress-track");
+  let progressFill = card.querySelector<HTMLElement>(".project-progress-fill");
+  let progressText = card.querySelector<HTMLElement>(".project-progress-text");
+  let progressCounter = card.querySelector<HTMLElement>(".project-progress-counter");
+
+  if (!progressRow && metaElement) {
+    progressRow = document.createElement("div");
+    progressTrack = document.createElement("div");
+    progressFill = document.createElement("span");
+    progressText = document.createElement("span");
+    progressCounter = document.createElement("p");
+
+    progressRow.className = "project-progress-row";
+    progressTrack.className = "project-progress-track";
+    progressFill.className = "project-progress-fill";
+    progressText.className = "project-progress-text";
+    progressCounter.className = "project-progress-counter";
+
+    progressTrack.setAttribute("role", "progressbar");
+    progressTrack.setAttribute("aria-valuemin", "0");
+    progressTrack.setAttribute("aria-valuemax", "100");
+
+    progressTrack.appendChild(progressFill);
+    progressRow.appendChild(progressTrack);
+    progressRow.appendChild(progressText);
+    metaElement.insertAdjacentElement("afterend", progressRow);
+    progressRow.insertAdjacentElement("afterend", progressCounter);
+  }
+
+  if (taskCountElement) {
+    taskCountElement.textContent = i18n("common.tasksCount", { count: summary.totalTasks });
+  }
+
+  if (progressRow) {
+    progressRow.className = `project-progress-row project-progress-tone-${summary.tone}`;
+  }
+
+  if (progressTrack) {
+    progressTrack.setAttribute("aria-valuenow", String(summary.percentage));
+    progressTrack.setAttribute("aria-label", summary.label);
+  }
+
+  if (progressFill) {
+    progressFill.style.width = `${summary.percentage}%`;
+  }
+
+  if (progressText) {
+    progressText.textContent = summary.label;
+  }
+
+  if (progressCounter) {
+    progressCounter.textContent = summary.counterLabel;
+  }
+}
+
+function createProjectCompletionSummary(totalTasks: number, completedTasks: number) {
+  const safeTotalTasks = Math.max(0, totalTasks);
+  const safeCompletedTasks = Math.min(Math.max(0, completedTasks), safeTotalTasks);
+  const percentage = safeTotalTasks > 0
+    ? Math.round((safeCompletedTasks / safeTotalTasks) * 100)
+    : 0;
+
+  return {
+    percentage,
+    tone: getProjectCompletionTone(percentage),
+    label: formatProjectCompletionLabel(percentage),
+    totalTasks: safeTotalTasks,
+    completedTasks: safeCompletedTasks,
+    counterLabel: formatProjectCompletionCounter(safeCompletedTasks, safeTotalTasks)
+  };
+}
+
+function getProjectCompletionTone(percentage: number): "low" | "medium" | "high" {
+  if (percentage <= 30) {
+    return "low";
+  }
+
+  if (percentage <= 60) {
+    return "medium";
+  }
+
+  return "high";
+}
+
+function isCompletedTaskStatus(status: unknown): boolean {
+  return typeof status === "string" && status.trim().toLowerCase() === "done";
+}
+
+function getProjectIdKey(projectId: unknown): string {
+  if (projectId === null || projectId === undefined) {
+    return "";
+  }
+
+  return String(projectId).trim();
 }
 
 async function renderCharts(): Promise<void> {
@@ -647,6 +843,7 @@ async function renderCharts(): Promise<void> {
   if (!Chart) return;
 
   try {
+    const chartTheme = getChartThemeColors();
     const projects = await getProjects();
     const statusCounts: Record<string, number> = {};
     for (const p of projects) {
@@ -668,30 +865,51 @@ async function renderCharts(): Promise<void> {
         type: "doughnut",
         data: {
           labels,
-          datasets: [{ data, backgroundColor: ["#6366f1", "#22c55e", "#f59e0b", "#94a3b8"] }],
+          datasets: [{
+            data,
+            backgroundColor: ["#ef4444", "#eab308", "#22c55e", "#3b82f6"],
+            borderColor: chartTheme.segmentBorderColor,
+            borderWidth: 3,
+            hoverBorderWidth: 4
+          }],
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
+                color: chartTheme.textColor,
+                usePointStyle: true,
+                pointStyle: "circle"
+              }
+            }
+          }
+        },
       });
     }
 
-    let taskAll: { status: string }[] = [];
+    let taskAll: Array<{ status?: string }> = [];
     for (const p of projects) {
       try { taskAll = taskAll.concat(await getProjectTasks(p.id)); } catch { /* skip */ }
     }
 
-    const taskStatusLabels: Record<string, string> = {
-      pending: i18n("tasks.status.todo"),
-      "in-progress": i18n("tasks.status.inProgress"),
-      "in review": i18n("tasks.status.inProgress"),
-      done: i18n("tasks.status.done"),
-    };
+    const taskStatuses = [
+      { status: "pending", label: i18n("tasks.status.todo"), color: "#ef4444" },
+      { status: "in-progress", label: i18n("tasks.status.inProgress"), color: "#eab308" },
+      { status: "in review", label: i18n("tasks.status.inReview"), color: "#3b82f6" },
+      { status: "done", label: i18n("tasks.status.done"), color: "#22c55e" }
+    ] as const;
     const taskCounts: Record<string, number> = {};
     for (const t of taskAll) {
       const s = t.status || "pending";
       taskCounts[s] = (taskCounts[s] || 0) + 1;
     }
-    const tLabels = Object.keys(taskCounts).map(k => taskStatusLabels[k] || k);
-    const tData = Object.values(taskCounts);
+    const visibleTaskStatuses = taskStatuses.filter(({ status }) => (taskCounts[status] || 0) > 0);
+    const tLabels = visibleTaskStatuses.map(({ label }) => label);
+    const tData = visibleTaskStatuses.map(({ status }) => taskCounts[status] || 0);
+    const tColors = visibleTaskStatuses.map(({ color }) => color);
 
     const taskCanvas = document.getElementById("task-overview-chart") as HTMLCanvasElement | null;
     if (taskCanvas && tLabels.length > 0) {
@@ -699,9 +917,34 @@ async function renderCharts(): Promise<void> {
         type: "bar",
         data: {
           labels: tLabels,
-          datasets: [{ label: i18n("tasks.pageTag"), data: tData, backgroundColor: "#6366f1" }],
+          datasets: [{
+            label: i18n("tasks.pageTag"),
+            data: tData,
+            backgroundColor: tColors,
+            borderColor: chartTheme.segmentBorderColor,
+            borderWidth: 1.5,
+            borderRadius: 10,
+            maxBarThickness: 56
+          }],
         },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              ticks: { color: chartTheme.textColor },
+              grid: { display: false }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { stepSize: 1, color: chartTheme.textColor },
+              grid: { color: chartTheme.gridColor }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        },
       });
     }
   } catch { /* charts unavailable */ }

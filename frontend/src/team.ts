@@ -3,6 +3,7 @@ import "./i18n";
 const API_BASE_URL = `${window.location.origin}/api`;
 const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
 const THEME_STORAGE_KEY = "dashboard-theme";
+const LEGACY_THEME_STORAGE_KEY = "theme";
 const MOBILE_SIDEBAR_BREAKPOINT = 960;
 const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 
@@ -261,24 +262,30 @@ function setInviteSubmitting(submitting: boolean): void {
 // ── Sidebar / theme ──────────────────────────────────────────────────────────
 
 function initTheme(): void {
-  const stored = localStorage.getItem(THEME_STORAGE_KEY);
+  const stored = localStorage.getItem(THEME_STORAGE_KEY) ?? localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
   const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   applyTheme((stored === "dark" || stored === "light" ? stored : preferred) as "light" | "dark");
 }
 
 function applyTheme(theme: "light" | "dark"): void {
   document.body.dataset.theme = theme;
+  persistTheme(theme);
   const btn = document.getElementById("theme-toggle-btn") as HTMLButtonElement | null;
   if (btn) {
     btn.textContent = theme === "dark" ? i18n("theme.light") : i18n("theme.dark");
     btn.setAttribute("aria-pressed", String(theme === "dark"));
+    btn.setAttribute("aria-label", theme === "dark" ? i18n("theme.toLight") : i18n("theme.toDark"));
   }
 }
 
 function toggleTheme(): void {
   const next = document.body.dataset.theme === "dark" ? "light" : "dark";
   applyTheme(next as "light" | "dark");
-  localStorage.setItem(THEME_STORAGE_KEY, next);
+}
+
+function persistTheme(theme: "light" | "dark"): void {
+  localStorage.setItem(THEME_STORAGE_KEY, theme);
+  localStorage.setItem(LEGACY_THEME_STORAGE_KEY, theme);
 }
 
 function isMobileViewport(): boolean {

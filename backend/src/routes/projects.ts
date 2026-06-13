@@ -6,7 +6,7 @@ import { AuthRequest } from "../middleware/roleMiddleware";
 const router = Router();
 
 type FilterStatus = "all" | "active" | "in-review" | "planning";
-type Language = "en" | "zh" | "es";
+type Language = "en" | "zh" | "es" | "ru";
 
 const fragmentTranslations: Record<Language, Record<string, string>> = {
     en: {
@@ -15,8 +15,11 @@ const fragmentTranslations: Record<Language, Record<string, string>> = {
             "Try another search or filter, or create a new project.",
         createProject: "Create New Project",
         tasksCount: "{count} tasks",
+        percentComplete: "{percent}% complete",
+        noTasksYet: "No tasks yet",
         createdRecently: "Created recently",
         createdDate: "Created {date}",
+        noDescriptionYet: "No description yet.",
         planning: "Planning",
         active: "Active",
         inReview: "In Review",
@@ -27,8 +30,11 @@ const fragmentTranslations: Record<Language, Record<string, string>> = {
         noProjectsText: "尝试其他搜索或筛选条件，或者创建一个新项目。",
         createProject: "创建新项目",
         tasksCount: "{count} 个任务",
+        percentComplete: "已完成 {percent}%",
+        noTasksYet: "还没有任务",
         createdRecently: "最近创建",
         createdDate: "创建于 {date}",
+        noDescriptionYet: "暂无描述。",
         planning: "规划中",
         active: "进行中",
         inReview: "评审中",
@@ -40,12 +46,31 @@ const fragmentTranslations: Record<Language, Record<string, string>> = {
             "Prueba otra búsqueda o filtro, o crea un proyecto nuevo.",
         createProject: "Crear nuevo proyecto",
         tasksCount: "{count} tareas",
+        percentComplete: "{percent}% completado",
+        noTasksYet: "Aún no hay tareas",
         createdRecently: "Creado recientemente",
         createdDate: "Creado {date}",
+        noDescriptionYet: "Sin descripción todavía.",
         planning: "Planificación",
         active: "Activo",
         inReview: "En revisión",
         done: "Hecho",
+    },
+    ru: {
+        noProjects: "Пока нет проектов",
+        noProjectsText:
+            "Попробуйте другой поиск или фильтр, либо создайте новый проект.",
+        createProject: "Создать проект",
+        tasksCount: "{count} задач",
+        percentComplete: "Готово {percent}%",
+        noTasksYet: "Пока нет задач",
+        createdRecently: "Недавно создано",
+        createdDate: "Создано {date}",
+        noDescriptionYet: "Описание пока отсутствует.",
+        planning: "Планирование",
+        active: "Активно",
+        inReview: "На проверке",
+        done: "Готово",
     },
 };
 
@@ -66,7 +91,7 @@ function formatStatus(status: string): string {
 }
 
 function readLanguage(rawValue: unknown): Language {
-    if (rawValue === "zh" || rawValue === "es" || rawValue === "en") {
+    if (rawValue === "zh" || rawValue === "es" || rawValue === "en" || rawValue === "ru") {
         return rawValue;
     }
 
@@ -106,6 +131,67 @@ function formatProjectDate(dateString: string, language: Language): string {
     return translate(language, "createdDate", { date: formattedDate });
 }
 
+function formatProjectCompletionLabel(
+    percentage: number,
+    language: Language,
+): string {
+    return translate(language, "percentComplete", { percent: percentage });
+}
+
+function formatProjectCompletionCounter(
+    completedTasks: number,
+    totalTasks: number,
+    language: Language,
+): string {
+    if (totalTasks <= 0) {
+        return translate(language, "noTasksYet");
+    }
+
+    return `${completedTasks}/${totalTasks}`;
+}
+
+function getProjectCompletionTone(
+    percentage: number,
+): "low" | "medium" | "high" {
+    if (percentage <= 30) {
+        return "low";
+    }
+
+    if (percentage <= 60) {
+        return "medium";
+    }
+
+    return "high";
+}
+
+function isCompletedTaskStatus(status: unknown): boolean {
+    return typeof status === "string" && status.trim().toLowerCase() === "done";
+}
+
+function createProjectCompletionSummary(
+    totalTasks: number,
+    completedTasks: number,
+    language: Language,
+) {
+    const safeTotalTasks = Math.max(0, totalTasks);
+    const safeCompletedTasks = Math.min(Math.max(0, completedTasks), safeTotalTasks);
+    const percentage =
+        safeTotalTasks > 0
+            ? Math.round((safeCompletedTasks / safeTotalTasks) * 100)
+            : 0;
+
+    return {
+        percentage,
+        tone: getProjectCompletionTone(percentage),
+        label: formatProjectCompletionLabel(percentage, language),
+        counterLabel: formatProjectCompletionCounter(
+            safeCompletedTasks,
+            safeTotalTasks,
+            language,
+        ),
+    };
+}
+
 function formatStatusLabel(status: string, language: Language): string {
     const normalized = normalizeStatus(status);
 
@@ -135,6 +221,37 @@ function formatStatusLabel(status: string, language: Language): string {
     }
 
     return formatStatus(status);
+}
+
+function getStatusTranslationKey(status: string): string {
+    const normalized = normalizeStatus(status);
+
+    if (normalized === "planning") {
+        return "status.planning";
+    }
+
+    if (normalized === "active") {
+        return "status.active";
+    }
+
+    if (normalized === "in-review") {
+        return "status.inReview";
+    }
+
+    if (
+        [
+            "done",
+            "completed",
+            "complete",
+            "closed",
+            "shipped",
+            "finished",
+        ].includes(status.trim().toLowerCase())
+    ) {
+        return "status.done";
+    }
+
+    return "";
 }
 
 function normalizeStatus(status: string): FilterStatus {
@@ -222,8 +339,11 @@ function renderProjectCards(
         .map((project) => {
             const description = project.description?.trim()
                 ? `<p class="project-description">${escapeHtml(project.description.trim())}</p>`
-                : '<p class="project-description is-empty">No description yet.</p>';
-            const taskCount = TaskModel.findByProjectId(project.id).length;
+                : `<p class="project-description is-empty" data-i18n="projects.noDescriptionYet">${escapeHtml(translate(language, "noDescriptionYet"))}</p>`;
+            const tasks = TaskModel.findByProjectId(project.id);
+            const taskCount = tasks.length;
+            const completedTaskCount = tasks.filter((task) => isCompletedTaskStatus(task.status)).length;
+            const progress = createProjectCompletionSummary(taskCount, completedTaskCount, language);
             const query = new URLSearchParams({
                 projectId: project.id,
                 projectName: project.name,
@@ -233,6 +353,8 @@ function renderProjectCards(
             }).toString();
             const normalizedStatus = project.status.trim().toLowerCase();
             const statusIndicator = getStatusIconMarkup(normalizedStatus);
+            const statusKey = getStatusTranslationKey(project.status);
+            const statusAttributes = statusKey ? ` data-i18n="${escapeHtml(statusKey)}"` : "";
 
             return `
       <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}">
@@ -241,13 +363,27 @@ function renderProjectCards(
             <h3 class="project-name">${escapeHtml(project.name)}</h3>
             <span class="project-task-count">${escapeHtml(translate(language, "tasksCount", { count: taskCount }))}</span>
           </div>
-          <span class="project-status">${statusIndicator}${escapeHtml(formatStatusLabel(project.status, language))}</span>
+          <span class="project-status">${statusIndicator}<span${statusAttributes}>${escapeHtml(formatStatusLabel(project.status, language))}</span></span>
         </div>
         ${description}
         <div class="project-meta">
           <span class="project-owner">${escapeHtml(ownerName)}</span>
-          <span>${escapeHtml(formatProjectDate(project.created_at, language))}</span>
+          <span data-i18n-created-at="${escapeHtml(project.created_at)}">${escapeHtml(formatProjectDate(project.created_at, language))}</span>
         </div>
+        <div class="project-progress-row project-progress-tone-${escapeHtml(progress.tone)}">
+          <div
+            class="project-progress-track"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="${progress.percentage}"
+            aria-label="${escapeHtml(progress.label)}"
+          >
+            <span class="project-progress-fill" style="width: ${progress.percentage}%;"></span>
+          </div>
+          <span class="project-progress-text">${escapeHtml(progress.label)}</span>
+        </div>
+        <p class="project-progress-counter">${escapeHtml(progress.counterLabel)}</p>
       </a>
     `;
         })

@@ -118,7 +118,7 @@ function syncSidebar(sidebar: HTMLElement | null, toggle: HTMLButtonElement | nu
   const isVisible = window.innerWidth > MOBILE_BREAKPOINT || mobileOpen;
   sidebar.setAttribute("aria-hidden", String(!isVisible));
   toggle.setAttribute("aria-expanded", String(mobileOpen));
-  toggle.setAttribute("aria-label", mobileOpen ? "Close navigation menu" : "Open navigation menu");
+  toggle.setAttribute("aria-label", mobileOpen ? t("app.aria.closeNavigationMenu") : t("app.aria.openNavigationMenu"));
   backdrop.hidden = !(window.innerWidth <= MOBILE_BREAKPOINT && mobileOpen);
 }
 
