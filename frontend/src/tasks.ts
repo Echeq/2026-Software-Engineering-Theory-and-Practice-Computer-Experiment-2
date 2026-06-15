@@ -5,6 +5,7 @@ import { getCurrentUser, getProjects, getProjectTasks, createTask, updateTask, d
 const THEME_STORAGE_KEY = "dashboard-theme";
 const LEGACY_THEME_STORAGE_KEY = "theme";
 const SETTINGS_STORAGE_KEY = "dashboard-settings-state";
+const SELECTED_PROJECT_STORAGE_KEY = "tasks-selected-project-id";
 const MOBILE_SIDEBAR_BREAKPOINT = 960;
 const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 const TASK_CATEGORIES = ["design", "frontend", "backend", "database", "api", "testing", "bugfix", "refactoring", "documentation", "devops", "performance", "security", "research", "chore"];
@@ -94,6 +95,8 @@ async function initializeTasksPage(): Promise<void> {
   initializeTaskView();
   syncSidebar();
   setupListeners();
+  window.I18n?.applyTranslations(document);
+  syncTaskDateInputLocale();
 
   try {
     currentUser = await getCurrentUser();
@@ -154,9 +157,11 @@ function setupListeners(): void {
   });
   projectSelect?.addEventListener("change", async () => {
     currentProjectId = projectSelect!.value;
+    persistSelectedProjectId(currentProjectId);
     await loadTasks();
     renderKanban();
   });
+  document.addEventListener("app-language-change", handleLanguageChange);
   document.getElementById("open-task-modal-btn")?.addEventListener("click", () => openTaskModal());
   cancelTaskBtn?.addEventListener("click", closeTaskModal);
   taskModal?.addEventListener("click", (e) => { if ((e.target as HTMLElement).dataset.closeModal === "true") closeTaskModal(); });
@@ -177,6 +182,21 @@ function setupListeners(): void {
   document.querySelectorAll(".sidebar-link").forEach((link) => {
     link.addEventListener("click", () => { if (isMobileViewport()) closeSidebarFn(); });
   });
+}
+
+function handleLanguageChange(): void {
+  window.I18n?.applyTranslations(document);
+  syncTaskDateInputLocale();
+  if (taskModal && !taskModal.hidden) {
+    if (editingTaskId) {
+      if (taskModalTitle) taskModalTitle.textContent = i18n("tasks.editTask");
+      if (saveTaskBtn) saveTaskBtn.textContent = i18n("tasks.updateTask");
+    } else {
+      if (taskModalTitle) taskModalTitle.textContent = i18n("tasks.createTask");
+      if (saveTaskBtn) saveTaskBtn.textContent = i18n("tasks.saveTask");
+    }
+  }
+  renderKanban();
 }
 
 function initializeTaskView(): void {
@@ -216,13 +236,47 @@ function populateProjectSelect(): void {
 async function loadInitialProject(): Promise<void> {
   const params = new URLSearchParams(window.location.search);
   const projectId = params.get("projectId");
+  const storedProjectId = readSelectedProjectId();
   if (projectId && projects.some(p => p.id === projectId)) {
     currentProjectId = projectId;
     if (projectSelect) projectSelect.value = projectId;
+    persistSelectedProjectId(projectId);
+  } else if (storedProjectId && projects.some(p => p.id === storedProjectId)) {
+    currentProjectId = storedProjectId;
+    if (projectSelect) projectSelect.value = storedProjectId;
   } else if (projects.length > 0) {
     currentProjectId = projects[0].id;
     if (projectSelect) projectSelect.value = projects[0].id;
+    persistSelectedProjectId(projects[0].id);
   }
+}
+
+function readSelectedProjectId(): string {
+  return localStorage.getItem(SELECTED_PROJECT_STORAGE_KEY)?.trim() || "";
+}
+
+function persistSelectedProjectId(projectId: string): void {
+  if (!projectId) {
+    localStorage.removeItem(SELECTED_PROJECT_STORAGE_KEY);
+    return;
+  }
+  localStorage.setItem(SELECTED_PROJECT_STORAGE_KEY, projectId);
+}
+
+function getCurrentLocale(): string {
+  const language = window.I18n?.getLanguage?.() || localStorage.getItem("app-language") || "en";
+  if (language === "ru") return "ru-RU";
+  if (language === "zh") return "zh-CN";
+  if (language === "es") return "es-ES";
+  return "en-US";
+}
+
+function syncTaskDateInputLocale(): void {
+  if (!taskDueDateInput) {
+    return;
+  }
+  taskDueDateInput.lang = getCurrentLocale();
+  taskDueDateInput.setAttribute("aria-label", i18n("tasks.formDueDate"));
 }
 
 async function loadTasks(): Promise<void> {

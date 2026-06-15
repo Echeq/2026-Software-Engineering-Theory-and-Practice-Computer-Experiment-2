@@ -294,12 +294,12 @@
         <div class="task-form-grid">
           <label class="form-group task-form-span-full" for="task-title-input">
             <span data-i18n="tasks.formTitle">Title</span>
-            <input id="task-title-input" name="title" type="text" autocomplete="off" placeholder="Task title" required>
+            <input id="task-title-input" name="title" type="text" autocomplete="off" data-i18n-placeholder="tasks.formTitlePlaceholder" placeholder="Prepare sprint review" required>
           </label>
 
           <label class="form-group task-form-span-full" for="task-desc-input">
             <span data-i18n="tasks.formDescription">Description</span>
-            <textarea id="task-desc-input" name="description" rows="3" placeholder="Optional description"></textarea>
+            <textarea id="task-desc-input" name="description" rows="3" data-i18n-placeholder="tasks.formDescriptionPlaceholder" placeholder="Describe the task outcome"></textarea>
           </label>
 
           <label class="form-group" for="task-project-select">
@@ -348,6 +348,7 @@
     </section>
   </div>
 
+  <script src="../js/i18n-live-fixes.js"></script>
   <script type="module" src="/src/tasks.ts"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>

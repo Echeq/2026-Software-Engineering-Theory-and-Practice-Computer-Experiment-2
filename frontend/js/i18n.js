@@ -36,6 +36,7 @@ const translations = {
         "language.current": "Language: {language}",
         "notifications.buttonLabel": "Notifications",
         "notifications.title": "Notifications",
+        "notifications": "Notifications",
         "notifications.close": "Close notifications",
         "notifications.dismiss": "Dismiss notification",
         "notifications.empty": "No notifications right now.",
@@ -115,8 +116,14 @@ const translations = {
         "dashboard.statisticsSubtitle": "A quick visual summary of project and task progress on this device.",
         "dashboard.projectStatusTitle": "Project Status",
         "dashboard.taskOverviewTitle": "Task Overview",
+        "projectStatus": "Project Status",
+        "taskOverview": "Task Overview",
         "dashboard.projectStatusChartAriaLabel": "Project status chart",
         "dashboard.taskOverviewChartAriaLabel": "Task overview chart",
+        "todo": "To Do",
+        "inProgress": "In Progress",
+        "inReview": "In Review",
+        "done": "Done",
         "dashboard.projectsTag": "Projects",
         "dashboard.projectsTitle": "My Projects",
         "dashboard.projectsSubtitle": "Keep project workspaces visible, organized, and easy to scan.",
@@ -271,6 +278,7 @@ const translations = {
         "settings.profileConfirmCancel": "Cancel",
         "settings.profileConfirmConfirm": "Confirm",
         "settings.profileConfirmRequired": "Password is required.",
+        "settings.incorrectPassword": "Incorrect password",
         "settings.profileSaveSuccess": "Profile changes saved successfully.",
         "settings.accountTitle": "Account",
         "settings.accountText": "Account security actions are available here as frontend-only interactions.",
@@ -1100,19 +1108,24 @@ Object.assign(translations.en, {
     "tasks.card.edit": "Edit",
     "settings.profileConfirmIncorrectPassword": "Incorrect password"
 });
+Object.assign(translations.ru, {
+    "settings.incorrectPassword": "Неверный пароль"
+});
 Object.assign(translations.zh, {
     "tasks.editTask": "编辑任务",
     "tasks.saveEdit": "保存更改",
     "tasks.message.updated": "任务已在本地更新。",
     "tasks.card.edit": "编辑",
-    "settings.profileConfirmIncorrectPassword": "密码错误"
+    "settings.profileConfirmIncorrectPassword": "密码错误",
+    "settings.incorrectPassword": "密码错误"
 });
 Object.assign(translations.es, {
     "tasks.editTask": "Editar tarea",
     "tasks.saveEdit": "Guardar cambios",
     "tasks.message.updated": "Tarea actualizada localmente.",
     "tasks.card.edit": "Editar",
-    "settings.profileConfirmIncorrectPassword": "Contraseña incorrecta"
+    "settings.profileConfirmIncorrectPassword": "Contraseña incorrecta",
+    "settings.incorrectPassword": "Contraseña incorrecta"
 });
 Object.assign(translations.zh, {
     "tasks.editTask": "\u7f16\u8f91\u4efb\u52a1",
@@ -1702,4 +1715,52 @@ if (document.readyState === "loading") {
 else {
     initializeI18n();
 }
+Object.assign(translations.en, {
+    "notifications": "Notifications",
+    "projectStatus": "Project Status",
+    "taskOverview": "Task Overview",
+    "todo": "To Do",
+    "inProgress": "In Progress",
+    "inReview": "In Review",
+    "done": "Done",
+    "settings.emailUpdated": "Email updated successfully",
+    "settings.emailTaken": "Email already in use",
+    "settings.invalidEmail": "Invalid email address"
+});
+Object.assign(translations.ru, {
+    "notifications": "Уведомления",
+    "projectStatus": "Статус проектов",
+    "taskOverview": "Обзор задач",
+    "todo": "К выполнению",
+    "inProgress": "В процессе",
+    "inReview": "На проверке",
+    "done": "Завершено",
+    "settings.emailUpdated": "Почта успешно обновлена",
+    "settings.emailTaken": "Эта почта уже используется",
+    "settings.invalidEmail": "Неверный формат почты"
+});
+Object.assign(translations.zh, {
+    "notifications": "通知",
+    "projectStatus": "项目状态",
+    "taskOverview": "任务概览",
+    "todo": "待办",
+    "inProgress": "进行中",
+    "inReview": "评审中",
+    "done": "已完成",
+    "settings.emailUpdated": "邮箱更新成功",
+    "settings.emailTaken": "该邮箱已被使用",
+    "settings.invalidEmail": "邮箱格式无效"
+});
+Object.assign(translations.es, {
+    "notifications": "Notificaciones",
+    "projectStatus": "Estado del proyecto",
+    "taskOverview": "Resumen de tareas",
+    "todo": "Por hacer",
+    "inProgress": "En progreso",
+    "inReview": "En revisión",
+    "done": "Completado",
+    "settings.emailUpdated": "Correo actualizado correctamente",
+    "settings.emailTaken": "El correo ya está en uso",
+    "settings.invalidEmail": "Correo electrónico inválido"
+});
 //# sourceMappingURL=i18n.js.map

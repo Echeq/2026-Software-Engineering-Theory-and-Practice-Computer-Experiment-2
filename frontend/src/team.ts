@@ -23,6 +23,7 @@ interface CurrentUser {
 }
 
 let currentUser: CurrentUser | null = null;
+let currentMembers: TeamMember[] = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   void initTeamPage();
@@ -32,6 +33,7 @@ async function initTeamPage(): Promise<void> {
   initTheme();
   syncSidebarState();
   setupEventListeners();
+  window.I18n?.applyTranslations(document);
 
   const token = getStoredToken();
   if (!token) {
@@ -111,6 +113,7 @@ async function loadCurrentUser(): Promise<void> {
 async function refreshMembers(): Promise<void> {
   try {
     const data = await requestWithAuth<{ users: TeamMember[] }>("/users");
+    currentMembers = Array.isArray(data.users) ? data.users : [];
     renderMembers(data.users);
   } catch (error) {
     showMessage(getErrorText(error, i18n("team.failedRefreshMembers")), "error");
@@ -123,6 +126,7 @@ async function loadMembers(): Promise<void> {
 
   try {
     const data = await requestWithAuth<{ users: TeamMember[] }>("/users");
+    currentMembers = Array.isArray(data.users) ? data.users : [];
     renderMembers(data.users);
   } catch (error) {
     showMessage(getErrorText(error, i18n("team.failedLoadMembers")), "error");
@@ -340,6 +344,7 @@ function setupEventListeners(): void {
     link.addEventListener("click", () => { if (isMobileViewport()) closeSidebar(); });
   });
   window.addEventListener("resize", syncSidebarState);
+  document.addEventListener("app-language-change", handleLanguageChange);
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       const modal = document.getElementById("invite-modal");
@@ -380,7 +385,23 @@ function getInitials(name: string): string {
 function formatDate(dateString: string): string {
   const d = new Date(dateString);
   if (isNaN(d.getTime())) return i18n("team.joinedRecently");
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(getCurrentLocale(), { month: "short", day: "numeric", year: "numeric" });
+}
+
+function handleLanguageChange(): void {
+  window.I18n?.applyTranslations(document);
+  syncSidebarState();
+  applyTheme((document.body.dataset.theme === "dark" ? "dark" : "light"));
+  renderMembers(currentMembers);
+  setInviteSubmitting(false);
+}
+
+function getCurrentLocale(): string {
+  const language = window.I18n?.getLanguage?.() || localStorage.getItem("app-language") || "en";
+  if (language === "ru") return "ru-RU";
+  if (language === "zh") return "zh-CN";
+  if (language === "es") return "es-ES";
+  return "en-US";
 }
 
 function escapeHtml(str: string): string {

@@ -1,6 +1,6 @@
 import "../css/dashboard.css";
 import "./i18n";
-import { getCurrentUser, getProjectTasks, isSessionError, logout } from "./core/services";
+import { deleteProject, getCurrentUser, getProjectTasks, isSessionError, logout } from "./core/services";
 
 type ProjectsTheme = "light" | "dark";
 type ProjectView = "grid" | "list";
@@ -63,6 +63,7 @@ function setupEventListeners(): void {
   document.addEventListener("keydown", handleEscapeKey);
   document.addEventListener("app-language-change", handleLanguageChange);
   document.addEventListener("htmx:afterSwap", handleProjectsAfterSwap as EventListener);
+  projectsBoardElement?.addEventListener("click", handleProjectsBoardClick);
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
       void refreshProjectCardsFromApi();
@@ -254,7 +255,24 @@ function handleProjectsAfterSwap(event: Event): void {
   }
 
   renderProjectView();
+  decorateProjectCards();
   void refreshProjectCardsFromApi();
+}
+
+function handleProjectsBoardClick(event: Event): void {
+  const target = event.target as HTMLElement | null;
+  const deleteButton = target?.closest<HTMLButtonElement>("[data-delete-project-id]");
+  if (!deleteButton) {
+    return;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  const projectId = deleteButton.dataset.deleteProjectId || "";
+  const projectName = deleteButton.dataset.projectName || "";
+  if (!projectId) {
+    return;
+  }
+  void deleteProjectAndRefresh(projectId, projectName);
 }
 
 function syncLanguageInput(): void {
@@ -267,6 +285,47 @@ function refreshProjectsBoard(): void {
   if (window.htmx) {
     window.htmx.trigger(document.body, "projects:refresh");
   }
+}
+
+function decorateProjectCards(): void {
+  if (!projectsBoardElement) {
+    return;
+  }
+
+  const projectCards = Array.from(projectsBoardElement.querySelectorAll<HTMLElement>(".project-card-link[data-project-id]"));
+  projectCards.forEach((card) => {
+    if (card.querySelector("[data-delete-project-id]")) {
+      const existingButton = card.querySelector<HTMLElement>("[data-delete-project-id]");
+      if (existingButton) {
+        existingButton.textContent = i18n("projects.deleteProject");
+      }
+      return;
+    }
+
+    const projectId = getProjectIdKey(card.getAttribute("data-project-id") || "");
+    const projectName = card.querySelector<HTMLElement>(".project-name")?.textContent?.trim() || "";
+    if (!projectId) {
+      return;
+    }
+
+    const actions = document.createElement("div");
+    actions.style.marginTop = "12px";
+    actions.style.display = "flex";
+    actions.style.justifyContent = "flex-end";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary-button";
+    button.dataset.deleteProjectId = projectId;
+    button.dataset.projectName = projectName;
+    button.textContent = i18n("projects.deleteProject");
+    button.style.fontSize = "12px";
+    button.style.padding = "6px 10px";
+    button.style.color = "#ef4444";
+
+    actions.appendChild(button);
+    card.appendChild(actions);
+  });
 }
 
 function renderBoardLoading(): void {
@@ -410,6 +469,7 @@ async function refreshProjectCardsFromApi(): Promise<void> {
   }
 
   try {
+    decorateProjectCards();
     await Promise.all(projectCards.map(async (card) => {
       const projectId = getProjectIdKey(card.getAttribute("data-project-id") || "");
       if (!projectId) {
@@ -424,6 +484,23 @@ async function refreshProjectCardsFromApi(): Promise<void> {
     }));
   } catch (error) {
     console.warn("Error reading project completion from API:", error);
+  }
+}
+
+async function deleteProjectAndRefresh(projectId: string, projectName: string): Promise<void> {
+  if (!confirm(i18n("projects.confirmDelete", { name: projectName }))) {
+    return;
+  }
+  try {
+    await deleteProject(projectId);
+    showProjectsMessage(i18n("projects.projectDeleted"), "success");
+    refreshProjectsBoard();
+  } catch (error) {
+    if (isSessionError(error)) {
+      redirectToLogin();
+      return;
+    }
+    showProjectsMessage(error instanceof Error ? error.message : i18n("projects.failedDeleteProject"), "error");
   }
 }
 

@@ -23,6 +23,10 @@ interface UserResponse {
   user: User;
 }
 
+interface ApiRequestInit extends RequestInit {
+  clearSessionOnAuthError?: boolean;
+}
+
 interface ProjectsResponse {
   projects: Project[];
 }
@@ -48,7 +52,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
   const response = await fetch(`${getAppContext().routes.apiBase}${path}`, {
     ...init,
     credentials: init.credentials ?? "same-origin",
@@ -60,7 +64,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const message = readMessage(payload, "Request failed.");
     const error = new ApiError(response.status, message);
 
-    if (response.status === 401 || response.status === 403) {
+    if ((response.status === 401 || response.status === 403) && init.clearSessionOnAuthError !== false) {
       clearSessionStorage();
     }
 
@@ -123,15 +127,16 @@ export async function changePassword(currentPassword: string, newPassword: strin
   return request<ChangePasswordResponse>("/auth/change-password", {
     method: "POST",
     credentials: "include",
+    clearSessionOnAuthError: false,
     body: JSON.stringify({ currentPassword, newPassword })
   });
 }
 
-export async function updateProfile(name: string, email: string): Promise<UpdateProfileResponse> {
+export async function updateProfile(name: string, email: string, currentPassword: string): Promise<UpdateProfileResponse> {
   return request<UpdateProfileResponse>("/users/update-profile", {
     method: "POST",
     credentials: "include",
-    body: JSON.stringify({ name, email })
+    body: JSON.stringify({ name, email, currentPassword })
   });
 }
 
@@ -163,6 +168,10 @@ export async function createProject(input: { name: string; description?: string 
     body: JSON.stringify(input)
   });
   return data.project;
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  await request(`/projects/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 export async function getProjectTasks(projectId: string): Promise<Task[]> {

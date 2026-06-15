@@ -80,6 +80,7 @@ namespace SettingsPage {
   });
 
   async function initializeSettingsPage(): Promise<void> {
+    ensureSettingsApiControls();
     cacheElements();
     initializeTheme();
     syncSidebarState();
@@ -88,6 +89,93 @@ namespace SettingsPage {
     renderSettingsState();
 
     await loadUserData();
+  }
+
+  function ensureSettingsApiControls(): void {
+    const settingsForm = document.getElementById("settings-form");
+    const profileFields = settingsForm?.querySelector(".settings-card .settings-field-grid");
+
+    if (profileFields && !document.getElementById("profile-save-btn")) {
+      profileFields.insertAdjacentHTML("afterend", `
+        <div class="settings-actions">
+          <button id="profile-save-btn" type="submit" class="submit-button" data-i18n="settings.profileSave">Save changes</button>
+        </div>
+      `);
+    }
+
+    if (!document.getElementById("profile-confirm-modal")) {
+      document.body.insertAdjacentHTML("beforeend", `
+        <section id="profile-confirm-modal" class="modal" aria-hidden="true" hidden>
+          <div class="modal-scrim" data-close-modal="true"></div>
+          <article class="modal-card profile-confirm-modal-card" role="dialog" aria-modal="true" aria-labelledby="profile-confirm-title">
+            <div class="modal-header">
+              <div>
+                <h2 id="profile-confirm-title" data-i18n="settings.profileConfirmTitle">Confirm profile changes</h2>
+                <p data-i18n="settings.profileConfirmSubtitle">Save your updated name and email.</p>
+              </div>
+              <button id="profile-confirm-cancel-btn" type="button" class="close-btn" aria-label="Cancel" data-i18n-aria-label="settings.profileConfirmCancel">×</button>
+            </div>
+            <form id="profile-confirm-form" class="project-form" novalidate>
+              <p class="form-message" id="profile-confirm-message" aria-live="polite"></p>
+              <div class="modal-actions">
+                <button type="button" class="secondary-button" data-close-modal="true" data-i18n="settings.profileConfirmCancel">Cancel</button>
+                <button id="profile-confirm-submit-btn" type="submit" class="submit-button" data-i18n="settings.profileConfirmConfirm">Confirm</button>
+              </div>
+            </form>
+          </article>
+        </section>
+      `);
+    }
+
+    if (!document.getElementById("change-password-modal")) {
+      document.body.insertAdjacentHTML("beforeend", `
+        <section id="change-password-modal" class="modal" aria-hidden="true" hidden>
+          <div class="modal-scrim" data-close-modal="true"></div>
+          <article class="modal-card" role="dialog" aria-modal="true" aria-labelledby="change-password-title">
+            <div class="modal-header">
+              <div>
+                <h2 id="change-password-title" data-i18n="settings.passwordModalTitle">Change Password</h2>
+                <p data-i18n="settings.passwordModalSubtitle">Update your account password.</p>
+              </div>
+              <button id="close-change-password-modal" type="button" class="close-btn" aria-label="Close change password dialog" data-i18n-aria-label="settings.passwordModalClose">×</button>
+            </div>
+            <form id="change-password-form" class="project-form change-password-form" novalidate>
+              <label class="form-group" for="current-password-input">
+                <span data-i18n="settings.currentPassword">Current password</span>
+                <div class="password-input-row">
+                  <input id="current-password-input" type="password" autocomplete="current-password">
+                  <button type="button" class="password-toggle-button" data-password-toggle="current-password-input" data-i18n="settings.passwordShow">Show</button>
+                </div>
+              </label>
+
+              <label class="form-group" for="new-password-input">
+                <span data-i18n="settings.newPassword">New password</span>
+                <div class="password-input-row">
+                  <input id="new-password-input" type="password" autocomplete="new-password">
+                  <button type="button" class="password-toggle-button" data-password-toggle="new-password-input" data-i18n="settings.passwordShow">Show</button>
+                </div>
+              </label>
+
+              <label class="form-group" for="confirm-new-password-input">
+                <span data-i18n="settings.confirmNewPassword">Confirm new password</span>
+                <div class="password-input-row">
+                  <input id="confirm-new-password-input" type="password" autocomplete="new-password">
+                  <button type="button" class="password-toggle-button" data-password-toggle="confirm-new-password-input" data-i18n="settings.passwordShow">Show</button>
+                </div>
+              </label>
+
+              <p class="form-message" id="change-password-modal-message" aria-live="polite"></p>
+              <div class="modal-actions">
+                <button id="cancel-change-password-btn" type="button" class="secondary-button" data-i18n="settings.cancel">Cancel</button>
+                <button type="submit" class="submit-button" data-i18n="settings.passwordSave">Save</button>
+              </div>
+            </form>
+          </article>
+        </section>
+      `);
+    }
+
+    window.I18n?.applyTranslations(document);
   }
 
   function cacheElements(): void {
@@ -334,17 +422,23 @@ namespace SettingsPage {
   async function handleProfileConfirmSubmit(event: Event): Promise<void> {
     event.preventDefault();
 
-    const password = profileConfirmPasswordInput?.value.trim() || "";
-    if (!password) {
+    const name = nameInput?.value.trim() || "";
+    const email = emailInput?.value.trim() || "";
+    const currentPassword = profileConfirmPasswordInput?.value || "";
+
+    const validationMessage = validateProfileForm(name, email);
+    if (validationMessage) {
+      showProfileConfirmMessage(validationMessage, "error");
+      return;
+    }
+
+    if (!currentPassword.trim()) {
       showProfileConfirmMessage(i18n("settings.profileConfirmRequired"), "error");
       return;
     }
 
-    const name = nameInput?.value.trim() || "";
-    const email = emailInput?.value.trim() || "";
-
     try {
-      const response = await updateProfile(name, email);
+      const response = await updateProfile(name, email, currentPassword);
 
       currentUser = response.user;
       settingsState.profileName = response.user.name;
@@ -358,14 +452,18 @@ namespace SettingsPage {
       updateUserAvatar(response.user.name);
 
       closeProfileConfirmModal();
-      showSettingsMessage("Profile updated successfully", "success");
+      showSettingsMessage(i18n("settings.profileUpdated"), "success");
     } catch (error) {
       if (isSessionError(error)) {
+        if (error instanceof ApiError && error.status === 401) {
+          showProfileConfirmMessage(i18n("settings.profileConfirmIncorrectPassword"), "error");
+          return;
+        }
         redirectToLogin();
         return;
       }
 
-      showProfileConfirmMessage(getApiErrorMessage(error), "error");
+      showProfileConfirmMessage(getProfileUpdateErrorMessage(error), "error");
     }
   }
 
@@ -383,6 +481,22 @@ namespace SettingsPage {
     showProfileConfirmMessage("");
   }
 
+  function validateProfileForm(name: string, email: string): string {
+    if (!name || !email) {
+      return i18n("settings.profileValidation.required");
+    }
+
+    if (name.length < 2) {
+      return i18n("settings.profileValidation.nameShort");
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return i18n("settings.profileValidation.emailInvalid");
+    }
+
+    return "";
+  }
+
   function getApiErrorMessage(error: unknown): string {
     if (error instanceof ApiError) {
       return error.message;
@@ -391,16 +505,26 @@ namespace SettingsPage {
     return i18n("common.error");
   }
 
+  function getProfileUpdateErrorMessage(error: unknown): string {
+    if (!(error instanceof ApiError)) {
+      return i18n("common.error");
+    }
+
+    if (error.status === 401) {
+      return i18n("settings.profileConfirmIncorrectPassword");
+    }
+
+    return error.message || i18n("common.error");
+  }
+
   function handleNameInput(event: Event): void {
-    const target = event.target as HTMLInputElement | null;
-    settingsState.profileName = target?.value ?? "";
-    persistSettingsState();
+    showSettingsMessage("");
+    showProfileConfirmMessage("");
   }
 
   function handleEmailInput(event: Event): void {
-    const target = event.target as HTMLInputElement | null;
-    settingsState.profileEmail = target?.value ?? "";
-    persistSettingsState();
+    showSettingsMessage("");
+    showProfileConfirmMessage("");
   }
 
   function setEmailNotifications(isEnabled: boolean): void {
@@ -502,13 +626,13 @@ namespace SettingsPage {
 
     try {
       await changePassword(currentPassword, newPassword);
-      showChangePasswordMessage("Password changed successfully", "success");
+      showChangePasswordMessage(i18n("settings.passwordSuccessRelogin"), "success");
       clearPasswordCloseTimer();
       passwordCloseTimer = window.setTimeout(() => {
-        closeChangePasswordModal();
+        redirectToLogin();
       }, 2000);
     } catch (error) {
-      if (isSessionError(error)) {
+      if (isSessionError(error) && !(error instanceof ApiError && error.message.toLowerCase().includes("current password"))) {
         void logout();
         return;
       }
@@ -527,11 +651,11 @@ namespace SettingsPage {
     }
 
     if (newPassword.length < 6) {
-      return { isValid: false, message: "Password must be at least 6 characters" };
+      return { isValid: false, message: i18n("settings.passwordValidation.newTooShort") };
     }
 
     if (newPassword === currentPassword) {
-      return { isValid: false, message: "New password must be different" };
+      return { isValid: false, message: i18n("settings.passwordValidation.newDifferent") };
     }
 
     if (confirmNewPassword !== newPassword) {
@@ -562,9 +686,9 @@ namespace SettingsPage {
     if (confirmNewPasswordInput) {
       confirmNewPasswordInput.type = "password";
     }
-    setPasswordVisibility(currentPasswordInput, "Show");
-    setPasswordVisibility(newPasswordInput, "Show");
-    setPasswordVisibility(confirmNewPasswordInput, "Show");
+    setPasswordVisibility(currentPasswordInput, i18n("settings.passwordShow"));
+    setPasswordVisibility(newPasswordInput, i18n("settings.passwordShow"));
+    setPasswordVisibility(confirmNewPasswordInput, i18n("settings.passwordShow"));
   }
 
   function togglePasswordVisibility(button: HTMLButtonElement): void {
@@ -580,7 +704,7 @@ namespace SettingsPage {
 
     const shouldShow = input.type === "password";
     input.type = shouldShow ? "text" : "password";
-    setPasswordVisibility(input, shouldShow ? "Hide" : "Show");
+    setPasswordVisibility(input, shouldShow ? i18n("settings.passwordHide") : i18n("settings.passwordShow"));
   }
 
   function setPasswordVisibility(input: HTMLInputElement | null, label: string): void {
@@ -611,7 +735,7 @@ namespace SettingsPage {
       const normalizedMessage = error.message.trim().toLowerCase();
 
       if (normalizedMessage.includes("current password")) {
-        return "Current password is incorrect";
+        return i18n("settings.passwordValidation.currentIncorrect");
       }
 
       if (
@@ -619,7 +743,7 @@ namespace SettingsPage {
         normalizedMessage.includes("minimum 6") ||
         normalizedMessage.includes("6 characters")
       ) {
-        return "Password must be at least 6 characters";
+        return i18n("settings.passwordValidation.newTooShort");
       }
 
       if (
@@ -627,7 +751,7 @@ namespace SettingsPage {
         normalizedMessage.includes("same as current") ||
         normalizedMessage.includes("must not match")
       ) {
-        return "New password must be different";
+        return i18n("settings.passwordValidation.newDifferent");
       }
     }
 

@@ -141,6 +141,7 @@
                   data-i18n-placeholder="settings.namePlaceholder"
                   placeholder="Your name"
                 >
+                <small class="field-error" aria-hidden="true"></small>
               </label>
 
               <label class="form-group" for="settings-email">
@@ -151,9 +152,8 @@
                   autocomplete="email"
                   data-i18n-placeholder="settings.emailPlaceholder"
                   placeholder="you@example.com"
-                  readonly
-                  style="opacity:0.7;cursor:default"
                 >
+                <small id="settings-email-error" class="field-error" aria-live="polite"></small>
               </label>
             </div>
 
@@ -366,13 +366,13 @@
         </div>
       </div>
 
-      <form id="profile-confirm-form" class="profile-confirm-form" novalidate>
+      <form id="profile-confirm-form" class="profile-confirm-form" novalidate autocomplete="off">
         <div class="form-group">
           <label for="profile-confirm-password" data-i18n="settings.profileConfirmPassword">Password</label>
           <input
             id="profile-confirm-password"
             type="password"
-            autocomplete="current-password"
+            autocomplete="off"
             placeholder="Enter your password"
             data-i18n-placeholder="settings.profileConfirmPasswordPlaceholder"
           >
@@ -388,6 +388,272 @@
     </section>
   </div>
 
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var form = document.getElementById("profile-confirm-form");
+      var passwordInput = document.getElementById("profile-confirm-password");
+      var messageBox = document.getElementById("profile-confirm-message");
+      var submitButton = document.getElementById("profile-confirm-submit-btn");
+      var modal = document.getElementById("profile-confirm-modal");
+      var nameInput = document.getElementById("settings-name");
+      var emailInput = document.getElementById("settings-email");
+      var emailError = document.getElementById("settings-email-error");
+      var settingsMessage = document.getElementById("settings-message");
+      var userName = document.getElementById("user-name");
+      var userAvatar = document.getElementById("user-avatar");
+      var isSubmitting = false;
+
+      if (!form || !passwordInput || !messageBox || !submitButton || !modal) {
+        return;
+      }
+
+      function t(key, fallback) {
+        if (window.I18n && typeof window.I18n.t === "function") {
+          var translated = window.I18n.t(key);
+          if (translated && translated !== key) {
+            return translated;
+          }
+        }
+        return fallback;
+      }
+
+      function getIncorrectPasswordMessage() {
+        var language = "en";
+        if (window.I18n && typeof window.I18n.getLanguage === "function") {
+          language = window.I18n.getLanguage() || "en";
+        }
+        language = language.toLowerCase();
+        if (language.indexOf("ru") === 0) {
+          return "Неверный пароль";
+        }
+        if (language.indexOf("zh") === 0) {
+          return "密码错误";
+        }
+        if (language.indexOf("es") === 0) {
+          return "Contraseña incorrecta";
+        }
+        return "Incorrect password";
+      }
+
+      function setMessage(text, tone) {
+        messageBox.textContent = text;
+        messageBox.className = tone ? "form-message " + tone : "form-message";
+      }
+
+      function setEmailError(text) {
+        if (!emailError) {
+          return;
+        }
+        emailError.textContent = text;
+      }
+
+      function clearEmailError() {
+        setEmailError("");
+      }
+
+      function getLanguage() {
+        if (window.I18n && typeof window.I18n.getLanguage === "function") {
+          return (window.I18n.getLanguage() || "en").toLowerCase();
+        }
+        return "en";
+      }
+
+      function getLocalTranslation(key, fallback) {
+        var language = getLanguage();
+        var translations = {
+          "settings.emailUpdated": {
+            en: "Email updated successfully",
+            ru: "Почта успешно обновлена",
+            zh: "邮箱更新成功",
+            es: "Correo actualizado correctamente"
+          },
+          "settings.emailTaken": {
+            en: "Email already in use",
+            ru: "Эта почта уже используется",
+            zh: "该邮箱已被使用",
+            es: "El correo ya está en uso"
+          },
+          "settings.invalidEmail": {
+            en: "Invalid email address",
+            ru: "Неверный формат почты",
+            zh: "邮箱格式无效",
+            es: "Correo electrónico inválido"
+          }
+        };
+        var entry = translations[key];
+        if (!entry) {
+          return fallback;
+        }
+        return entry[language] || entry.en || fallback;
+      }
+
+      function translate(key, fallback) {
+        if (window.I18n && typeof window.I18n.t === "function") {
+          var translated = window.I18n.t(key);
+          if (translated && translated !== key) {
+            return translated;
+          }
+        }
+        return getLocalTranslation(key, fallback);
+      }
+
+      function isValidEmail(value) {
+        return !!value && value.indexOf("@") !== -1 && value.indexOf(".") !== -1;
+      }
+
+      function getStoredToken() {
+        var token = localStorage.getItem("spmp-csrf-token");
+        return token ? token.trim() : "";
+      }
+
+      function updateAvatar(name) {
+        if (!userAvatar) {
+          return;
+        }
+        var parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+        if (parts.length === 0) {
+          userAvatar.textContent = "U";
+          return;
+        }
+        if (parts.length === 1) {
+          userAvatar.textContent = parts[0].slice(0, 2).toUpperCase();
+          return;
+        }
+        userAvatar.textContent = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+
+      function persistProfile(name, email) {
+        var storageKey = "dashboard-settings-state";
+        var raw = localStorage.getItem(storageKey);
+        if (!raw) {
+          return;
+        }
+        try {
+          var parsed = JSON.parse(raw);
+          parsed.profileName = name;
+          if (typeof email === "string") {
+            parsed.profileEmail = email;
+          }
+          localStorage.setItem(storageKey, JSON.stringify(parsed));
+        } catch (error) {
+          console.warn("Failed to persist updated profile state:", error);
+        }
+      }
+
+      function closeModal() {
+        modal.hidden = true;
+        modal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("modal-open");
+        form.reset();
+        setMessage("", "");
+      }
+
+      form.setAttribute("autocomplete", "off");
+      passwordInput.setAttribute("autocomplete", "off");
+      emailInput && emailInput.removeAttribute("readonly");
+      emailInput && emailInput.removeAttribute("disabled");
+      emailInput && emailInput.style.removeProperty("opacity");
+      emailInput && emailInput.style.removeProperty("cursor");
+
+      if (emailInput) {
+        emailInput.addEventListener("input", clearEmailError);
+      }
+
+      form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        if (isSubmitting) {
+          return;
+        }
+
+        var email = emailInput ? emailInput.value.trim() : "";
+        clearEmailError();
+        if (!isValidEmail(email)) {
+          setEmailError(translate("settings.invalidEmail", "Invalid email address"));
+          return;
+        }
+
+        var password = passwordInput.value || "";
+        if (!password.trim()) {
+          setMessage(t("settings.profileConfirmRequired", "Password is required."), "error");
+          return;
+        }
+
+        isSubmitting = true;
+        submitButton.disabled = true;
+        setMessage("", "");
+
+        try {
+          var token = getStoredToken();
+          var authToken = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
+          var response = await fetch(window.location.origin + "/api/users/update-profile", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: Object.assign({
+              "Content-Type": "application/json"
+            }, token ? { "X-CSRF-Token": token } : {}, authToken ? { "Authorization": "Bearer " + authToken } : {}),
+            body: JSON.stringify({
+              name: nameInput ? nameInput.value.trim() : "",
+              email: email,
+              currentPassword: password
+            })
+          });
+
+          var data = await response.json().catch(function () { return {}; });
+
+          if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+              setMessage(t("settings.incorrectPassword", getIncorrectPasswordMessage()), "error");
+              return;
+            }
+            var errorText = String((data && (data.error || data.message || data.detail)) || "").toLowerCase();
+            if (response.status === 409 || errorText.indexOf("already") !== -1 || errorText.indexOf("taken") !== -1 || errorText.indexOf("exists") !== -1 || errorText.indexOf("use") !== -1) {
+              setEmailError(translate("settings.emailTaken", "Email already in use"));
+              return;
+            }
+            if (response.status === 400 || response.status === 422 || errorText.indexOf("invalid") !== -1 || errorText.indexOf("email") !== -1) {
+              setEmailError(translate("settings.invalidEmail", "Invalid email address"));
+              return;
+            }
+            setMessage(t("common.error", "Request failed."), "error");
+            return;
+          }
+
+          var updatedName = data && data.user && typeof data.user.name === "string"
+            ? data.user.name.trim()
+            : (nameInput ? nameInput.value.trim() : "");
+          var updatedEmail = data && data.user && typeof data.user.email === "string"
+            ? data.user.email.trim()
+            : (emailInput ? emailInput.value.trim() : "");
+
+          if (nameInput) {
+            nameInput.value = updatedName;
+          }
+          if (emailInput && updatedEmail) {
+            emailInput.value = updatedEmail;
+          }
+          if (userName) {
+            userName.textContent = updatedName;
+          }
+          updateAvatar(updatedName);
+          persistProfile(updatedName, updatedEmail);
+          closeModal();
+
+          if (settingsMessage) {
+            settingsMessage.textContent = updatedEmail !== email
+              ? translate("settings.emailUpdated", "Email updated successfully")
+              : t("settings.profileSaveSuccess", "Profile changes saved successfully.");
+            settingsMessage.className = "form-message success";
+          }
+        } finally {
+          isSubmitting = false;
+          submitButton.disabled = false;
+        }
+      }, true);
+    });
+  </script>
+  <script src="../js/i18n-live-fixes.js"></script>
   <script type="module" src="/src/settings.ts"></script>
 </body>
 </html>

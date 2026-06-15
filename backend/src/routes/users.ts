@@ -38,7 +38,7 @@ router.post("/", requireManager, async (req: AuthRequest, res: Response) => {
     }
 });
 
-router.post("/update-profile", (req: AuthRequest, res: Response) => {
+router.post("/update-profile", async (req: AuthRequest, res: Response) => {
     if (!req.user) {
         res.status(401).json({ message: "Not authenticated" });
         return;
@@ -46,9 +46,10 @@ router.post("/update-profile", (req: AuthRequest, res: Response) => {
 
     const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
     const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const currentPassword = typeof req.body?.currentPassword === "string" ? req.body.currentPassword : "";
 
-    if (!name || !email) {
-        res.status(400).json({ message: "Name and email are required" });
+    if (!name || !email || !currentPassword.trim()) {
+        res.status(400).json({ message: "Name, email, and current password are required" });
         return;
     }
 
@@ -66,6 +67,16 @@ router.post("/update-profile", (req: AuthRequest, res: Response) => {
     const existingUser = UserModel.findByEmail(email);
     if (existingUser && existingUser.id !== req.user.id) {
         res.status(409).json({ message: "Email is already registered" });
+        return;
+    }
+
+    const passwordMatches = await UserModel.verifyPassword(
+        currentPassword,
+        req.user.password_hash,
+    );
+
+    if (!passwordMatches) {
+        res.status(401).json({ message: "Current password is incorrect" });
         return;
     }
 
