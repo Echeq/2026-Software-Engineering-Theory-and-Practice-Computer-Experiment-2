@@ -22,35 +22,22 @@ npm install
 npm run install:all
 ```
 
-### 3. Configure Environment Variables
-Create `backend/.env`:
-
-```env
-JWT_SECRET=your-secret-key-change-in-production
-NODE_ENV=development
-
-# Default accounts
-SUPPORT_NAME=Support Admin
-SUPPORT_EMAIL=support@test.com
-SUPPORT_PASSWORD=support123
-MANAGER_NAME=Manager User
-MANAGER_EMAIL=manager@test.com
-MANAGER_PASSWORD=manager123
-USER_NAME=Member User
-USER_EMAIL=member@test.com
-USER_PASSWORD=member123
-```
-
-### 4. Inject Default Users
+### 3. Inject Default Users
 ```bash
 npm run inject:user
 ```
-This creates 3 default accounts (support, manager, member) from your `.env` file.
+Auto-creates `backend/.env` with default settings and seeds 3 test accounts (support, manager, member). A reference file `backend/.env.example` is also created for customization.
 
-### 5. Build the Project
+### 4. Build the Project
 ```bash
 npm run build
 ```
+
+### 5. Run Tests
+```bash
+npm test
+```
+Executes 50 automated unit tests using Jest + ts-jest against an in-memory SQLite database. No configuration needed. See `doc/test.md` for full results.
 
 ### 6. Start Development Server
 ```bash
@@ -83,6 +70,35 @@ npm run build
 ```
 
 6 Vite entry points: login, dashboard, projects, tasks, settings, team.
+
+---
+
+## Customizing Environment Variables
+
+To change the default credentials or JWT secret, edit `backend/.env` before running `npm run inject:user`:
+
+```env
+JWT_SECRET=your-secret-key-change-in-production
+NODE_ENV=development
+
+# Default accounts
+SUPPORT_NAME=Support Admin
+SUPPORT_EMAIL=support@test.com
+SUPPORT_PASSWORD=support123
+MANAGER_NAME=Manager User
+MANAGER_EMAIL=manager@test.com
+MANAGER_PASSWORD=manager123
+USER_NAME=Member User
+USER_EMAIL=member@test.com
+USER_PASSWORD=member123
+```
+
+Or copy the reference file and modify it:
+```bash
+cp backend/.env.example backend/.env
+```
+
+Run `npm run inject:user` again to apply changes (it upserts users by email).
 
 ---
 

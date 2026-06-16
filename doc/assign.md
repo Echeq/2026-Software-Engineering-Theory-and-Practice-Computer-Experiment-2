@@ -30,6 +30,8 @@ Detailed record of tasks completed by each team member for the SPMP (Student Pro
 ## Module 4: Testing
 | Member | Tasks Completed | Status |
 |--------|----------------|--------|
+| AI (Code agent) | Created 50 automated Jest unit tests covering Database, Auth, Projects, Tasks, Users | Done |
+| Sinn | Defined test structure, in-memory DB helper, Jest + ts-jest configuration | Done |
 | 孔刚 | Unit tests concept, curl auth testing | Done |
 | 李欣 | API endpoint testing with API client tool | Done |
 | 任杰 | Functional UI testing, bug documentation, install guide | Done |

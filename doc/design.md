@@ -27,7 +27,7 @@ Browser → Vite (5173) → fetch() → Express Backend (3000)
 | Frontend | Vanilla TypeScript + Vite |
 | Backend | Express + TypeScript |
 | Database | SQLite (sql.js) |
-| Auth | JWT + Session cookies + CSRF tokens |
+| Auth | Session cookies + CSRF tokens |
 | Charts | Native SVG |
 | i18n | Custom built-in (EN/ZH/ES/RU) |
 
@@ -39,8 +39,8 @@ Browser → fetch() → Express → cors → json → csrf → auth → Route �
 
 ### Security
 - CORS (same-origin via Vite proxy)
-- JWT + HttpOnly session cookie
-- CSRF per session token
+- HttpOnly session cookie (`sessionId`)
+- CSRF per session token (stored in localStorage, sent as `X-CSRF-Token` header)
 - Parameterized queries (SQL injection prevention)
 - Role middleware: requireSoporte(), requireManager()
 - XSS: escapeHtml() helper

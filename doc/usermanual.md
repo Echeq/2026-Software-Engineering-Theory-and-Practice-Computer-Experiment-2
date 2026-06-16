@@ -33,7 +33,17 @@ USER_PASSWORD=member123
 ```bash
 npm run inject:user    # Seed default accounts
 npm run build          # Build frontend + backend
-npm run dev            # Start dev servers
+```
+
+### Run Tests (optional)
+```bash
+npm test
+```
+Executes 50 automated unit tests using Jest + ts-jest against an in-memory SQLite database. All tests run in isolation with zero configuration needed.
+
+### Start Development Server
+```bash
+npm run dev            # Start both backend (3000) and frontend (5173)
 ```
 
 Open `http://localhost:5173`.
@@ -109,7 +119,7 @@ Click Logout in the topbar — session is invalidated server-side.
 ## Architecture Notes
 - **Backend**: Express + TypeScript + SQLite (sql.js)
 - **Frontend**: Vanilla TypeScript + Vite (no frameworks)
-- **Auth**: Session cookies + JWT + CSRF tokens
+- **Auth**: HttpOnly session cookies + CSRF tokens
 - **Charts**: Native SVG (no Chart.js)
 - **HTTP**: Native fetch (no HTMX)
 - **i18n**: Built-in with EN/ZH/ES/RU dictionaries

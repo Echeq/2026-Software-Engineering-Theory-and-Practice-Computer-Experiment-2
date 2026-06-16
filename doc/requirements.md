@@ -12,7 +12,7 @@ This document combines User Stories and Use Cases.
 
 ### Story 2: User Login
 - **As a** registered user, **I want to** log in with my credentials, **so that** I can access my projects.
-- **Acceptance:** Generic error on invalid credentials, JWT token, 24h session.
+- **Acceptance:** Generic error on invalid credentials, HttpOnly session cookie + CSRF token, 24h session expiry.
 
 ### Story 3: User Profile Viewing
 - **As a** logged-in user, **I want to** see my name on the dashboard, **so that** I can confirm my account.
@@ -69,7 +69,7 @@ Task comments, task assignment, filter by project, edit project details, search 
 
 ### Use Case 2: User Login
 - **Actors:** Registered User, System
-- **Flow:** Enter email/password → POST /login → validate → create session → JWT + cookies → redirect to dashboard
+- **Flow:** Enter email/password → POST /login → validate → create session → HttpOnly `sessionId` cookie + CSRF token in response → redirect to dashboard
 
 ### Use Case 3: Create Project
 - **Actors:** Manager/Support User, System

@@ -35,9 +35,9 @@ A full-stack web-based project and task management platform built with Node.js, 
 ```bash
 npm install                  # root deps (concurrently, ts-node)
 npm run install:all          # backend/ + frontend/ deps
-# edit backend/.env with JWT_SECRET, MANAGER_*, USER_*
-npm run inject:user          # seed default users into DB
+npm run inject:user          # auto-creates backend/.env + seeds default users
 npm run build                # build:frontend (Vite) then build:backend (tsc)
+npm test                     # 50 automated unit tests (Jest + in-memory SQLite)
 npm run dev                  # starts backend (port 3000) + frontend (port 5173)
 ```
 

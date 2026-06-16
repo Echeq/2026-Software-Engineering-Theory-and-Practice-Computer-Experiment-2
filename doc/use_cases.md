@@ -12,7 +12,7 @@ Detailed interaction scenarios for each user story in SPMP.
 ## Use Case 2: User Login
 - **Actors:** Registered User, System
 - **Preconditions:** On login page
-- **Flow:** Enter email/password → POST /login → validate → create session → JWT + cookies → redirect to dashboard
+- **Flow:** Enter email/password → POST /login → validate → create session → HttpOnly `sessionId` cookie + CSRF token → redirect to dashboard
 - **Alternatives:** Invalid credentials → 401 generic error
 
 ## Use Case 3: Create Project

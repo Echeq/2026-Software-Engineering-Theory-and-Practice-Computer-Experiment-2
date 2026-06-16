@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "outDir": "../dist-test",
+    "baseUrl": ".",
+    "typeRoots": ["./node_modules/@types"],
+    "paths": {
+      "sql.js": ["node_modules/sql.js"],
+      "uuid": ["node_modules/uuid"],
+      "bcryptjs": ["node_modules/bcryptjs"]
+    }
+  },
+  "include": ["src/**/*", "../test/**/*"]
+}

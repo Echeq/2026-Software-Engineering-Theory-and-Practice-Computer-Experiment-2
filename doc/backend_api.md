@@ -1,7 +1,7 @@
 # Backend API Design
 
 ## Overview
-RESTful API for SPMP built with Express.js + TypeScript + SQLite (sql.js). Auth: session cookies + JWT + CSRF tokens.
+RESTful API for SPMP built with Express.js + TypeScript + SQLite (sql.js). Auth: HttpOnly session cookies + CSRF tokens (no JWT Bearer tokens).
 
 ## Base URL
 - Dev: `http://localhost:3000/api`
@@ -9,8 +9,9 @@ RESTful API for SPMP built with Express.js + TypeScript + SQLite (sql.js). Auth:
 
 ## Authentication
 - Sessions stored in DB with 24h TTL
-- Session ID: HttpOnly cookie (`sessionId`)
-- CSRF token: cookie (`csrf-token`) + header (`X-CSRF-Token`) on non-GET requests
+- Session ID: HttpOnly cookie (`sessionId`) — sent automatically by the browser
+- CSRF token: returned in login JSON body, stored in localStorage under key `spmp-csrf-token`, sent as `X-CSRF-Token` header on all state-changing requests (POST, PUT, PATCH, DELETE)
+- No JWT Bearer tokens — authentication is purely session-based
 
 ---
 
@@ -119,9 +120,10 @@ RESTful API for SPMP built with Express.js + TypeScript + SQLite (sql.js). Auth:
 ---
 
 ## Security
-- bcrypt (10 salt rounds)
-- Session TTL: 24h
-- CSRF on all state-changing requests
-- Parameterized queries (no SQL injection)
-- Role middleware: requireSoporte(), requireManager(), requireSupervisor()
-- XSS: escapeHtml() helper
+- bcrypt (10 salt rounds) for password hashing
+- Session TTL: 24 hours (`expires_at` field)
+- CSRF token per session, validated on all state-changing requests
+- Parameterized queries via `query()` / `run()` helpers (no SQL injection)
+- Role middleware: `requireSoporte()`, `requireManager()`, `requireSupervisor()`
+- XSS prevention: `escapeHtml()` helper on all user-generated content
+- HttpOnly session cookies (not accessible via JavaScript)

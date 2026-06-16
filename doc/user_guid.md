@@ -15,6 +15,15 @@
 | manager@test.com | manager123 | Manager (CRUD projects/tasks/users) |
 | member@test.com | member123 | Member (view + task status only) |
 
+### Running Automated Tests
+
+```bash
+cd backend
+npm test
+```
+
+50 unit tests covering database helpers, user/session/project/task models. Uses an in-memory SQLite database — no configuration needed. Full results in `doc/test.md`.
+
 ---
 
 ## Dashboard

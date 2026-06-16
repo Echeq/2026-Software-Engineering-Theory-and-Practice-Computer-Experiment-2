@@ -1,9 +1,29 @@
 import path from 'path';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { closeDatabase, getDatabase, run } from '../src/database';
 import { UserModel, UserRole } from '../src/models/User';
+
+const DEFAULT_ENV = `JWT_SECRET=change-this-secret
+NODE_ENV=development
+
+# Support account (full access)
+SUPPORT_NAME=Support Admin
+SUPPORT_EMAIL=support@test.com
+SUPPORT_PASSWORD=support123
+
+# Manager account
+MANAGER_NAME=Manager User
+MANAGER_EMAIL=manager@test.com
+MANAGER_PASSWORD=manager123
+
+# Member account
+USER_NAME=Member User
+USER_EMAIL=member@test.com
+USER_PASSWORD=member123
+`;
 
 type EnvUser = {
   name: string;
@@ -131,6 +151,12 @@ async function upsertUser(user: EnvUser): Promise<'created' | 'updated'> {
 }
 
 async function main(): Promise<void> {
+  const envPath = path.resolve(__dirname, '../.env');
+  if (!fs.existsSync(envPath)) {
+    fs.writeFileSync(envPath, DEFAULT_ENV, 'utf-8');
+    console.log('Created backend/.env with default accounts (change for production).');
+  }
+
   const users = readUsersFromEnv();
 
   if (users.length === 0) {

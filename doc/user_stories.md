@@ -13,7 +13,7 @@ User stories for the SPMP (Student Project Management Platform), refined using A
 - **As a** registered user
 - **I want to** log in with my credentials
 - **So that** I can access my projects
-- **Acceptance:** Generic error on invalid credentials, JWT token, 24h session
+- **Acceptance:** Generic error on invalid credentials, HttpOnly session cookie + CSRF token, 24h session expiry
 
 ### Story 3: User Profile Viewing
 - **As a** logged-in user
