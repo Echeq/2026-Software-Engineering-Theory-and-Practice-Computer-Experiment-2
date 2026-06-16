@@ -1,15 +1,14 @@
 import "../css/dashboard.css";
 import "./i18n";
 import { Project } from "./core/app";
+import { normalizeProjectColumn, normalizeTaskColumn } from "./core/format";
 import { createProject, getCurrentUser, getProjectTasks, getProjects, isSessionError, logout } from "./core/services";
 
 /* Original pre-sidebar layout backed up in ./dashboard.layout-backup.ts */
 const THEME_STORAGE_KEY = "dashboard-theme";
 const LEGACY_THEME_STORAGE_KEY = "theme";
 const MOBILE_SIDEBAR_BREAKPOINT = 960;
-const DB_NAME = "SPMP_DB";
-const DB_VERSION = 1;
-const TASKS_STORE_NAME = "tasks";
+const SELECTED_PROJECT_STORAGE_KEY = "tasks-selected-project-id";
 const i18n = (key: string, values?: Record<string, string | number>): string => window.I18n?.t(key, values) || key;
 
 interface User {
@@ -46,6 +45,8 @@ let cancelProjectModalButton: HTMLButtonElement | null = null;
 let projectSearchInput: HTMLInputElement | null = null;
 let projectStatusInput: HTMLInputElement | null = null;
 let projectLanguageInput: HTMLInputElement | null = null;
+let projectStatusChartInstance: any = null;
+let taskOverviewChartInstance: any = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   void initializeDashboard();
@@ -108,16 +109,20 @@ function setupEventListeners(): void {
   document.addEventListener("app-language-change", refreshGreetingBanner);
   document.addEventListener("app-language-change", handleLanguageChange);
   document.addEventListener("htmx:afterSwap", handleProjectsAfterSwap as EventListener);
+  projectsListElement?.addEventListener("click", handleProjectCardClick);
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
       void refreshProjectCardsFromIndexedDb();
+      void renderCharts();
     }
   });
   window.addEventListener("focus", () => {
     void refreshProjectCardsFromIndexedDb();
+    void renderCharts();
   });
   window.addEventListener("pageshow", () => {
     void refreshProjectCardsFromIndexedDb();
+    void renderCharts();
   });
   document.querySelectorAll<HTMLButtonElement>(".filter-button").forEach((button) => {
     button.addEventListener("click", () => handleFilterButtonClick(button));
@@ -470,6 +475,19 @@ function handleLanguageChange(): void {
   syncLanguageInput();
   refreshProjectsList();
   void refreshProjectCardsFromIndexedDb();
+  void renderCharts();
+}
+
+function handleProjectCardClick(event: Event): void {
+  const target = event.target as HTMLElement | null;
+  const projectCard = target?.closest<HTMLElement>(".project-card-link[data-project-id]");
+  const projectId = getProjectIdKey(projectCard?.getAttribute("data-project-id") || "");
+
+  if (!projectId) {
+    return;
+  }
+
+  persistSelectedProjectId(projectId);
 }
 
 function refreshGreetingBanner(): void {
@@ -838,6 +856,19 @@ function getProjectIdKey(projectId: unknown): string {
   return String(projectId).trim();
 }
 
+function readSelectedProjectId(): string {
+  return localStorage.getItem(SELECTED_PROJECT_STORAGE_KEY)?.trim() || "";
+}
+
+function persistSelectedProjectId(projectId: string): void {
+  if (!projectId) {
+    localStorage.removeItem(SELECTED_PROJECT_STORAGE_KEY);
+    return;
+  }
+
+  localStorage.setItem(SELECTED_PROJECT_STORAGE_KEY, projectId);
+}
+
 async function renderCharts(): Promise<void> {
   const Chart = (window as any).Chart;
   if (!Chart) return;
@@ -845,29 +876,35 @@ async function renderCharts(): Promise<void> {
   try {
     const chartTheme = getChartThemeColors();
     const projects = await getProjects();
-    const statusCounts: Record<string, number> = {};
-    for (const p of projects) {
-      const s = p.status || "planning";
-      statusCounts[s] = (statusCounts[s] || 0) + 1;
-    }
-    const statusLabels: Record<string, string> = {
-      planning: i18n("status.planning"),
-      active: i18n("status.active"),
-      "in-review": i18n("status.inReview"),
-      done: i18n("status.done"),
+    const statusCounts: Record<"start-next" | "in-progress" | "done", number> = {
+      "start-next": 0,
+      "in-progress": 0,
+      done: 0
     };
-    const labels = Object.keys(statusCounts).map(k => statusLabels[k] || k);
-    const data = Object.values(statusCounts);
+    for (const p of projects) {
+      const normalizedStatus = normalizeProjectColumn(p.status || "planning");
+      statusCounts[normalizedStatus] += 1;
+    }
+    const projectStatusGroups = [
+      { status: "start-next", label: i18n("projects.startNext"), color: "#ef4444" },
+      { status: "in-progress", label: i18n("projects.inProgress"), color: "#eab308" },
+      { status: "done", label: i18n("projects.done"), color: "#22c55e" }
+    ] as const;
+    const visibleProjectStatuses = projectStatusGroups.filter(({ status }) => statusCounts[status] > 0);
+    const labels = visibleProjectStatuses.map(({ label }) => label);
+    const data = visibleProjectStatuses.map(({ status }) => statusCounts[status]);
+    const colors = visibleProjectStatuses.map(({ color }) => color);
 
     const statusCanvas = document.getElementById("project-status-chart") as HTMLCanvasElement | null;
     if (statusCanvas && labels.length > 0) {
-      new Chart(statusCanvas, {
+      projectStatusChartInstance?.destroy?.();
+      projectStatusChartInstance = new Chart(statusCanvas, {
         type: "doughnut",
         data: {
           labels,
           datasets: [{
             data,
-            backgroundColor: ["#ef4444", "#eab308", "#22c55e", "#3b82f6"],
+            backgroundColor: colors,
             borderColor: chartTheme.segmentBorderColor,
             borderWidth: 3,
             hoverBorderWidth: 4
@@ -888,32 +925,43 @@ async function renderCharts(): Promise<void> {
           }
         },
       });
+    } else {
+      projectStatusChartInstance?.destroy?.();
+      projectStatusChartInstance = null;
     }
 
-    let taskAll: Array<{ status?: string }> = [];
-    for (const p of projects) {
-      try { taskAll = taskAll.concat(await getProjectTasks(p.id)); } catch { /* skip */ }
+    const selectedProjectId = readSelectedProjectId();
+    const selectedProject = projects.find((project) => project.id === selectedProjectId) || projects[0] || null;
+    const taskAll = selectedProject ? await getProjectTasks(selectedProject.id) : [];
+
+    const taskCanvas = document.getElementById("task-overview-chart") as HTMLCanvasElement | null;
+    if (!selectedProject || !taskCanvas) {
+      taskOverviewChartInstance?.destroy?.();
+      taskOverviewChartInstance = null;
+      return;
     }
 
     const taskStatuses = [
-      { status: "pending", label: i18n("tasks.status.todo"), color: "#ef4444" },
-      { status: "in-progress", label: i18n("tasks.status.inProgress"), color: "#eab308" },
-      { status: "in review", label: i18n("tasks.status.inReview"), color: "#3b82f6" },
+      { status: "todo", label: i18n("tasks.status.todo"), color: "#ef4444" },
+      { status: "doing", label: i18n("tasks.status.inProgress"), color: "#eab308" },
       { status: "done", label: i18n("tasks.status.done"), color: "#22c55e" }
     ] as const;
-    const taskCounts: Record<string, number> = {};
+    const taskCounts: Record<"todo" | "doing" | "done", number> = {
+      todo: 0,
+      doing: 0,
+      done: 0
+    };
     for (const t of taskAll) {
-      const s = t.status || "pending";
-      taskCounts[s] = (taskCounts[s] || 0) + 1;
+      const normalizedStatus = normalizeTaskColumn(t.status || "pending");
+      taskCounts[normalizedStatus] += 1;
     }
     const visibleTaskStatuses = taskStatuses.filter(({ status }) => (taskCounts[status] || 0) > 0);
     const tLabels = visibleTaskStatuses.map(({ label }) => label);
     const tData = visibleTaskStatuses.map(({ status }) => taskCounts[status] || 0);
     const tColors = visibleTaskStatuses.map(({ color }) => color);
-
-    const taskCanvas = document.getElementById("task-overview-chart") as HTMLCanvasElement | null;
     if (taskCanvas && tLabels.length > 0) {
-      new Chart(taskCanvas, {
+      taskOverviewChartInstance?.destroy?.();
+      taskOverviewChartInstance = new Chart(taskCanvas, {
         type: "bar",
         data: {
           labels: tLabels,
@@ -946,6 +994,9 @@ async function renderCharts(): Promise<void> {
           }
         },
       });
+    } else {
+      taskOverviewChartInstance?.destroy?.();
+      taskOverviewChartInstance = null;
     }
   } catch { /* charts unavailable */ }
 }

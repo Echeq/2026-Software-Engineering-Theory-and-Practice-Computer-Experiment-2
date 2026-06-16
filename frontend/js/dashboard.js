@@ -9,7 +9,7 @@ const DB_NAME = "SPMP_DB";
 const DB_VERSION = 1;
 const TASKS_STORE_NAME = "tasks";
 const PROJECT_STATUS_CHART_COLORS = ["#94A3B8", "#22C55E", "#F59E0B", "#6366F1"];
-const TASK_OVERVIEW_CHART_COLORS = ["#94A3B8", "#F59E0B", "#22C55E"];
+const TASK_OVERVIEW_CHART_COLORS = ["#94A3B8", "#F59E0B", "#3B82F6", "#22C55E"];
 const i18n = (key, values) => window.I18n?.t(key, values) || key;
 const setDynamicText = (element, key, values) => {
     if (!element) {
@@ -830,6 +830,7 @@ function getTaskOverviewChartLabels() {
     return [
         i18n("tasks.status.todo"),
         i18n("tasks.status.inProgress"),
+        i18n("tasks.status.inReview"),
         i18n("tasks.status.done")
     ];
 }
@@ -887,7 +888,7 @@ function renderTaskOverviewChart() {
         return;
     }
     const themeColors = getDashboardChartThemeColors();
-    const data = [taskStatusCounts.todo, taskStatusCounts.inProgress, taskStatusCounts.done];
+    const data = [taskStatusCounts.todo, taskStatusCounts.inProgress, taskStatusCounts.inReview, taskStatusCounts.done];
     if (taskOverviewChart) {
         taskOverviewChart.data.datasets[0].data = data;
         taskOverviewChart.data.labels = getTaskOverviewChartLabels();
@@ -984,6 +985,7 @@ function createTaskStatusCounts() {
     return {
         todo: 0,
         inProgress: 0,
+        inReview: 0,
         done: 0
     };
 }
@@ -991,20 +993,27 @@ async function refreshTaskStatusCounts() {
     taskStatusCounts = createTaskStatusCounts();
     try {
         const tasks = await readIndexedDbTasks();
+        console.log("[Dashboard][Task Overview] raw tasks:", tasks);
         tasks.forEach((task) => {
-            const normalizedStatus = typeof task?.status === "string" ? task.status.trim().toLowerCase() : "";
-            if (normalizedStatus === "todo") {
+            const rawStatus = typeof task?.status === "string" ? task.status : "";
+            const normalizedStatus = rawStatus.trim().toLowerCase();
+            if (["todo", "to-do", "pending"].includes(normalizedStatus)) {
                 taskStatusCounts.todo += 1;
                 return;
             }
-            if (normalizedStatus === "in progress" || normalizedStatus === "in-progress") {
+            if (["in progress", "in-progress", "in_progress", "active", "doing"].includes(normalizedStatus)) {
                 taskStatusCounts.inProgress += 1;
                 return;
             }
-            if (normalizedStatus === "done") {
+            if (["in review", "in-review", "in_review", "inreview", "review"].includes(normalizedStatus)) {
+                taskStatusCounts.inReview += 1;
+                return;
+            }
+            if (["done", "completed", "complete", "closed", "finished"].includes(normalizedStatus)) {
                 taskStatusCounts.done += 1;
             }
         });
+        console.log("[Dashboard][Task Overview] counted statuses:", taskStatusCounts);
     }
     catch (error) {
         console.warn("Error reading task overview from IndexedDB:", error);
