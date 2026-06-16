@@ -80,49 +80,27 @@ CREATE TABLE sessions (
 );
 ```
 
-## Indexes
-- `email` — UNIQUE constraint on `users.email` (implicit index)
-- `owner_id` on `projects` — foreign key lookup
-- `project_id` on `tasks` — foreign key lookup
-- `assigned_to` on `tasks` — my-tasks query
-- `task_id` on `time_entries` — foreign key lookup
-- `user_id` on `sessions` — lookup by user
-
 ## Design Decisions
 
 ### UUIDs (TEXT primary keys)
-- All IDs are UUID v4 strings (generated via `uuid` package)
-- Why not auto-increment: UUIDs are safe for distributed/offline scenarios and avoid ID collision during data migration
+All IDs are UUID v4 strings. Safe for distributed scenarios, no collision risk.
 
 ### TEXT for dates
-- SQLite has no native DATETIME type; all timestamps stored as ISO 8601 strings
-- SQLite's `datetime('now')` function returns UTC
+SQLite has no native DATETIME; stored as ISO 8601 strings.
 
-### JSON in `tasks.tags`
-- Tags stored as JSON array string (e.g., `["bug","urgent"]`)
-- Keeps schema simple; no separate tags table needed
+### JSON in tasks.tags
+Tags stored as JSON array string (e.g., `["bug","urgent"]`). Keeps schema simple.
 
 ### Sessions table
-- Enables server-side session invalidation (logout, password change)
-- CSRF tokens per session — one token per login
-- `expires_at` enables automatic session expiry (24h TTL)
-- `last_seen_at` updated on each request for activity tracking
+Enables server-side invalidation, CSRF per session, 24h TTL, activity tracking via last_seen_at.
 
 ### Migration Guards
-The database init script uses `ensureColumnExists()` to safely add columns without breaking existing databases:
-
-```typescript
-function ensureColumnExists(table: string, column: string, definition: string): void
-```
-
-This allows schema evolution without manual migration scripts.
+`ensureColumnExists()` safely adds columns without breaking existing databases.
 
 ## Helper Functions
 
 ```typescript
-query(sql: string, params?: any[]): any[]       // SELECT → array of rows
-queryOne(sql: string, params?: any[]): any|null  // SELECT → single row or null
-run(sql: string, params?: any[]): void           // INSERT/UPDATE/DELETE + auto-save
+query(sql: string, params?: any[]): any[]       -- SELECT → array
+queryOne(sql: string, params?: any[]): any|null  -- SELECT → single row
+run(sql: string, params?: any[]): void           -- INSERT/UPDATE/DELETE + auto-save
 ```
-
-The `run()` function automatically persists the database to disk after each write operation.

@@ -1,277 +1,272 @@
 # SPMP - Student Project Management Platform
 
-A full-stack web-based project and task management platform built with Node.js, Express, TypeScript, SQLite, and vanilla TypeScript.
+A full-stack web-based project and task management platform built with Node.js, Express, TypeScript, SQLite, and vanilla TypeScript. Features role-based access control (support/manager/member), i18n with 4 languages, and session-based authentication with CSRF protection.
 
 ## Quick Links
 
-| 📚 Docs | 🔧 API | 🗄️ DB | 🎨 UI | 🏗️ Arch | 🤖 AI Skill | 🌐 i18n |
-|---------|--------|-------|-------|----------|-------------|---------|
-| [User Guide](./docs/external_logs/user_guid.md) | [Backend API](./docs/external_logs/deisgn_logs/backend_api.md) | [Database](./docs/external_logs/deisgn_logs/db.md) | [UI Design](./docs/external_logs/deisgn_logs/ui_design.md) | [Architecture](./docs/external_logs/deisgn_logs/architect.md) | [Course Skill](./skills/software_engineering_course_skill.md) | [EN/ZH/ES/RU](#-internationalization-i18n) |
+| 📘 User Guide | 📥 Install | 📖 User Manual | 📋 Requirements | 🧪 Test Plan | 📊 Assign |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| [user_guid.md](./doc/user_guid.md) | [install.md](./doc/install.md) | [usermanual.md](./doc/usermanual.md) | [requirements.md](./doc/requirements.md) | [test.md](./doc/test.md) | [assign.md](./doc/assign.md) |
+
+| 🏗️ Architecture | 🎨 UI Design | 🔧 API | 🗄️ Database | 📐 Full Design |
+|:---:|:---:|:---:|:---:|:---:|
+| [architect.md](./doc/architect.md) | [ui_design.md](./doc/ui_design.md) | [backend_api.md](./doc/backend_api.md) | [db.md](./doc/db.md) | [design.md](./doc/design.md) |
+
+| 🤖 AI Log | 📖 User Stories | 🎭 Use Cases | 🌐 i18n | 🧠 Course Skill |
+|:---:|:---:|:---:|:---:|:---:|
+| [ai.md](./doc/ai.md) | [user_stories.md](./doc/user_stories.md) | [use_cases.md](./doc/use_cases.md) | [EN/ZH/ES/RU](#-internationalization-i18n) | [Course Skill](./skills/software_engineering_course_skill.md) |
 
 ---
 
-## 🚀 Quick Setup
+## Quick Setup
 
-Follow these steps to get the project running:
-
-### 1. Install Root Dependencies
 ```bash
-npm install
+npm install                  # root deps (concurrently, ts-node)
+npm run install:all          # backend/ + frontend/ deps
+# edit backend/.env with JWT_SECRET, MANAGER_*, USER_*
+npm run inject:user          # seed default users into DB
+npm run build                # build:frontend (Vite) then build:backend (tsc)
+npm run dev                  # starts backend (port 3000) + frontend (port 5173)
 ```
 
-### 2. Install All Project Dependencies
-```bash
-npm run install:all
-```
+## Configuration
 
-### 3. Configure Environment Variables
-
-Create or edit `.env` file in `backend/` directory:
+Create `backend/.env`:
 
 ```env
-# Security
 JWT_SECRET=change-this-secret
-
-# Environment
 NODE_ENV=development
 
-# Default Manager Account (for first-time setup)
-MANAGER_NAME=System Manager
-MANAGER_EMAIL=ur@email.com
-MANAGER_PASSWORD=urpassword
-
-# Default Regular User (member role)
-USER_NAME=Regular User
-USER_EMAIL=user@email.com
-USER_PASSWORD=userpassword
+# Default accounts (used by npm run inject:user)
+SUPPORT_NAME=Support Admin
+SUPPORT_EMAIL=support@test.com
+SUPPORT_PASSWORD=support123
+MANAGER_NAME=Manager User
+MANAGER_EMAIL=manager@test.com
+MANAGER_PASSWORD=manager123
+USER_NAME=Member User
+USER_EMAIL=member@test.com
+USER_PASSWORD=member123
 ```
 
-> **Note:** The backend already includes a `.env.example` file you can copy as a starting point.
+Additional users via `USERS_JSON` env var (JSON array).
 
-### 4. Inject Default Users
-```bash
-npm run inject:user
-```
+## Ports
 
-### 5. Build the Project
-```bash
-npm run build
-```
+| Service | Port | URL |
+|---------|------|-----|
+| Vite Frontend (dev) | 5173 | `http://localhost:5173` |
+| Backend API | 3000 | `http://localhost:3000/api` |
 
-### 6. Start the Development Server
-```bash
-npm run dev
-```
+Vite proxies `/api` requests to the backend, so browse the full app at `localhost:5173`.
 
-## 🌐 Ports Information
-
-When the server starts, you'll see two different services running:
-
-- **Vite Frontend**: Runs on port 5173 (shown as `http://localhost:5173` in VITE output)
-- **Backend Server**: Runs on port 3000 (shown as `Server running on http://localhost:3000`)
-
-**For testing your .env configuration:** Use the backend server URL (`http://localhost:3000`) as this is where the API runs and where you'll test authentication and environment variables.
-
-The frontend will automatically proxy API requests to the backend, so you can interact with the full application through `http://localhost:5173` in your browser, but the backend API itself is accessible directly at `http://localhost:3000/api`.
-
-## 🧹 Database Reset
-
-If you encounter database issues or want a completely clean slate:
-
-```bash
-# Delete the database file
-rm backend/data/spmp.db
-
-# Restart the server - it will auto-create a new empty database
-npm run dev
-```
-
-> **Recommendation:** It's good practice to reset the database when:
-> - Starting a new project phase
-> - After major schema changes
-> - When experiencing unexpected data issues
-
----
-
-## 📜 Available npm Scripts
+## Available Scripts
 
 | Script | Description |
 |--------|-------------|
-| `npm run install:all` | Install all dependencies (backend + frontend) |
-| `npm run install:backend` | Install backend dependencies only |
-| `npm run install:frontend` | Install frontend dependencies only |
-| `npm run build:frontend` | Build frontend TypeScript |
-| `npm run build:backend` | Build backend TypeScript |
-| `npm run build` | Build both frontend and backend |
-| `npm run dev:backend` | Run backend in development mode |
-| `npm run dev:frontend` | Run frontend in development mode (Vite) |
-| `npm run dev` | Run both backend and frontend concurrently |
-| `npm run start` | Run backend in production mode |
-| `npm run inject:user` | Inject default users into database |
+| `npm run install:all` | Install backend + frontend dependencies |
+| `npm run build` | Build frontend (Vite) then backend (tsc) |
+| `npm run dev` | Run backend (nodemon) + frontend (Vite) concurrently |
+| `npm run start` | Production: `node backend/dist/server.js` |
+| `npm run inject:user` | Insert/upsert default users from `.env` |
+| `npm run build:frontend` | Build frontend only |
+| `npm run build:backend` | Build backend only |
+
+## Database Reset
+
+```bash
+rm backend/data/spmp.db    # delete DB file
+npm run dev                 # restart — auto-creates fresh DB
+```
 
 ---
 
-## 🛠️ Tech Stack
+## Role System
+
+| Role | Permissions |
+|------|------------|
+| **support** | Full access: CRUD projects/tasks, manage users (create, delete, promote any role), close/reopen/delete projects. Cannot be created via web UI — only via `inject:user` script or DB. |
+| **manager** | Create/update/delete projects and tasks, manage team members (create users, delete members), close/reopen projects. |
+| **member** | View assigned projects and tasks, update task status only. Cannot create projects or tasks. |
+
+---
+
+## Tech Stack
 
 ### Backend
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Language**: TypeScript
-- **Database**: SQLite (via sql.js)
-- **Authentication**: JWT (JSON Web Tokens)
-- **Password Hashing**: bcryptjs
+| Component | Library |
+|-----------|---------|
+| Runtime | Node.js |
+| Framework | Express.js |
+| Language | TypeScript |
+| Database | SQLite (via sql.js) |
+| Auth | JWT + Sessions + CSRF tokens |
+| Password | bcryptjs |
+| Templates | doT (SSR pages — legacy, migration in progress) |
 
 ### Frontend
-- **Languages**: HTML5, CSS3, TypeScript
-- **Build Tool**: Vite
-- **Architecture**: Modular with separate files per page
-- **Internationalization**: Built-in i18n system with 4 languages
+| Component | Library |
+|-----------|---------|
+| Build Tool | Vite (6 entry points) |
+| Language | TypeScript (vanilla, no framework) |
+| i18n | Built-in system (EN/ZH/ES/RU) |
+| Charts | Native SVG (no Chart.js) |
+| UI | Native fetch + innerHTML (no HTMX) |
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 spmp-platform/
-├── backend/                    # Express backend server
+├── backend/
 │   ├── src/
-│   │   ├── database/          # DB init & utilities
-│   │   ├── middleware/        # Auth middleware
-│   │   ├── models/            # User, Project, Task models
-│   │   ├── routes/            # API routes
-│   │   ├── scripts/           # Utility scripts (injectUser.ts)
-│   │   └── server.ts          # Main entry point
-│   ├── dist/                  # Compiled JS
-│   ├── data/                  # SQLite database
-│   ├── .env                   # Environment config
-│   └── package.json
-├── frontend/                  # Frontend files
-│   ├── src/                   # TypeScript sources
-│   ├── dist/                  # Compiled assets
-│   ├── index.html             # Login page
-│   ├── signup.html            # Registration
-│   ├── vite.config.ts         # Vite configuration
-│   └── package.json
-├── docs/                      # Documentation
-│   └── external_logs/
-│       ├── ai.md             # AI interaction log
-│       ├── assign.md         # Task assignment record
-│       ├── user_guid.md      # User guide
-│       ├── use_cases.md      # Use cases
-│       ├── use_stories.md    # User stories
-│       ├── install.md        # Installation guide
-│       ├── test.md           # Testing documentation
+│   │   ├── database/        # DB init, schema, query helpers
+│   │   ├── middleware/       # readSession, authenticateToken, roleMiddleware
+│   │   ├── models/           # User, Project, Task, Session, TimeEntry
+│   │   ├── routes/           # auth, projects, tasks, users, timeEntries, pages
+│   │   ├── scripts/          # injectUser.ts
+│   │   ├── services/         # views.ts, assets.ts, pages.ts (SSR)
+│   │   ├── views/            # doT templates (pages/*.dot, partials/*.dot)
+│   │   └── server.ts         # Entry point
+│   ├── data/                 # SQLite database (spmp.db)
+│   ├── dist/                 # Compiled JS
+│   └── .env                  # Environment variables
+├── frontend/
+│   ├── src/                  # TypeScript sources
+│   │   ├── i18n.ts           # Translation dictionaries (EN/ZH/ES/RU)
+│   │   ├── dashboard.ts      # Dashboard page logic
+│   │   ├── projects.ts       # Projects page logic
+│   │   ├── tasks.ts          # Tasks page logic
+│   │   └── ...
+│   ├── dashboard/            # HTML pages (dashboard, projects, tasks, settings, team)
+│   ├── dist/                 # Vite build output
+│   ├── vite.config.ts        # Vite config with 6 entry points
+│   └── index.html            # Login page
+├── doc/                       # Documentation (14 reorganized files)
+│   ├── user_guid.md           # User guide only
+│   ├── install.md             # Installation instructions only
+│   ├── usermanual.md          # Install + user guide (combined)
+│   ├── test.md                # Test plan, cases, results
+│   ├── assign.md              # Task assignment & team tracking
+│   ├── ai.md                  # AI interaction log
+│   ├── db.md                  # Database design (ER, scripts)
+│   ├── backend_api.md         # API definition
+│   ├── ui_design.md           # UI design
+│   ├── architect.md           # Architecture & class design
+│   ├── design.md              # Architecture + UI + API + DB (combined)
+│   ├── use_cases.md           # Interaction scenarios
+│   ├── user_stories.md        # User stories
+│   └── requirements.md        # User stories + use cases (combined)
+├── docs/
+│   └── external_logs/        # Original course documentation
+│       ├── ai.md
+│       ├── assign.md
 │       └── deisgn_logs/
-│           ├── backend_api.md
-│           ├── db.md
-│           ├── ui_design.md
-│           └── architect.md
-├── skills/                    # AI skills
+├── skills/
 │   └── software_engineering_course_skill.md
-├── package.json              # Root scripts
+├── package.json              # Root orchestrator
 └── README.md
 ```
 
 ---
 
-## 🌐 Internationalization (i18n)
+## API Endpoints
 
-The platform supports 4 languages, switchable via the Settings page:
+Full documentation: [Backend API Docs](./doc/backend_api.md)
 
-| Language | Code | Status |
-|----------|------|--------|
-| English | `en` | Default, complete |
-| Chinese (Simplified) | `zh` | Complete |
-| Spanish | `es` | Complete |
-| Russian | `ru` | Complete |
+### Authentication (`/api/auth`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/login` | No | Login, creates session + CSRF cookie |
+| POST | `/register` | No | **Disabled** — use Team page |
+| GET | `/me` | Token | Get current user profile |
+| POST | `/change-password` | Token | Change password |
+| POST | `/logout` | No | Clear session |
 
-Translation dictionaries are in `frontend/src/i18n.ts`. All HTML pages use `data-i18n` / `data-i18n-aria-label` attributes for automatic text replacement.
+### Projects (`/api/projects`)
+| Method | Endpoint | Role | Description |
+|--------|----------|------|-------------|
+| GET | `/` | Any | List user's projects |
+| GET | `/fragment/cards` | Any | HTML fragment for project cards |
+| GET | `/:id` | Any | Get project details |
+| POST | `/` | Manager/Support | Create project |
+| PUT | `/:id` | Manager/Support | Update project |
+| PATCH | `/:id/close` | Manager/Support | Close project |
+| PATCH | `/:id/reopen` | Manager/Support | Reopen project |
+| DELETE | `/:id` | Manager/Support | Delete project |
+| POST | `/:id/transfer` | Manager/Support | Transfer ownership |
+
+### Tasks (`/api/tasks`)
+| Method | Endpoint | Role | Description |
+|--------|----------|------|-------------|
+| GET | `/my-tasks` | Any | Get assigned tasks |
+| GET | `/:id` | Any | Get task details |
+| POST | `/` | Manager/Support | Create task |
+| PUT | `/:id` | Manager/Support | Update task (any field) |
+| PUT | `/:id` | Member | Update status only |
+| DELETE | `/:id` | Manager/Support | Delete task |
+
+### Users (`/api/users`)
+| Method | Endpoint | Role | Description |
+|--------|----------|------|-------------|
+| GET | `/` | Manager/Support | List all users |
+| POST | `/` | Manager | Create user |
+| DELETE | `/:id` | Manager | Delete user |
+| POST | `/:id/change-role` | Support | Change user role |
 
 ---
 
-## 🤖 AI Course Skill
+## Features
 
-This project includes an AI skill at [`skills/software_engineering_course_skill.md`](./skills/software_engineering_course_skill.md) that enables an AI assistant to execute the "Software Engineering Theory and Practice Course Design" workflow. The skill covers:
+### User Management
+- Session-based auth with JWT + CSRF tokens
+- Role-based access control (support/manager/member)
+- Password change with validation
+- Team management (create/delete users, promote roles)
 
-- Requirements analysis (user stories, use cases)
-- Architecture & design (architecture, UI, API, DB)
-- Implementation
-- Testing
-- Deployment & documentation
-
-All AI interactions are logged in [`docs/external_logs/ai.md`](./docs/external_logs/ai.md) and task assignments in [`docs/external_logs/assign.md`](./docs/external_logs/assign.md).
-
----
-
-## 📋 Features
-
-### 👤 User Management
-- User registration with email validation
-- Secure login with JWT authentication
-- Password hashing with bcrypt
-- Session management
-
-### 📂 Project Management
+### Project Management
 - Create, read, update, delete projects
-- Project ownership and access control
-- Project status tracking
+- Close / reopen projects (status: active/completed)
+- Transfer project ownership
+- Project cards with search/filter
+- Visual status badges (active=green, completed=red)
 
-### ✅ Task Management
-- Create tasks within projects
+### Task Management
+- Create tasks with title, description, priority, due date, tags
 - Assign tasks to users
-- Task priority levels (Low, Medium, High)
-- Due date setting
-- Task status (Pending, In Progress, Completed)
-- Filter by project or assigned user
+- Task status tracking (pending → in-progress → completed)
+- Members can update status only; managers can edit all fields
+- Time entry tracking per task
+- Charts: project statistics and task overview (native SVG)
+
+### Internationalization
+- 4 languages: English (default), Chinese, Spanish, Russian
+- Switchable via Settings page
+- `data-i18n` / `data-i18n-aria-label` attributes for automatic translation
 
 ---
 
-## 📖 API Endpoints
+## More Documentation
 
-Full API documentation: [Backend API Docs](./docs/external_logs/deisgn_logs/backend_api.md)
-
-### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login & get JWT |
-| GET | `/api/auth/me` | Get current user |
-
-### Projects (Protected)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/projects` | List user's projects |
-| GET | `/api/projects/:id` | Get project details |
-| POST | `/api/projects` | Create project |
-| PUT | `/api/projects/:id` | Update project |
-| DELETE | `/api/projects/:id` | Delete project |
-| GET | `/api/projects/:id/tasks` | Get project tasks |
-
-### Tasks (Protected)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/tasks/my-tasks` | Get assigned tasks |
-| GET | `/api/tasks/:id` | Get task details |
-| POST | `/api/tasks` | Create task |
-| PUT | `/api/tasks/:id` | Update task |
-| DELETE | `/api/tasks/:id` | Delete task |
+| File | Description |
+|------|-------------|
+| [User Guide](./doc/user_guid.md) | How to use the platform |
+| [Installation Guide](./doc/install.md) | Setup instructions |
+| [User Manual](./doc/usermanual.md) | Install + usage (combined) |
+| [Requirements](./doc/requirements.md) | User stories + use cases |
+| [Test Plan](./doc/test.md) | Test cases and results |
+| [Architecture](./doc/architect.md) | System architecture and classes |
+| [API Reference](./doc/backend_api.md) | All REST endpoints |
+| [Database Schema](./doc/db.md) | ER diagram and SQL |
+| [UI Design](./doc/ui_design.md) | Interface and components |
+| [Design (all in one)](./doc/design.md) | Architecture + UI + API + DB |
+| [AI Interaction Log](./doc/ai.md) | Prompts and iterations |
+| [Task Assignments](./doc/assign.md) | Team member contributions |
 
 ---
 
-## 💻 Usage
-
-1. Open browser at **http://localhost:5173** (frontend)
-2. Click "Sign Up" to create an account OR use the injected default users
-3. Login with your credentials
-4. Access the dashboard to:
-   - Create new projects
-   - Add tasks to projects
-   - Manage task status and priorities
-   - View all projects and assigned tasks
-
----
-
-## 👥 Collaborators
+## Collaborators
 
 | Name | Role |
 |------|------|
@@ -282,15 +277,4 @@ Full API documentation: [Backend API Docs](./docs/external_logs/deisgn_logs/back
 
 ---
 
-## 📚 More Documentation
-
-- [User Guide](./docs/external_logs/user_guid.md)
-- [Use Cases](./docs/external_logs/use_cases.md)
-- [User Stories](./docs/external_logs/use_stories.md)
-- [Architecture](./docs/external_logs/deisgn_logs/architect.md)
-- [Database Schema](./docs/external_logs/deisgn_logs/db.md)
-- [UI Design](./docs/external_logs/deisgn_logs/ui_design.md)
-
----
-
-MIT
+MIT License
