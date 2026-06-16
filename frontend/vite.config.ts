@@ -21,6 +21,7 @@ export default defineConfig({
         projects: path.resolve(__dirname, 'src/projects.ts'),
         tasks: path.resolve(__dirname, 'src/tasks.ts'),
         settings: path.resolve(__dirname, 'src/settings.ts'),
+        team: path.resolve(__dirname, 'src/team.ts'),
       },
     },
   },

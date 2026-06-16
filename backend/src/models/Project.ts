@@ -44,7 +44,7 @@ export class ProjectModel {
 
     static update(
         id: string,
-        updates: Partial<Pick<Project, "name" | "description" | "status">>,
+        updates: Partial<Pick<Project, "name" | "description" | "status" | "owner_id">>,
     ): Project | null {
         const fields: string[] = [];
         const values: any[] = [];
@@ -60,6 +60,10 @@ export class ProjectModel {
         if (updates.status !== undefined) {
             fields.push("status = ?");
             values.push(updates.status);
+        }
+        if (updates.owner_id !== undefined) {
+            fields.push("owner_id = ?");
+            values.push(updates.owner_id);
         }
 
         if (fields.length === 0) return this.findById(id);

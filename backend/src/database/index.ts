@@ -47,7 +47,7 @@ function initializeDatabase(): void {
       name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
-      role TEXT NOT NULL DEFAULT 'user',
+      role TEXT NOT NULL DEFAULT 'member',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -57,7 +57,7 @@ function initializeDatabase(): void {
   ensureColumnExists(
     'users',
     'role',
-    "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'"
+    "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'member'"
   );
 
   // Create projects table

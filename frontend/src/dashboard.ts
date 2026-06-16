@@ -12,6 +12,7 @@ interface User {
   id: string;
   name: string;
   email: string;
+  role: string;
 }
 
 type DashboardTheme = "light" | "dark";
@@ -115,6 +116,8 @@ function setupEventListeners(): void {
       }
     });
   });
+
+  projectsListElement?.addEventListener("click", handleProjectActionClick);
 }
 
 function initializeTheme(): void {
@@ -215,6 +218,10 @@ async function loadUserData(): Promise<void> {
       userNameElement.textContent = currentUser.name;
     }
     updateUserAvatar(currentUser.name);
+
+    const canManageProjects = currentUser.role === "support" || currentUser.role === "manager";
+    const newProjectBtn = document.getElementById("new-project-btn");
+    if (newProjectBtn) newProjectBtn.style.display = canManageProjects ? "" : "none";
 
     refreshGreetingBanner();
   } catch (error) {
@@ -442,6 +449,67 @@ function handleProjectsAfterSwap(event: Event): void {
 
   document.getElementById("empty-state-create-project-btn")?.addEventListener("click", openProjectModal, { once: true });
   sortRenderedProjectCards();
+}
+
+function handleProjectActionClick(event: Event): void {
+  const target = event.target as HTMLElement;
+  const closeBtn = target.closest(".project-close-btn") as HTMLElement | null;
+  if (closeBtn) {
+    event.preventDefault();
+    const projectId = closeBtn.dataset.projectId!;
+    const projectName = closeBtn.dataset.projectName!;
+    const action = closeBtn.dataset.action || "close";
+    void handleCloseProject(projectId, projectName, action);
+    return;
+  }
+  const deleteBtn = target.closest(".project-delete-btn") as HTMLElement | null;
+  if (deleteBtn) {
+    event.preventDefault();
+    const projectId = deleteBtn.dataset.projectId!;
+    const projectName = deleteBtn.dataset.projectName!;
+    void handleDeleteProject(projectId, projectName);
+  }
+}
+
+async function requestWithAuth<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = { ...(init.headers as Record<string, string> || {}) };
+  const token = localStorage.getItem("spmp-csrf-token");
+  if (token) headers["X-CSRF-Token"] = token;
+  const res = await fetch(`/api${path}`, { ...init, headers });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(body.message || `Request failed (${res.status})`);
+  }
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
+}
+
+async function handleCloseProject(projectId: string, projectName: string, action: string): Promise<void> {
+  const isReopen = action === "reopen";
+  const confirmKey = isReopen ? "projects.confirmReopenProject" : "projects.confirmCloseProject";
+  if (!confirm(i18n(confirmKey, { name: projectName }))) return;
+  try {
+    const endpoint = isReopen ? `/projects/${projectId}/reopen` : `/projects/${projectId}/close`;
+    await requestWithAuth(endpoint, { method: "PATCH" });
+    const msgKey = isReopen ? "projects.projectReopened" : "projects.projectClosed";
+    showProjectsMessage(i18n(msgKey), "success");
+    refreshProjectsList();
+  } catch (error) {
+    if (isSessionError(error)) { redirectToLogin(); return; }
+    showProjectsMessage(error instanceof Error ? error.message : i18n("projects.failedCloseProject"), "error");
+  }
+}
+
+async function handleDeleteProject(projectId: string, projectName: string): Promise<void> {
+  if (!confirm(i18n("projects.confirmDeleteProject", { name: projectName }))) return;
+  try {
+    await requestWithAuth(`/projects/${projectId}`, { method: "DELETE" });
+    showProjectsMessage(i18n("projects.projectDeleted"), "success");
+    refreshProjectsList();
+  } catch (error) {
+    if (isSessionError(error)) { redirectToLogin(); return; }
+    showProjectsMessage(error instanceof Error ? error.message : i18n("projects.failedDeleteProject"), "error");
+  }
 }
 
 function handleLanguageChange(): void {

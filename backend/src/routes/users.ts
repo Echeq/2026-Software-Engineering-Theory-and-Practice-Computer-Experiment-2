@@ -1,13 +1,17 @@
 import { Router, Response } from "express";
 import { UserModel } from "../models/User";
 import { AuthRequest } from "../middleware/readSession";
-import { requireManager } from "../middleware/roleMiddleware";
+import { requireManager, requireSoporte } from "../middleware/roleMiddleware";
 
 const router = Router();
 
 router.get("/", (req: AuthRequest, res: Response) => {
     if (!req.user) {
         res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+    if (req.user.role !== "support" && req.user.role !== "manager") {
+        res.status(403).json({ message: "Access denied" });
         return;
     }
     const users = UserModel.listAll();
@@ -57,6 +61,43 @@ router.delete("/:id", requireManager, (req: AuthRequest, res: Response) => {
 
     UserModel.delete(req.params.id);
     res.json({ message: "User removed successfully" });
+});
+
+router.post("/:id/change-role", requireSoporte, (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+
+    const targetUser = UserModel.findById(req.params.id);
+    if (!targetUser) {
+        res.status(404).json({ message: "User not found" });
+        return;
+    }
+
+    if (targetUser.role === "support") {
+        res.status(400).json({ message: "Cannot change role of a support user" });
+        return;
+    }
+
+    if (targetUser.id === req.user.id) {
+        res.status(400).json({ message: "You cannot change your own role" });
+        return;
+    }
+
+    const newRole = req.body.newRole || "manager";
+    if (newRole !== "manager" && newRole !== "support") {
+        res.status(400).json({ message: "Target role must be 'manager' or 'support'" });
+        return;
+    }
+
+    const updated = UserModel.updateRole(req.params.id, newRole);
+    if (!updated) {
+        res.status(500).json({ message: "Failed to update role" });
+        return;
+    }
+
+    res.json({ message: `User role updated to ${newRole}`, user: { id: updated.id, name: updated.name, email: updated.email, role: updated.role } });
 });
 
 export default router;

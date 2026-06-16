@@ -1,5 +1,6 @@
 import { Router, Response } from "express";
 import { ProjectModel, CreateProjectInput } from "../models/Project";
+import { UserModel } from "../models/User";
 import { TaskModel } from "../models/Task";
 import { AuthRequest } from "../middleware/roleMiddleware";
 
@@ -21,6 +22,11 @@ const fragmentTranslations: Record<Language, Record<string, string>> = {
         active: "Active",
         inReview: "In Review",
         done: "Done",
+        closeProject: "Close",
+        deleteProject: "Delete",
+        reopenProject: "Reopen",
+        noProjectsMember: "No assigned projects",
+        noProjectsMemberText: "You don't have any tasks assigned yet. Contact your manager to get assigned to a project.",
     },
     zh: {
         noProjects: "还没有项目",
@@ -33,6 +39,11 @@ const fragmentTranslations: Record<Language, Record<string, string>> = {
         active: "进行中",
         inReview: "评审中",
         done: "已完成",
+        closeProject: "关闭",
+        deleteProject: "删除",
+        reopenProject: "重新打开",
+        noProjectsMember: "没有分配的项目",
+        noProjectsMemberText: "你还没有被分配任何任务。联系你的管理员来获取工作。",
     },
     es: {
         noProjects: "Aún no hay proyectos",
@@ -46,6 +57,11 @@ const fragmentTranslations: Record<Language, Record<string, string>> = {
         active: "Activo",
         inReview: "En revisión",
         done: "Hecho",
+        closeProject: "Cerrar",
+        deleteProject: "Eliminar",
+        reopenProject: "Reabrir",
+        noProjectsMember: "Sin proyectos asignados",
+        noProjectsMemberText: "Aún no tienes tareas asignadas. Contacta con tu manager para que te asigne un proyecto.",
     },
 };
 
@@ -196,8 +212,27 @@ function renderProjectCards(
     projects: ReturnType<typeof ProjectModel.findByOwnerId>,
     ownerName: string,
     language: Language,
+    userRole?: string,
 ): string {
+    const isMember = userRole === "member";
+
     if (projects.length === 0) {
+        if (isMember) {
+            return `
+      <article class="state-card empty-state-card">
+        <div class="empty-state-illustration" aria-hidden="true">
+          <svg viewBox="0 0 160 120" class="empty-state-svg" focusable="false">
+            <circle cx="80" cy="50" r="18" fill="none" stroke="currentColor" stroke-width="2" opacity="0.4"/>
+            <path d="M80 68v-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+            <rect x="30" y="84" width="100" height="8" rx="4" fill="currentColor" opacity="0.08"/>
+            <rect x="40" y="98" width="80" height="6" rx="3" fill="currentColor" opacity="0.06"/>
+          </svg>
+        </div>
+        <h3>${escapeHtml(translate(language, "noProjectsMember"))}</h3>
+        <p>${escapeHtml(translate(language, "noProjectsMemberText"))}</p>
+      </article>
+    `;
+        }
         return `
       <article class="state-card empty-state-card">
         <div class="empty-state-illustration" aria-hidden="true">
@@ -218,6 +253,8 @@ function renderProjectCards(
     `;
     }
 
+    const canManage = userRole === "support" || userRole === "manager";
+
     return projects
         .map((project) => {
             const description = project.description?.trim()
@@ -233,22 +270,41 @@ function renderProjectCards(
             }).toString();
             const normalizedStatus = project.status.trim().toLowerCase();
             const statusIndicator = getStatusIconMarkup(normalizedStatus);
+            const isCompleted = ["done", "completed", "complete", "closed", "shipped", "finished"].includes(normalizedStatus);
 
+            const closeAction = isCompleted ? "reopen" : "close";
+            const closeLabel = isCompleted ? translate(language, "reopenProject") : translate(language, "closeProject");
+            const closeBtn = canManage
+                ? `<button type="button" class="secondary-button project-action-btn project-close-btn" data-project-id="${escapeHtml(project.id)}" data-project-name="${escapeHtml(project.name)}" data-action="${escapeHtml(closeAction)}" style="font-size:12px;padding:4px 10px;">${escapeHtml(closeLabel)}</button>`
+                : "";
+
+            const deleteBtn = canManage
+                ? `<button type="button" class="secondary-button project-action-btn project-delete-btn" data-project-id="${escapeHtml(project.id)}" data-project-name="${escapeHtml(project.name)}" style="font-size:12px;padding:4px 10px;color:var(--danger,#c0392b);">${escapeHtml(translate(language, "deleteProject"))}</button>`
+                : "";
+
+            const actionsHtml = closeBtn || deleteBtn
+                ? `<div class="project-actions" style="display:flex;gap:6px;margin-top:8px;">${closeBtn}${deleteBtn}</div>`
+                : "";
+
+            const statusClass = isCompleted ? "completed" : normalizedStatus;
             return `
-      <a class="project-card project-card-link" href="./tasks.html?${query}" data-project-id="${escapeHtml(project.id)}">
-        <div class="project-head">
-          <div class="project-title-wrap">
-            <h3 class="project-name">${escapeHtml(project.name)}</h3>
-            <span class="project-task-count">${escapeHtml(translate(language, "tasksCount", { count: taskCount }))}</span>
+      <div class="project-card project-card-link" data-project-id="${escapeHtml(project.id)}" data-project-status="${escapeHtml(statusClass)}">
+        <a href="./tasks.html?${query}" class="project-card-inner-link" style="display:block;text-decoration:none;color:inherit;">
+          <div class="project-head">
+            <div class="project-title-wrap">
+              <h3 class="project-name">${escapeHtml(project.name)}</h3>
+              <span class="project-task-count">${escapeHtml(translate(language, "tasksCount", { count: taskCount }))}</span>
+            </div>
+            <span class="project-status">${statusIndicator}${escapeHtml(formatStatusLabel(project.status, language))}</span>
           </div>
-          <span class="project-status">${statusIndicator}${escapeHtml(formatStatusLabel(project.status, language))}</span>
-        </div>
-        ${description}
-        <div class="project-meta">
-          <span class="project-owner">${escapeHtml(ownerName)}</span>
-          <span>${escapeHtml(formatProjectDate(project.created_at, language))}</span>
-        </div>
-      </a>
+          ${description}
+          <div class="project-meta">
+            <span class="project-owner">${escapeHtml(ownerName)}</span>
+            <span>${escapeHtml(formatProjectDate(project.created_at, language))}</span>
+          </div>
+        </a>
+        ${actionsHtml}
+      </div>
     `;
         })
         .join("");
@@ -300,6 +356,17 @@ router.get("/", (req: AuthRequest, res: Response) => {
         return;
     }
 
+    // member sees projects they are assigned to; managers/support see owned projects
+    if (req.user.role === "member") {
+        const allTasks = TaskModel.findByAssignedTo(req.user.id);
+        const projectIds = [...new Set(allTasks.map((t) => t.project_id))];
+        const projects = projectIds
+            .map((pid) => ProjectModel.findById(pid))
+            .filter(Boolean) as ReturnType<typeof ProjectModel.findByOwnerId>;
+        res.json({ projects: attachTaskCounts(projects) });
+        return;
+    }
+
     const projects = ProjectModel.findByOwnerId(req.user.id);
     res.json({ projects: attachTaskCounts(projects) });
 });
@@ -317,11 +384,22 @@ router.get("/fragment/cards", (req: AuthRequest, res: Response) => {
 
     const status = readFilterStatus(req.query.status);
     const language = readLanguage(req.query.lang);
-    const projects = ProjectModel.findByOwnerId(req.user.id);
+
+    let projects: ReturnType<typeof ProjectModel.findByOwnerId>;
+    if (req.user.role === "member") {
+        const allTasks = TaskModel.findByAssignedTo(req.user.id);
+        const projectIds = [...new Set(allTasks.map((t) => t.project_id))];
+        projects = projectIds
+            .map((pid) => ProjectModel.findById(pid))
+            .filter(Boolean) as ReturnType<typeof ProjectModel.findByOwnerId>;
+    } else {
+        projects = ProjectModel.findByOwnerId(req.user.id);
+    }
+
     const filteredProjects = filterProjects(projects, req.query.search, status);
 
     res.type("html").send(
-        renderProjectCards(filteredProjects, req.user.name, language),
+        renderProjectCards(filteredProjects, req.user.name, language, req.user.role),
     );
 });
 
@@ -339,6 +417,18 @@ router.get("/:id", (req: AuthRequest, res: Response) => {
         return;
     }
 
+    // member can access if assigned to a task in this project
+    if (req.user.role === "member") {
+        const myTasks = TaskModel.findByAssignedTo(req.user.id);
+        const hasAccess = myTasks.some((t) => t.project_id === project.id);
+        if (!hasAccess) {
+            res.status(403).json({ message: "Access denied" });
+            return;
+        }
+        res.json({ project });
+        return;
+    }
+
     // Check ownership
     if (project.owner_id !== req.user.id) {
         res.status(403).json({ message: "Access denied" });
@@ -348,10 +438,15 @@ router.get("/:id", (req: AuthRequest, res: Response) => {
     res.json({ project });
 });
 
-// Create a new project
+// Create a new project – only support/manager
 router.post("/", (req: AuthRequest, res: Response) => {
     if (!req.user) {
         res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+
+    if (req.user.role !== "support" && req.user.role !== "manager") {
+        res.status(403).json({ message: "Only managers and soporte can create projects" });
         return;
     }
 
@@ -371,10 +466,15 @@ router.post("/", (req: AuthRequest, res: Response) => {
     res.status(201).json({ project });
 });
 
-// Update a project
+// Update a project – only support/manager
 router.put("/:id", (req: AuthRequest, res: Response) => {
     if (!req.user) {
         res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+
+    if (req.user.role !== "support" && req.user.role !== "manager") {
+        res.status(403).json({ message: "Only managers and soporte can update projects" });
         return;
     }
 
@@ -385,7 +485,7 @@ router.put("/:id", (req: AuthRequest, res: Response) => {
         return;
     }
 
-    if (project.owner_id !== req.user.id) {
+    if (project.owner_id !== req.user.id && req.user.role !== "support") {
         res.status(403).json({ message: "Access denied" });
         return;
     }
@@ -394,10 +494,69 @@ router.put("/:id", (req: AuthRequest, res: Response) => {
     res.json({ project: updated });
 });
 
-// Delete a project
+// Close/complete a project – only support/manager
+router.patch("/:id/close", (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+
+    if (req.user.role !== "support" && req.user.role !== "manager") {
+        res.status(403).json({ message: "Only managers and support can close projects" });
+        return;
+    }
+
+    const project = ProjectModel.findById(req.params.id);
+    if (!project) {
+        res.status(404).json({ message: "Project not found" });
+        return;
+    }
+
+    if (project.owner_id !== req.user.id && req.user.role !== "support") {
+        res.status(403).json({ message: "Access denied" });
+        return;
+    }
+
+    const updated = ProjectModel.update(req.params.id, { status: "completed" });
+    res.json({ project: updated });
+});
+
+// Reopen a closed project – only support/manager
+router.patch("/:id/reopen", (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+
+    if (req.user.role !== "support" && req.user.role !== "manager") {
+        res.status(403).json({ message: "Only managers and support can reopen projects" });
+        return;
+    }
+
+    const project = ProjectModel.findById(req.params.id);
+    if (!project) {
+        res.status(404).json({ message: "Project not found" });
+        return;
+    }
+
+    if (project.owner_id !== req.user.id && req.user.role !== "support") {
+        res.status(403).json({ message: "Access denied" });
+        return;
+    }
+
+    const updated = ProjectModel.update(req.params.id, { status: "active" });
+    res.json({ project: updated });
+});
+
+// Delete a project – only support/manager
 router.delete("/:id", (req: AuthRequest, res: Response) => {
     if (!req.user) {
         res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+
+    if (req.user.role !== "support" && req.user.role !== "manager") {
+        res.status(403).json({ message: "Only managers and soporte can delete projects" });
         return;
     }
 
@@ -408,13 +567,57 @@ router.delete("/:id", (req: AuthRequest, res: Response) => {
         return;
     }
 
-    if (project.owner_id !== req.user.id) {
+    if (project.owner_id !== req.user.id && req.user.role !== "support") {
         res.status(403).json({ message: "Access denied" });
         return;
     }
 
     ProjectModel.delete(req.params.id);
     res.json({ message: "Project deleted successfully" });
+});
+
+// Transfer project ownership – only to another manager/support
+router.post("/:id/transfer", (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+        res.status(401).json({ message: "Not authenticated" });
+        return;
+    }
+
+    if (req.user.role !== "support" && req.user.role !== "manager") {
+        res.status(403).json({ message: "Only managers and soporte can transfer projects" });
+        return;
+    }
+
+    const project = ProjectModel.findById(req.params.id);
+    if (!project) {
+        res.status(404).json({ message: "Project not found" });
+        return;
+    }
+
+    if (project.owner_id !== req.user.id && req.user.role !== "support") {
+        res.status(403).json({ message: "Access denied" });
+        return;
+    }
+
+    const { new_owner_id } = req.body;
+    if (!new_owner_id) {
+        res.status(400).json({ message: "new_owner_id is required" });
+        return;
+    }
+
+    const newOwner = UserModel.findById(new_owner_id);
+    if (!newOwner) {
+        res.status(404).json({ message: "New owner not found" });
+        return;
+    }
+
+    if (newOwner.role !== "manager" && newOwner.role !== "support") {
+        res.status(400).json({ message: "Can only transfer to a manager or soporte" });
+        return;
+    }
+
+    const updated = ProjectModel.update(req.params.id, { owner_id: new_owner_id });
+    res.json({ message: "Project transferred", project: updated });
 });
 
 // Get tasks for a project
@@ -428,6 +631,12 @@ router.get("/:id/tasks", (req: AuthRequest, res: Response) => {
 
     if (!project) {
         res.status(404).json({ message: "Project not found" });
+        return;
+    }
+
+    if (req.user.role === "member") {
+        const tasks = TaskModel.findByProjectId(req.params.id);
+        res.json({ tasks });
         return;
     }
 

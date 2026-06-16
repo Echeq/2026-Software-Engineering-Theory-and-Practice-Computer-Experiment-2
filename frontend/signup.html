@@ -99,13 +99,13 @@
         <button type="submit" class="submit-button" data-i18n="signup.submit">Sign Up</button>
       </form>
 
-      <p class="auth-switch">
-        <span data-i18n="signup.haveAccount">Already have an account?</span>
-        <a href="./index.html" class="auth-link" data-i18n="signup.loginLink">Log In</a>
-      </p>
     </section>
   </main>
 
+  <script>
+    // Public signup is disabled. Accounts can only be created by managers/soporte from the Team page.
+    window.location.href = "./index.html";
+  </script>
   <script src="./js/signup.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
 </body>
