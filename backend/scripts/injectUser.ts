@@ -36,6 +36,20 @@ function normalizeUser(rawUser: RawEnvUser, fallbackRole: UserRole): EnvUser | n
 function readUsersFromEnv(): EnvUser[] {
   const configuredUsers: EnvUser[] = [];
 
+  const supportUser = normalizeUser(
+    {
+      name: process.env.SUPPORT_NAME,
+      email: process.env.SUPPORT_EMAIL,
+      password: process.env.SUPPORT_PASSWORD,
+      role: 'support',
+    },
+    'support'
+  );
+
+  if (supportUser) {
+    configuredUsers.push(supportUser);
+  }
+
   const managerUser = normalizeUser(
     {
       name: process.env.MANAGER_NAME,
@@ -57,7 +71,7 @@ function readUsersFromEnv(): EnvUser[] {
       password: process.env.USER_PASSWORD,
       role: process.env.USER_ROLE as UserRole | undefined,
     },
-    'user'
+    'member'
   );
 
   if (defaultUser) {
@@ -73,7 +87,7 @@ function readUsersFromEnv(): EnvUser[] {
     }
 
     for (const parsedUser of parsedUsers) {
-      const user = normalizeUser(parsedUser, 'user');
+      const user = normalizeUser(parsedUser, 'member');
       if (user) {
         configuredUsers.push(user);
       }

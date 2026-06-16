@@ -98,10 +98,9 @@ async function loadCurrentUser(): Promise<void> {
     if (nameEl) nameEl.textContent = currentUser.name;
     if (avatarEl) avatarEl.textContent = getInitials(currentUser.name);
 
-    if (currentUser.role === "manager") {
-      const inviteBtn = document.getElementById("invite-member-btn") as HTMLButtonElement | null;
-      if (inviteBtn) inviteBtn.hidden = false;
-    }
+    const canManage = currentUser.role === "support" || currentUser.role === "manager";
+    const inviteBtn = document.getElementById("invite-member-btn") as HTMLButtonElement | null;
+    if (inviteBtn) inviteBtn.hidden = !canManage;
   } catch {
     redirectToLogin();
   }
@@ -137,15 +136,24 @@ function renderMembers(members: TeamMember[]): void {
     return;
   }
 
+  const isSoporte = currentUser?.role === "support";
+  const canManage = isSoporte || currentUser?.role === "manager";
+
   list.innerHTML = members.map((m) => {
     const isMe = m.id === currentUser?.id;
-    const isManager = currentUser?.role === "manager";
-    const roleBadge = m.role === "manager"
-      ? `<span class="project-status" style="color:var(--accent)">${i18n("team.roleManager")}</span>`
-      : `<span class="project-status">${i18n("team.roleMember")}</span>`;
 
-    const removeBtn = isManager && !isMe
+    const roleBadge = m.role === "support"
+      ? `<span class="project-status" style="color:#ef4444;font-weight:600;">${i18n("team.roleSoporte")}</span>`
+      : m.role === "manager"
+        ? `<span class="project-status" style="color:var(--accent)">${i18n("team.roleManager")}</span>`
+        : `<span class="project-status">${i18n("team.roleMember")}</span>`;
+
+    const removeBtn = canManage && !isMe
       ? `<button type="button" class="secondary-button remove-member-btn" data-member-id="${escapeHtml(m.id)}" data-member-name="${escapeHtml(m.name)}" style="margin-top:12px;font-size:13px;">${i18n("team.removeMember")}</button>`
+      : "";
+
+    const changeRoleBtn = isSoporte && !isMe && m.role !== "support"
+      ? `<button type="button" class="secondary-button change-role-btn" data-member-id="${escapeHtml(m.id)}" data-member-name="${escapeHtml(m.name)}" data-target-role="${m.role === "manager" ? "support" : "manager"}" style="margin-top:12px;font-size:13px;color:var(--accent);">${m.role === "manager" ? i18n("team.changeToSupport") : i18n("team.changeToManager")}</button>`
       : "";
 
     const youBadge = isMe ? ` <span style="font-size:12px;color:var(--muted)">${i18n("team.you")}</span>` : "";
@@ -160,7 +168,7 @@ function renderMembers(members: TeamMember[]): void {
           ${roleBadge}
         </div>
         <p class="project-description">${i18n("team.memberSince")} ${formatDate(m.created_at)}</p>
-        ${removeBtn}
+        <div style="display:flex;gap:8px;margin-top:4px;">${changeRoleBtn}${removeBtn}</div>
       </article>
     `;
   }).join("");
@@ -172,6 +180,36 @@ function renderMembers(members: TeamMember[]): void {
       void confirmRemoveMember(id, name);
     });
   });
+
+  document.querySelectorAll<HTMLButtonElement>(".change-role-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.memberId!;
+      const name = btn.dataset.memberName!;
+      const targetRole = btn.dataset.targetRole!;
+      void confirmChangeRole(id, name, targetRole);
+    });
+  });
+}
+
+async function confirmChangeRole(id: string, name: string, targetRole: string): Promise<void> {
+  const msgKey = targetRole === "support" ? "team.confirmChangeToSupport" : "team.confirmChangeRole";
+  if (!confirm(i18n(msgKey, { name }))) return;
+  await changeMemberRole(id, targetRole);
+}
+
+async function changeMemberRole(id: string, targetRole: string): Promise<void> {
+  try {
+    await requestWithAuth(`/users/${id}/change-role`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newRole: targetRole }),
+    });
+    const msgKey = targetRole === "support" ? "team.roleChangedToSupport" : "team.roleChanged";
+    showMessage(i18n(msgKey), "success");
+    await refreshMembers();
+  } catch (error) {
+    showMessage(getErrorText(error, i18n("team.failedChangeRole")), "error");
+  }
 }
 
 async function confirmRemoveMember(id: string, name: string): Promise<void> {

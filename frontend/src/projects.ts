@@ -1,6 +1,6 @@
 import "../css/dashboard.css";
 import "./i18n";
-import { getCurrentUser, isSessionError, logout } from "./core/services";
+import { getCurrentUser, isSessionError, logout, createProject } from "./core/services";
 
 type ProjectsTheme = "light" | "dark";
 
@@ -17,6 +17,14 @@ let sidebarToggleButton: HTMLButtonElement | null = null;
 let sidebarElement: HTMLElement | null = null;
 let sidebarBackdropElement: HTMLElement | null = null;
 let projectsLanguageInput: HTMLInputElement | null = null;
+let projectModalElement: HTMLElement | null = null;
+let projectFormElement: HTMLFormElement | null = null;
+let projectNameInput: HTMLInputElement | null = null;
+let projectDescriptionInput: HTMLTextAreaElement | null = null;
+let projectFormMessageBox: HTMLElement | null = null;
+let projectSubmitButton: HTMLButtonElement | null = null;
+let closeProjectModalButton: HTMLButtonElement | null = null;
+let cancelProjectModalButton: HTMLButtonElement | null = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   void initializeProjectsPage();
@@ -43,6 +51,14 @@ function cacheElements(): void {
   sidebarElement = document.getElementById("dashboard-sidebar");
   sidebarBackdropElement = document.getElementById("sidebar-backdrop");
   projectsLanguageInput = document.getElementById("projects-language-input") as HTMLInputElement | null;
+  projectModalElement = document.getElementById("project-modal");
+  projectFormElement = document.getElementById("project-form") as HTMLFormElement | null;
+  projectNameInput = document.getElementById("project-name") as HTMLInputElement | null;
+  projectDescriptionInput = document.getElementById("project-description") as HTMLTextAreaElement | null;
+  projectFormMessageBox = document.getElementById("project-form-message");
+  projectSubmitButton = document.getElementById("project-submit-btn") as HTMLButtonElement | null;
+  closeProjectModalButton = document.getElementById("close-project-modal") as HTMLButtonElement | null;
+  cancelProjectModalButton = document.getElementById("cancel-project-btn") as HTMLButtonElement | null;
 }
 
 function setupEventListeners(): void {
@@ -60,6 +76,38 @@ function setupEventListeners(): void {
         closeSidebar();
       }
     });
+  });
+
+  document.getElementById("new-project-btn")?.addEventListener("click", openProjectModal);
+  closeProjectModalButton?.addEventListener("click", closeProjectModal);
+  cancelProjectModalButton?.addEventListener("click", closeProjectModal);
+  projectModalElement?.addEventListener("click", handleProjectModalClick);
+  projectFormElement?.addEventListener("submit", handleProjectFormSubmit);
+
+  const board = document.getElementById("projects-board");
+  board?.addEventListener("click", (event: Event) => {
+    const target = event.target as HTMLElement;
+    const closeBtn = target.closest(".project-close-btn") as HTMLElement | null;
+    if (closeBtn) {
+      const projectId = closeBtn.dataset.projectId!;
+      const projectName = closeBtn.dataset.projectName!;
+      const action = closeBtn.dataset.action || "close";
+      void handleCloseProject(projectId, projectName, action);
+      return;
+    }
+    const deleteBtn = target.closest(".project-delete-btn") as HTMLElement | null;
+    if (deleteBtn) {
+      const projectId = deleteBtn.dataset.projectId!;
+      const projectName = deleteBtn.dataset.projectName!;
+      void handleDeleteProject(projectId, projectName);
+    }
+  });
+
+  document.addEventListener("htmx:afterSettle", (e: Event) => {
+    const customEvent = e as CustomEvent;
+    if (customEvent.target instanceof HTMLElement && customEvent.target.id === "projects-board") {
+      document.getElementById("empty-state-create-project-btn")?.addEventListener("click", openProjectModal, { once: true });
+    }
   });
 }
 
@@ -148,7 +196,12 @@ function handleSidebarBackdropClick(event: Event): void {
 }
 
 function handleEscapeKey(event: KeyboardEvent): void {
-  if (event.key === "Escape" && document.body.classList.contains("sidebar-open")) {
+  if (event.key !== "Escape") return;
+  if (projectModalElement && !projectModalElement.hidden) {
+    closeProjectModal();
+    return;
+  }
+  if (document.body.classList.contains("sidebar-open")) {
     closeSidebar();
   }
 }
@@ -162,6 +215,11 @@ async function loadUserData(): Promise<void> {
     }
 
     updateUserAvatar(user.name);
+
+    const canManageProjects = user.role === "support" || user.role === "manager";
+    const createBtn = document.getElementById("new-project-btn");
+    if (createBtn) createBtn.style.display = canManageProjects ? "" : "none";
+
     clearProjectsMessage();
   } catch (error) {
     if (isSessionError(error)) {
@@ -243,6 +301,146 @@ function showProjectsMessage(text: string, type?: "error" | "success"): void {
 
 function clearProjectsMessage(): void {
   showProjectsMessage("");
+}
+
+function openProjectModal(): void {
+  if (!projectModalElement) return;
+  closeSidebar();
+  projectModalElement.hidden = false;
+  projectModalElement.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+  projectNameInput?.focus();
+}
+
+function closeProjectModal(): void {
+  if (!projectModalElement) return;
+  projectModalElement.hidden = true;
+  projectModalElement.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+  projectFormElement?.reset();
+  resetProjectFormErrors();
+  setProjectSubmitting(false);
+}
+
+function handleProjectModalClick(event: Event): void {
+  const target = event.target as HTMLElement | null;
+  if (target?.dataset.closeModal === "true") {
+    closeProjectModal();
+  }
+}
+
+function resetProjectFormErrors(): void {
+  document.querySelectorAll<HTMLElement>(".field-error").forEach((el) => {
+    el.textContent = "";
+  });
+}
+
+function setProjectFieldError(inputId: string, message: string): void {
+  const errorEl = document.querySelector<HTMLElement>(`[data-error-for="${inputId}"]`);
+  if (errorEl) errorEl.textContent = message;
+}
+
+function showProjectFormMessage(text: string, type?: "error" | "success"): void {
+  if (!projectFormMessageBox) return;
+  projectFormMessageBox.textContent = text;
+  projectFormMessageBox.className = type ? `form-message ${type}` : "form-message";
+}
+
+function setProjectSubmitting(isSubmitting: boolean): void {
+  if (!projectSubmitButton) return;
+  projectSubmitButton.disabled = isSubmitting;
+  projectSubmitButton.textContent = isSubmitting ? i18n("dashboard.projectSubmitting") : i18n("dashboard.projectSubmit");
+}
+
+function validateProjectForm(name: string, description: string): boolean {
+  let isValid = true;
+  if (!name) {
+    setProjectFieldError("project-name", i18n("dashboard.validation.projectRequired"));
+    isValid = false;
+  } else if (name.length < 2) {
+    setProjectFieldError("project-name", i18n("dashboard.validation.projectShort"));
+    isValid = false;
+  }
+  if (description.length > 500) {
+    setProjectFieldError("project-description", i18n("dashboard.validation.projectDescriptionLong"));
+    isValid = false;
+  }
+  return isValid;
+}
+
+async function handleProjectFormSubmit(event: Event): Promise<void> {
+  event.preventDefault();
+  if (!projectFormElement || !projectNameInput) return;
+  const name = projectNameInput.value.trim();
+  const description = projectDescriptionInput?.value.trim() || "";
+  if (!validateProjectForm(name, description)) {
+    showProjectFormMessage(i18n("dashboard.validation.fix"), "error");
+    return;
+  }
+  setProjectSubmitting(true);
+  try {
+    await createProject({ name, description: description || undefined });
+    closeProjectModal();
+    showProjectsMessage(i18n("dashboard.projectCreated"), "success");
+    refreshProjectsBoard();
+  } catch (error) {
+    if (isSessionError(error)) {
+      redirectToLogin();
+      return;
+    }
+    showProjectFormMessage(error instanceof Error ? error.message : i18n("dashboard.projectCreateFailed"), "error");
+  } finally {
+    setProjectSubmitting(false);
+  }
+}
+
+async function requestWithAuth<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = { ...(init.headers as Record<string, string> || {}) };
+  const token = localStorage.getItem("spmp-csrf-token");
+  if (token) headers["X-CSRF-Token"] = token;
+  const res = await fetch(`/api${path}`, { ...init, headers });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(body.message || `Request failed (${res.status})`);
+  }
+  if (res.status === 204) return undefined as T;
+  return res.json() as Promise<T>;
+}
+
+function showMessage(text: string, type: "success" | "error"): void {
+  showProjectsMessage(text, type);
+}
+
+function getErrorText(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+async function handleCloseProject(projectId: string, projectName: string, action: string): Promise<void> {
+  const isReopen = action === "reopen";
+  const confirmKey = isReopen ? "projects.confirmReopenProject" : "projects.confirmCloseProject";
+  if (!confirm(i18n(confirmKey, { name: projectName }))) return;
+  try {
+    const endpoint = isReopen ? `/projects/${projectId}/reopen` : `/projects/${projectId}/close`;
+    await requestWithAuth(endpoint, { method: "PATCH" });
+    const msgKey = isReopen ? "projects.projectReopened" : "projects.projectClosed";
+    showMessage(i18n(msgKey), "success");
+    refreshProjectsBoard();
+  } catch (error) {
+    if (isSessionError(error)) { redirectToLogin(); return; }
+    showMessage(getErrorText(error, i18n("projects.failedCloseProject")), "error");
+  }
+}
+
+async function handleDeleteProject(projectId: string, projectName: string): Promise<void> {
+  if (!confirm(i18n("projects.confirmDeleteProject", { name: projectName }))) return;
+  try {
+    await requestWithAuth(`/projects/${projectId}`, { method: "DELETE" });
+    showMessage(i18n("projects.projectDeleted"), "success");
+    refreshProjectsBoard();
+  } catch (error) {
+    if (isSessionError(error)) { redirectToLogin(); return; }
+    showMessage(getErrorText(error, i18n("projects.failedDeleteProject")), "error");
+  }
 }
 
 async function handleLogout(): Promise<void> {

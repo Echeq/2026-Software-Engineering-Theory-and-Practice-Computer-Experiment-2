@@ -8,7 +8,7 @@ const i18n = (key: string, values?: Record<string, string | number>): string => 
 const TASK_CATEGORIES = ["design", "frontend", "backend", "database", "api", "testing", "bugfix", "refactoring", "documentation", "devops", "performance", "security", "research", "chore"];
 
 interface CurrentUser {
-  id: string; name: string; email: string;
+  id: string; name: string; email: string; role?: string;
 }
 
 interface TeamMember {
@@ -78,6 +78,11 @@ async function initializeTasksPage(): Promise<void> {
     currentUser = await getCurrentUser();
     if (userNameElement) userNameElement.textContent = currentUser.name;
     if (userAvatarElement) userAvatarElement.textContent = getInitials(currentUser.name);
+
+    const canManageTasks = currentUser.role === "support" || currentUser.role === "manager";
+    const addBtn = document.getElementById("open-task-modal-btn");
+    if (addBtn) addBtn.style.display = canManageTasks ? "" : "none";
+
     projects = await getProjects();
     const allUsers = await fetchMembers();
     members = allUsers;
@@ -235,7 +240,7 @@ function renderKanban(): void {
     html += `<div class="kanban-column" data-column-status="${col.status}" style="background:var(--surface);border-radius:12px;padding:16px;">
       <h3 style="margin:0 0 12px;font-size:15px;">${escapeHtml(col.title)} <span style="font-weight:400;color:var(--muted)">(${colTasks.length})</span></h3>
       ${colTasks.length === 0 ? `<p style="color:var(--muted);font-size:13px;">${i18n("tasks.noTasks")}</p>` : ""}
-      ${colTasks.map(t => renderTaskCard(t, memberMap)).join("")}
+      ${colTasks.map(t => renderTaskCard(t, memberMap, currentUser?.role || "")).join("")}
     </div>`;
   }
   html += `</div>`;
@@ -255,11 +260,18 @@ function renderKanban(): void {
   });
 }
 
-function renderTaskCard(t: TaskItem, memberMap: Map<string, string>): string {
+function renderTaskCard(t: TaskItem, memberMap: Map<string, string>, currentRole: string): string {
   let tags: string[] = [];
   try { tags = JSON.parse(t.tags || "[]"); } catch { tags = []; }
   const priorityColors: Record<string, string> = { high: "#ef4444", medium: "#f59e0b", low: "#22c55e" };
   const assigneeName = t.assigned_to ? memberMap.get(t.assigned_to) || i18n("tasks.unknown") : i18n("tasks.unassigned");
+  const canManageTasks = currentRole === "support" || currentRole === "manager";
+  const actionButtons = canManageTasks
+    ? `<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+        <button class="secondary-button task-edit-btn" data-task-id="${t.id}" style="font-size:11px;padding:2px 8px;">${i18n("tasks.edit")}</button>
+        <button class="secondary-button task-delete-btn" data-task-id="${t.id}" style="font-size:11px;padding:2px 8px;color:#ef4444;">${i18n("tasks.delete")}</button>
+       </div>`
+    : "";
   return `
     <article class="project-card task-card-draggable" draggable="true" data-task-id="${t.id}" style="margin-bottom:12px;cursor:grab;padding:14px;">
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
@@ -275,10 +287,7 @@ function renderTaskCard(t: TaskItem, memberMap: Map<string, string>): string {
         ${t.due_date ? `<span>📅 ${escapeHtml(t.due_date)}</span>` : ""}
         ${t.estimated_hours > 0 ? `<span>⏱ ${t.estimated_hours}h</span>` : ""}
       </div>
-      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
-        <button class="secondary-button task-edit-btn" data-task-id="${t.id}" style="font-size:11px;padding:2px 8px;">${i18n("tasks.edit")}</button>
-        <button class="secondary-button task-delete-btn" data-task-id="${t.id}" style="font-size:11px;padding:2px 8px;color:#ef4444;">${i18n("tasks.delete")}</button>
-      </div>
+      ${actionButtons}
     </article>
   `;
 }

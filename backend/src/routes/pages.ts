@@ -9,6 +9,7 @@ const appRoutes = {
   dashboard: "/dashboard",
   projects: "/dashboard/projects",
   tasks: "/dashboard/tasks",
+  team: "/dashboard/team.html",
   settings: "/dashboard/settings",
   apiBase: "/api"
 } as const;
@@ -75,6 +76,8 @@ router.get(["/dashboard/settings", "/dashboard/settings.html"], (req, res) => {
   });
 });
 
+
+
 export default router;
 
 function renderAuthPage(res: Response, options: {
@@ -109,10 +112,10 @@ function renderAuthPage(res: Response, options: {
 }
 
 function renderWorkspacePage(req: Request, res: Response, options: {
-  pageId: "dashboard" | "projects" | "tasks" | "settings";
+  pageId: "dashboard" | "projects" | "tasks" | "settings" | "team";
   title: string;
   entry: string;
-  activePage: "dashboard" | "projects" | "tasks" | "settings";
+  activePage: "dashboard" | "projects" | "tasks" | "settings" | "team";
   topbarTagKey: string;
   topbarLabelKey: string;
   contentTemplate: string;

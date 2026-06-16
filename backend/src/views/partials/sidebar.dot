@@ -20,6 +20,9 @@
       <a href="{{=it.routes.tasks}}" class="sidebar-link{{=it.activePage === "tasks" ? " is-active" : ""}}">
         <span data-i18n="sidebar.tasks">Tasks</span>
       </a>
+      <a href="{{=it.routes.team}}" class="sidebar-link{{=it.activePage === "team" ? " is-active" : ""}}">
+        <span data-i18n="sidebar.team">Team</span>
+      </a>
       <a href="{{=it.routes.settings}}" class="sidebar-link{{=it.activePage === "settings" ? " is-active" : ""}}">
         <span data-i18n="sidebar.settings">Settings</span>
       </a>

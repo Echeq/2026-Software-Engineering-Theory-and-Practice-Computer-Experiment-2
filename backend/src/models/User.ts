@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { query, queryOne, run } from '../database';
 
-export type UserRole = 'user' | 'manager';
+export type UserRole = 'member' | 'manager' | 'support';
 
 export interface User {
   id: string;
@@ -28,8 +28,8 @@ export class UserModel {
     const hashedPassword = await bcrypt.hash(input.password, this.SALT_ROUNDS);
 
     run(
-      'INSERT INTO users (id, name, email, password_hash) VALUES (?, ?, ?, ?)',
-      [id, input.name, input.email, hashedPassword]
+      'INSERT INTO users (id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)',
+      [id, input.name, input.email, hashedPassword, 'member']
     );
 
     return this.findById(id)!;

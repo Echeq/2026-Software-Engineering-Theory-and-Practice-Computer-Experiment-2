@@ -1191,6 +1191,10 @@ body[data-theme="dark"] .state-card {
   background: #94A3B8;
 }
 
+.project-card[data-project-status="completed"]::before {
+  background: #EF4444;
+}
+
 .project-card {
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
@@ -1250,6 +1254,18 @@ body[data-theme="dark"] .project-card:hover {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.project-card[data-project-status="completed"] .project-status {
+  color: #EF4444;
+  border-color: #FECACA;
+  background: #FEF2F2;
+}
+
+body[data-theme="dark"] .project-card[data-project-status="completed"] .project-status {
+  color: #FCA5A5;
+  border-color: #7F1D1D;
+  background: #450A0A;
 }
 
 .status-icon {
