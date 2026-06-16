@@ -16,6 +16,18 @@ A full-stack web-based project and task management platform built with Node.js, 
 |:---:|:---:|:---:|:---:|:---:|
 | [ai.md](./doc/ai.md) | [user_stories.md](./doc/user_stories.md) | [use_cases.md](./doc/use_cases.md) | [EN/ZH/ES/RU](#-internationalization-i18n) | [Course Skill](./skills/software_engineering_course_skill.md) |
 
+
+---
+
+## Collaborators
+
+| Name | Role |
+|------|------|
+| **陈昌发** | Project Leader + Documentation + Code Supervision + QA |
+| **李欣** | Backend + APIs + Database Design & Management |
+| **任杰** | Frontend + UI/UX Design |
+| **孔刚** | Frontend Helper + Backend Helper |
+
 ---
 
 ## Quick Setup
@@ -264,16 +276,6 @@ Full documentation: [Backend API Docs](./doc/backend_api.md)
 | [AI Interaction Log](./doc/ai.md) | Prompts and iterations |
 | [Task Assignments](./doc/assign.md) | Team member contributions |
 
----
-
-## Collaborators
-
-| Name | Role |
-|------|------|
-| **陈昌发** | Project Leader + Documentation + Code Supervision + QA |
-| **李欣** | Backend + APIs + Database Design & Management |
-| **任杰** | Frontend + UI/UX Design |
-| **孔刚** | Frontend Helper + Backend Helper |
 
 ---
 
